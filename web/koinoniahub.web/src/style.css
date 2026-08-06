@@ -1,0 +1,455 @@
+/* src/style.css */
+
+/* ── Fontes Institucionais ── */
+@import url("https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Source+Sans+3:wght@300;400;500;600;700&display=swap");
+
+/* ── Design System IPB ── */
+:root {
+  --ipb-verde: #234f32;
+  --ipb-verde-claro: #2e6b42;
+  --ipb-verde-escuro: #1a3b25;
+  --ipb-verde-bg: #edf5f0;
+  --ipb-cinza: #4d4d4d;
+  --ipb-cinza-claro: #7a7a7a;
+  --ipb-cinza-borda: #e2e2e2;
+  --ipb-cinza-bg: #f7f7f7;
+  --ipb-branco: #ffffff;
+  --ipb-erro: #b83232;
+  --ipb-sucesso: #2e7d4a;
+
+  --font-display: "Merriweather", Georgia, serif;
+  --font-body: "Source Sans 3", "Segoe UI", sans-serif;
+
+  --header-h: 64px;
+  --sidebar-w: 272px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Reset base ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ipb-cinza);
+  background: var(--ipb-cinza-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Títulos de Página ── */
+.page-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ipb-verde-escuro);
+  margin-bottom: 4px;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: var(--ipb-cinza-claro);
+  margin-bottom: 24px;
+}
+
+/* ── Cards ── */
+.card-ipb {
+  background: var(--ipb-branco);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--ipb-cinza-borda);
+}
+
+/* ── Botões ── */
+.btn-ipb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.btn-ipb-primary {
+  background: var(--ipb-verde);
+  color: #fff;
+}
+
+.btn-ipb-primary:hover {
+  background: var(--ipb-verde-claro);
+  box-shadow: 0 4px 16px rgba(35, 79, 50, 0.1);
+}
+
+.btn-ipb-secondary {
+  background: transparent;
+  color: var(--ipb-verde);
+  border: 1px solid var(--ipb-verde);
+}
+
+.btn-ipb-secondary:hover {
+  background: var(--ipb-verde-bg);
+}
+
+/* ── Stat Cards (Dashboard) ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  background: var(--ipb-branco);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  border: 1px solid var(--ipb-cinza-borda);
+  box-shadow: var(--shadow-card);
+}
+
+.stat-card-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--ipb-cinza-claro);
+  font-weight: 600;
+}
+
+.stat-card-valor {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--ipb-verde-escuro);
+  margin-top: 4px;
+}
+
+.stat-card-detalhe {
+  font-size: 12px;
+  color: var(--ipb-sucesso);
+  margin-top: 2px;
+}
+/* ── Container padrão de página ── */
+.page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Card de tabela (DataTable dentro) ── */
+.card-tabela {
+  background: var(--ipb-branco);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  border: 1px solid var(--ipb-cinza-borda);
+  box-shadow: var(--shadow-card);
+}
+
+.card-tabela-titulo {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ipb-verde-escuro);
+  margin-bottom: 14px;
+}
+
+/* ── Grid de ações rápidas ── */
+.acoes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+/* ══════════════════════════════════════════
+   PRIMEVUE OVERRIDES — Identidade IPB
+   ══════════════════════════════════════════ */
+
+/* ── DataTable ── */
+.p-datatable .p-datatable-thead > tr > th {
+  background: var(--ipb-verde-bg) !important;
+  color: var(--ipb-verde-escuro) !important;
+  border-color: var(--ipb-cinza-borda) !important;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.p-datatable .p-datatable-tbody > tr {
+  background: var(--ipb-branco) !important;
+  color: var(--ipb-cinza) !important;
+}
+
+.p-datatable .p-datatable-tbody > tr:nth-child(even) {
+  background: var(--ipb-cinza-bg) !important;
+}
+
+.p-datatable .p-datatable-tbody > tr:hover {
+  background: var(--ipb-verde-bg) !important;
+}
+
+.p-datatable .p-datatable-tbody > tr > td {
+  border-color: var(--ipb-cinza-borda) !important;
+}
+
+/* ── Paginator ── */
+.p-paginator {
+  background: transparent !important;
+  border: none !important;
+}
+
+.p-paginator .p-paginator-page.p-highlight {
+  background: var(--ipb-verde) !important;
+  color: #fff !important;
+  border-color: var(--ipb-verde) !important;
+}
+
+/* ── Inputs, Selects, DatePickers ── */
+.p-inputtext,
+.p-select,
+.p-datepicker-input,
+.p-inputnumber-input {
+  background: var(--ipb-branco) !important;
+  color: var(--ipb-cinza) !important;
+  border-color: var(--ipb-cinza-borda) !important;
+}
+
+.p-inputtext:focus,
+.p-select:focus,
+.p-select.p-focus {
+  border-color: var(--ipb-verde) !important;
+  box-shadow: 0 0 0 2px rgba(35, 79, 50, 0.15) !important;
+}
+
+/* ── Select dropdown panel ── */
+.p-select-overlay,
+.p-select-panel {
+  background: var(--ipb-branco) !important;
+}
+
+.p-select-option {
+  color: var(--ipb-cinza) !important;
+}
+
+.p-select-option.p-highlight {
+  background: var(--ipb-verde-bg) !important;
+  color: var(--ipb-verde-escuro) !important;
+}
+
+/* ── Buttons Primary ── */
+.p-button:not(.p-button-secondary):not(.p-button-danger):not(
+    .p-button-info
+  ):not(.p-button-text):not(.p-button-outlined) {
+  background: var(--ipb-verde) !important;
+  border-color: var(--ipb-verde) !important;
+}
+
+.p-button:not(.p-button-secondary):not(.p-button-danger):not(
+    .p-button-info
+  ):not(.p-button-text):not(.p-button-outlined):hover {
+  background: var(--ipb-verde-claro) !important;
+  border-color: var(--ipb-verde-claro) !important;
+}
+
+/* ── TabView / Tabs ── */
+.p-tabview-nav-link.p-tabview-nav-link-active,
+.p-tab.p-tab-active {
+  color: var(--ipb-verde) !important;
+  border-color: var(--ipb-verde) !important;
+}
+
+/* ── Dialog ── */
+.p-dialog {
+  background: var(--ipb-branco) !important;
+}
+
+.p-dialog .p-dialog-header {
+  background: var(--ipb-verde-bg) !important;
+  color: var(--ipb-verde-escuro) !important;
+}
+
+/* ── Tags ── */
+.p-tag.p-tag-success {
+  background: var(--ipb-sucesso) !important;
+}
+
+/* ══════════════════════════════════════════
+   PRIMEVUE v4 — Correções extras (Dropdown, Calendar, InputNumber, TabView)
+   ══════════════════════════════════════════ */
+
+/* ── Dropdown (p-dropdown em v4) ── */
+.p-dropdown,
+.p-multiselect {
+  background: var(--ipb-branco) !important;
+  color: var(--ipb-cinza) !important;
+  border-color: var(--ipb-cinza-borda) !important;
+}
+
+.p-dropdown .p-dropdown-label,
+.p-multiselect .p-multiselect-label {
+  color: var(--ipb-cinza) !important;
+}
+
+.p-dropdown-panel,
+.p-dropdown-items-wrapper {
+  background: var(--ipb-branco) !important;
+}
+
+.p-dropdown-item {
+  color: var(--ipb-cinza) !important;
+}
+
+.p-dropdown-item.p-highlight,
+.p-dropdown-item:hover {
+  background: var(--ipb-verde-bg) !important;
+  color: var(--ipb-verde-escuro) !important;
+}
+
+.p-dropdown-filter {
+  background: var(--ipb-branco) !important;
+  color: var(--ipb-cinza) !important;
+  border-color: var(--ipb-cinza-borda) !important;
+}
+
+/* ── Calendar / DatePicker ── */
+.p-calendar .p-inputtext,
+.p-datepicker-input {
+  background: var(--ipb-branco) !important;
+  color: var(--ipb-cinza) !important;
+  border-color: var(--ipb-cinza-borda) !important;
+}
+
+.p-datepicker,
+.p-datepicker-panel {
+  background: var(--ipb-branco) !important;
+  color: var(--ipb-cinza) !important;
+}
+
+.p-datepicker table td > span {
+  color: var(--ipb-cinza) !important;
+}
+
+.p-datepicker table td > span.p-highlight {
+  background: var(--ipb-verde) !important;
+  color: #fff !important;
+}
+
+.p-datepicker .p-datepicker-header {
+  background: var(--ipb-verde-bg) !important;
+  color: var(--ipb-verde-escuro) !important;
+}
+
+/* ── InputNumber ── */
+.p-inputnumber .p-inputtext,
+.p-inputnumber-input {
+  background: var(--ipb-branco) !important;
+  color: var(--ipb-cinza) !important;
+  border-color: var(--ipb-cinza-borda) !important;
+}
+
+.p-inputnumber .p-inputnumber-button {
+  background: var(--ipb-verde-bg) !important;
+  color: var(--ipb-verde-escuro) !important;
+  border-color: var(--ipb-cinza-borda) !important;
+}
+
+/* ── TabView ── */
+.p-tabview .p-tabview-nav {
+  background: var(--ipb-branco) !important;
+  border-color: var(--ipb-cinza-borda) !important;
+}
+
+.p-tabview .p-tabview-nav li .p-tabview-nav-link {
+  background: transparent !important;
+  color: var(--ipb-cinza-claro) !important;
+}
+
+.p-tabview .p-tabview-nav li.p-highlight .p-tabview-nav-link,
+.p-tabview .p-tabview-nav li.p-tabview-selected .p-tabview-nav-link {
+  color: var(--ipb-verde) !important;
+  border-color: var(--ipb-verde) !important;
+}
+
+.p-tabview .p-tabview-panels {
+  background: var(--ipb-branco) !important;
+  color: var(--ipb-cinza) !important;
+}
+
+/* ── Tabs (PrimeVue v4 alternate API) ── */
+.p-tabs .p-tablist {
+  background: var(--ipb-branco) !important;
+}
+
+.p-tabs .p-tab {
+  color: var(--ipb-cinza-claro) !important;
+  background: transparent !important;
+}
+
+.p-tabs .p-tab-active {
+  color: var(--ipb-verde) !important;
+  border-color: var(--ipb-verde) !important;
+}
+
+.p-tabs .p-tabpanels,
+.p-tabs .p-tabpanel {
+  background: var(--ipb-branco) !important;
+  color: var(--ipb-cinza) !important;
+}
+
+/* ── Catch-all: forçar fundo branco em qualquer surface escura do Aura ── */
+[data-pc-section="root"],
+[data-pc-section="panel"] {
+  color: var(--ipb-cinza);
+}
+/* ── Tags com cores sólidas e legíveis ── */
+.p-tag.p-tag-success {
+  background: var(--ipb-sucesso) !important;
+  color: #fff !important;
+}
+
+.p-tag.p-tag-danger {
+  background: #c4324a !important;
+  color: #fff !important;
+}
+
+.p-tag.p-tag-warning {
+  background: #b8860b !important;
+  color: #fff !important;
+}
+
+.p-tag.p-tag-info {
+  background: #2472b0 !important;
+  color: #fff !important;
+}
+
+.p-tag.p-tag-help {
+  background: #7b5ea7 !important;
+  color: #fff !important;
+}
+
+.p-tag.p-tag-secondary {
+  background: #e8e8e8 !important;
+  color: var(--ipb-cinza) !important;
+}
+
+.p-tag span,
+.p-tag .p-tag-value {
+  color: inherit !important;
+}
