@@ -119,7 +119,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             if (!estavaInativa && ficaInativa)
             {
-         .
+         
                 var agora = DateTime.UtcNow;
                 pessoa.DataInativacao = agora;
 
