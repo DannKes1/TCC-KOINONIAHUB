@@ -4,7 +4,7 @@ Sistema web de gestão da Escola Bíblica Dominical (EBD) — um Diário de Clas
 
 > **Trabalho de Conclusão de Curso** — Tecnologia em Análise e Desenvolvimento de Sistemas (CST-ADS)
 > Instituto Federal de Rondônia (IFRO), Campus Ji-Paraná
-> **Autor:** Daniel Cristian Amorim Rocha · **Orientador:** Prof. João Eujácio Teixeira Junior · **Product Owner:** Presb. Victor Moreira
+
 
 ## Sobre o projeto
 
