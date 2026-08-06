@@ -2,22 +2,20 @@
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-// UI base
+
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 
-// Composable
+
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-// Serviços
 import { obterAula } from "../../../aplicacao/servicos/aulasServico";
 import { listarPresencasRegistradas } from "../../../aplicacao/servicos/chamadasServico";
 
-// Tipos
 import type { AulaVM, PresencaVM } from "../../../aplicacao/modelos/dtos";
 
-// PrimeVue
+
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";

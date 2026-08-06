@@ -1,6 +1,3 @@
-// =====================
-// Departamentos (Turmas)
-// =====================
 export type DepartamentoVM = {
   id: number;
   nome: string;
@@ -22,9 +19,7 @@ export type DepartamentoAtualizarDTO = {
   Ativo: boolean;
 };
 
-// ==========
-// Pessoas
-// ==========
+
 export type PessoaVM = {
   id: number;
   nome: string;
@@ -90,9 +85,6 @@ export type ParentescoCriarDTO = {
   TipoRelacionamento: string;
 };
 
-// ==========
-// Usuários
-// ==========
 export type UsuarioVM = {
   id: number;
   igrejaId: number;
@@ -145,9 +137,7 @@ export type AtribuicaoAtualizarDTO = {
   DataFim?: string | null;
 };
 
-// ==========
-// Matrículas
-// ==========
+
 export type MatriculaRespostaVM = {
   id: number;
   pessoaId: number;
@@ -174,9 +164,7 @@ export type AlunoDaClasseVM = {
   dataMatricula: string;
 };
 
-// =======
-// Matérias
-// =======
+
 export type MateriaVM = {
   id: number;
   nome: string;
@@ -199,9 +187,7 @@ export type MateriaCriarDTO = {
 
 export type MateriaAtualizarDTO = MateriaCriarDTO;
 
-// ====
-// Aulas
-// ====
+
 export type AulaVM = {
   id: number;
   data: string;
@@ -224,9 +210,7 @@ export type AulaCriarDTO = {
   ProfessorId: number;
 };
 
-// =========
-// Chamada
-// =========
+
 export type ItemChamadaCompletaVM = {
   alunoDepartamentoId: number;
   pessoaId: number;
@@ -255,9 +239,7 @@ export type ChamadaRegistrarDTO = {
   }>;
 };
 
-// ==========
-// Relatórios
-// ==========
+
 export type FrequenciaTurmaVM = {
   departamentoId: number;
   nomeDepartamento: string;
@@ -280,6 +262,8 @@ export type RankingFaltasVM = {
   dataFim: string;
   itens: any[];
 };
+
+
 export type HistoricoPresencaPessoaVM = {
   aulaId: number;
   dataAula: string;

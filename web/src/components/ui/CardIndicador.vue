@@ -1,6 +1,5 @@
 <script setup lang="ts">
-// Card de indicador (KPI) padronizado dos relatórios.
-// Centraliza o visual que antes era montado com estilos inline em cada tela.
+
 defineProps<{
   rotulo: string;
   valor: string | number;

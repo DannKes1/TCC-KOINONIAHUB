@@ -2,18 +2,18 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
-// UI base
+
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 
-// Composable
+
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-// Notificações padronizadas
+
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-// PrimeVue
+
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -21,10 +21,9 @@ import InputNumber from "primevue/inputnumber";
 import Checkbox from "primevue/checkbox";
 import InputText from "primevue/inputtext";
 
-// PrimeVue services
+
 import { useConfirm } from "primevue/useconfirm";
 
-// Serviços
 import {
   obterAula,
   consolidarAula,
@@ -34,7 +33,7 @@ import {
   registrarChamada,
 } from "../../../aplicacao/servicos/chamadasServico";
 
-// Tipos
+
 import type {
   AulaVM,
   ItemChamadaCompletaVM,

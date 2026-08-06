@@ -1,9 +1,7 @@
-/* src/style.css */
 
-/* ── Fontes Institucionais ── */
 @import url("https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Source+Sans+3:wght@300;400;500;600;700&display=swap");
 
-/* ── Design System IPB ── */
+
 :root {
   --ipb-verde: #234f32;
   --ipb-verde-claro: #2e6b42;
@@ -27,7 +25,7 @@
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-/* ── Reset base ── */
+
 *,
 *::before,
 *::after {
@@ -49,7 +47,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Títulos de Página ── */
+
 .page-title {
   font-family: var(--font-display);
   font-size: 22px;
@@ -64,7 +62,7 @@ body {
   margin-bottom: 24px;
 }
 
-/* ── Cards ── */
+
 .card-ipb {
   background: var(--ipb-branco);
   border-radius: var(--radius-md);
@@ -73,7 +71,6 @@ body {
   border: 1px solid var(--ipb-cinza-borda);
 }
 
-/* ── Botões ── */
 .btn-ipb {
   display: inline-flex;
   align-items: center;
@@ -108,7 +105,7 @@ body {
   background: var(--ipb-verde-bg);
 }
 
-/* ── Stat Cards (Dashboard) ── */
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -145,14 +142,14 @@ body {
   color: var(--ipb-sucesso);
   margin-top: 2px;
 }
-/* ── Container padrão de página ── */
+
 .page-container {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-/* ── Card de tabela (DataTable dentro) ── */
+
 .card-tabela {
   background: var(--ipb-branco);
   border-radius: var(--radius-md);
@@ -169,18 +166,14 @@ body {
   margin-bottom: 14px;
 }
 
-/* ── Grid de ações rápidas ── */
+
 .acoes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 10px;
 }
 
-/* ══════════════════════════════════════════
-   PRIMEVUE OVERRIDES — Identidade IPB
-   ══════════════════════════════════════════ */
 
-/* ── DataTable ── */
 .p-datatable .p-datatable-thead > tr > th {
   background: var(--ipb-verde-bg) !important;
   color: var(--ipb-verde-escuro) !important;
@@ -209,7 +202,7 @@ body {
   border-color: var(--ipb-cinza-borda) !important;
 }
 
-/* ── Paginator ── */
+
 .p-paginator {
   background: transparent !important;
   border: none !important;
@@ -221,7 +214,7 @@ body {
   border-color: var(--ipb-verde) !important;
 }
 
-/* ── Inputs, Selects, DatePickers ── */
+
 .p-inputtext,
 .p-select,
 .p-datepicker-input,
@@ -238,7 +231,7 @@ body {
   box-shadow: 0 0 0 2px rgba(35, 79, 50, 0.15) !important;
 }
 
-/* ── Select dropdown panel ── */
+
 .p-select-overlay,
 .p-select-panel {
   background: var(--ipb-branco) !important;
@@ -253,7 +246,7 @@ body {
   color: var(--ipb-verde-escuro) !important;
 }
 
-/* ── Buttons Primary ── */
+
 .p-button:not(.p-button-secondary):not(.p-button-danger):not(
     .p-button-info
   ):not(.p-button-text):not(.p-button-outlined) {
@@ -268,14 +261,14 @@ body {
   border-color: var(--ipb-verde-claro) !important;
 }
 
-/* ── TabView / Tabs ── */
+
 .p-tabview-nav-link.p-tabview-nav-link-active,
 .p-tab.p-tab-active {
   color: var(--ipb-verde) !important;
   border-color: var(--ipb-verde) !important;
 }
 
-/* ── Dialog ── */
+
 .p-dialog {
   background: var(--ipb-branco) !important;
 }
@@ -285,16 +278,12 @@ body {
   color: var(--ipb-verde-escuro) !important;
 }
 
-/* ── Tags ── */
+
 .p-tag.p-tag-success {
   background: var(--ipb-sucesso) !important;
 }
 
-/* ══════════════════════════════════════════
-   PRIMEVUE v4 — Correções extras (Dropdown, Calendar, InputNumber, TabView)
-   ══════════════════════════════════════════ */
 
-/* ── Dropdown (p-dropdown em v4) ── */
 .p-dropdown,
 .p-multiselect {
   background: var(--ipb-branco) !important;
@@ -328,7 +317,7 @@ body {
   border-color: var(--ipb-cinza-borda) !important;
 }
 
-/* ── Calendar / DatePicker ── */
+
 .p-calendar .p-inputtext,
 .p-datepicker-input {
   background: var(--ipb-branco) !important;
@@ -356,7 +345,7 @@ body {
   color: var(--ipb-verde-escuro) !important;
 }
 
-/* ── InputNumber ── */
+
 .p-inputnumber .p-inputtext,
 .p-inputnumber-input {
   background: var(--ipb-branco) !important;
@@ -370,7 +359,7 @@ body {
   border-color: var(--ipb-cinza-borda) !important;
 }
 
-/* ── TabView ── */
+
 .p-tabview .p-tabview-nav {
   background: var(--ipb-branco) !important;
   border-color: var(--ipb-cinza-borda) !important;
@@ -392,7 +381,7 @@ body {
   color: var(--ipb-cinza) !important;
 }
 
-/* ── Tabs (PrimeVue v4 alternate API) ── */
+
 .p-tabs .p-tablist {
   background: var(--ipb-branco) !important;
 }
@@ -413,12 +402,12 @@ body {
   color: var(--ipb-cinza) !important;
 }
 
-/* ── Catch-all: forçar fundo branco em qualquer surface escura do Aura ── */
+
 [data-pc-section="root"],
 [data-pc-section="panel"] {
   color: var(--ipb-cinza);
 }
-/* ── Tags com cores sólidas e legíveis ── */
+
 .p-tag.p-tag-success {
   background: var(--ipb-sucesso) !important;
   color: #fff !important;

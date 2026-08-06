@@ -2,20 +2,20 @@
 import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 
-// UI base
+
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 
-// Composable
+
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-// PrimeVue
+
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Tag from "primevue/tag";
 
-// Serviço
+
 import {
   obterMinhaFrequencia,
   type MinhaFrequenciaTurmaVM,
@@ -70,7 +70,7 @@ onMounted(carregar);
         v-if="dados"
         style="display: flex; flex-direction: column; gap: 16px"
       >
-        <!-- Resumo -->
+       
         <div style="display: flex; gap: 12px; flex-wrap: wrap">
           <div
             style="

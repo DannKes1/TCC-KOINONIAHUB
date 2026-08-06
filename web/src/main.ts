@@ -7,12 +7,10 @@ import "./style.css";
 import router from "./aplicacao/rotas";
 import { usarAutenticacaoStore } from "./aplicacao/armazenamentos/autenticacaoStore";
 
-// PrimeVue
 import PrimeVue from "primevue/config";
 import Aura from "@primeuix/themes/aura";
 import "primeicons/primeicons.css";
 
-// PrimeVue services
 import ToastService from "primevue/toastservice";
 import ConfirmationService from "primevue/confirmationservice";
 import Tooltip from "primevue/tooltip";
@@ -22,7 +20,6 @@ const app = createApp(App);
 const pinia = createPinia();
 app.use(pinia);
 
-// carrega sessão persistida 1x (antes das rotas começarem a rodar)
 usarAutenticacaoStore(pinia).carregarDoStorage();
 
 app.use(router);

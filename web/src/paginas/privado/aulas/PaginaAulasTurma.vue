@@ -2,22 +2,21 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-// UI base
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
-// Composable
+
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-// Notificações padronizadas
+
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-// Helpers de erro por campo
+
 import { firstFieldError } from "../../../aplicacao/servicos/apiError";
 
-// PrimeVue
+
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -26,10 +25,10 @@ import Dropdown from "primevue/dropdown";
 import InputText from "primevue/inputtext";
 import Calendar from "primevue/calendar";
 
-// PrimeVue services
+
 import { useConfirm } from "primevue/useconfirm";
 
-// Serviços
+
 import { obterDepartamento } from "../../../aplicacao/servicos/departamentosServico";
 import { listarMaterias } from "../../../aplicacao/servicos/materiasServico";
 import { listarAtribuicoesPorDepartamento } from "../../../aplicacao/servicos/atribuicoesServico";
@@ -39,7 +38,7 @@ import {
   consolidarAula,
 } from "../../../aplicacao/servicos/aulasServico";
 
-// Tipos
+
 import type {
   AulaVM,
   DepartamentoVM,

@@ -2,24 +2,19 @@
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
-// Store
 import { usarAutenticacaoStore } from "../../aplicacao/armazenamentos/autenticacaoStore";
 
-// UI base
 import PageHeader from "../../components/ui/PageHeader.vue";
 import InlineMessage from "../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../components/ui/LoadingOverplay.vue";
 
-// Composable
 import { useAsync } from "../../aplicacao/composables/useAsync";
 
-// PrimeVue
 import Button from "primevue/button";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Tag from "primevue/tag";
 
-// Serviços
 import { listarDepartamentos } from "../../aplicacao/servicos/departamentosServico";
 import { listarPessoas } from "../../aplicacao/servicos/pessoasServico";
 import { listarAulasPorDepartamento } from "../../aplicacao/servicos/aulasServico";
@@ -29,7 +24,6 @@ import {
   type MinhaTurmaVM,
 } from "../../aplicacao/servicos/meusDadosServico";
 
-// Tipos
 import type {
   DepartamentoVM,
   PessoaVM,
@@ -37,7 +31,6 @@ import type {
   HistoricoPresencaPessoaVM,
 } from "../../aplicacao/modelos/dtos";
 
-// ── Tipos locais ──
 type AulaComTurmaVM = AulaVM & {
   departamentoId: number;
   nomeDepartamento: string;
@@ -55,7 +48,6 @@ const autenticacao = usarAutenticacaoStore();
 const router = useRouter();
 const { carregando, erro, run } = useAsync();
 
-// ── Perfis ──
 const perfilLower = computed(() =>
   (autenticacao.perfil || "").trim().toLowerCase(),
 );
@@ -66,17 +58,14 @@ const isAdministrativo = computed(() =>
 
 const isProfessor = computed(() => perfilLower.value === "professor");
 
-// ── Estado compartilhado (admin + professor) ──
 const pessoas = ref<PessoaVM[]>([]);
 const departamentos = ref<DepartamentoVM[]>([]);
 const aulasRecentes = ref<AulaComTurmaVM[]>([]);
 const resumoTurmas = ref<ResumoTurmaVM[]>([]);
 
-// ── Estado usuário comum ──
 const historicoPresencas = ref<HistoricoPresencaPessoaVM[]>([]);
 const minhasTurmas = ref<MinhaTurmaVM[]>([]);
 
-// ── Navegação ──
 function abrirPessoas() {
   router.push("/pessoas");
 }
@@ -93,8 +82,7 @@ function abrirAulasDaTurma(departamentoId: number) {
   router.push(`/departamentos/${departamentoId}/aulas`);
 }
 
-// Roteia conforme o vínculo: quem é só aluno vê a própria frequência (somente leitura);
-// quem tem papel docente (Professor, Auxiliar, etc.) vai para as aulas/chamada.
+
 function abrirTurma(turma: MinhaTurmaVM) {
   if ((turma.vinculo || "").toLowerCase() === "aluno") {
     router.push(`/departamentos/${turma.departamentoId}/minha-frequencia`);
@@ -107,7 +95,7 @@ function abrirChamada(aulaId: number) {
   router.push(`/aulas/${aulaId}/chamada`);
 }
 
-// ── Helpers ──
+
 function formatarData(valor?: string | null) {
   if (!valor) return "-";
   const data = new Date(valor);
@@ -132,7 +120,6 @@ function severityVinculo(vinculo: string) {
   return "secondary";
 }
 
-// ── Computeds painel ADMINISTRATIVO ──
 const turmasEbdAtivas = computed(() =>
   departamentos.value.filter(
     (dep) =>
@@ -163,7 +150,6 @@ const resumoTurmasOrdenado = computed(() =>
   ),
 );
 
-// ── Computeds painel PROFESSOR ──
 const aulasAbertasDoProfessor = computed(() =>
   [...aulasRecentes.value]
     .filter((a) => !a.consolidada)
@@ -176,7 +162,6 @@ const totalMinhasAulasAbertas = computed(
   () => aulasRecentes.value.filter((a) => !a.consolidada).length,
 );
 
-// ── Computeds usuário comum ──
 const presencasOrdenadas = computed(() =>
   [...historicoPresencas.value].sort(
     (a, b) => new Date(b.dataAula).getTime() - new Date(a.dataAula).getTime(),
@@ -198,9 +183,7 @@ const percentualPresenca = computed(() => {
   return `${pct.toFixed(0)}%`;
 });
 
-// ── Carregamentos ──
 async function carregarDadosTurmas() {
-  // Backend já filtra /departamentos por atribuição quando é professor
   const listaDepartamentos = await listarDepartamentos();
   departamentos.value = listaDepartamentos;
 
@@ -296,9 +279,6 @@ onMounted(carregarPainel);
 
 <template>
   <div class="page-container">
-    <!-- ════════════════════════════════════════ -->
-    <!-- PAINEL ADMINISTRATIVO (Admin/Pastor/Superintendente) -->
-    <!-- ════════════════════════════════════════ -->
     <template v-if="isAdministrativo">
       <PageHeader
         titulo="Painel"
@@ -423,9 +403,6 @@ onMounted(carregarPainel);
       </LoadingOverlay>
     </template>
 
-    <!-- ════════════════════════════════════════ -->
-    <!-- PAINEL DO PROFESSOR                       -->
-    <!-- ════════════════════════════════════════ -->
     <template v-else-if="isProfessor">
       <PageHeader
         titulo="Meu Painel"
@@ -468,7 +445,7 @@ onMounted(carregarPainel);
             align-items: start;
           "
         >
-          <!-- Aulas abertas com atalho direto para chamada -->
+  
           <div class="card-tabela">
             <div class="card-tabela-titulo">
               Aulas em aberto (fazer chamada)
@@ -502,7 +479,7 @@ onMounted(carregarPainel);
             </DataTable>
           </div>
 
-          <!-- Minhas turmas -->
+
           <div class="card-tabela">
             <div class="card-tabela-titulo">Minhas turmas</div>
 
@@ -537,9 +514,6 @@ onMounted(carregarPainel);
       </LoadingOverlay>
     </template>
 
-    <!-- ════════════════════════════════════════ -->
-    <!-- PAINEL DO USUÁRIO COMUM                   -->
-    <!-- ════════════════════════════════════════ -->
     <template v-else>
       <PageHeader
         titulo="Meu Painel"
@@ -562,7 +536,7 @@ onMounted(carregarPainel);
         :loading="carregando"
         texto="Carregando suas informações..."
       >
-        <!-- Card: minhas turmas -->
+        
         <div class="card-tabela">
           <div class="card-tabela-titulo">Minhas turmas</div>
 
@@ -605,7 +579,7 @@ onMounted(carregarPainel);
           </DataTable>
         </div>
 
-        <!-- Estatísticas de presença -->
+     
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-card-label">Total de aulas</div>
@@ -625,7 +599,7 @@ onMounted(carregarPainel);
           </div>
         </div>
 
-        <!-- Histórico de presenças -->
+       
         <div class="card-tabela">
           <div class="card-tabela-titulo">
             Meu histórico de presenças - 3 Meses

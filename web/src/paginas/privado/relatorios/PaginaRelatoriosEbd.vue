@@ -2,16 +2,16 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
 
-// UI base
+
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import CardIndicador from "../../../components/ui/CardIndicador.vue";
 
-// Composable
+
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-// PrimeVue
+
 import Button from "primevue/button";
 import Tabs from "primevue/tabs";
 import TabList from "primevue/tablist";
@@ -27,7 +27,7 @@ import Tag from "primevue/tag";
 import Chart from "primevue/chart";
 import ProgressBar from "primevue/progressbar";
 
-// Serviços
+
 import { listarDepartamentos } from "../../../aplicacao/servicos/departamentosServico";
 import {
   obterFrequenciaTurma,
@@ -37,10 +37,10 @@ import {
   type ResumoDiaVM,
 } from "../../../aplicacao/servicos/relatoriosServico";
 
-// Tipos
+
 import type { DepartamentoVM } from "../../../aplicacao/modelos/dtos";
 
-// Tipos inferidos das respostas normalizadas do serviço (evita duplicar contratos)
+
 type FrequenciaVM = Awaited<ReturnType<typeof obterFrequenciaTurma>>;
 type AcompanhamentoVM = Awaited<ReturnType<typeof obterPainelAcompanhamento>>;
 type RankingVM = Awaited<ReturnType<typeof obterRankingFaltas>>;
@@ -53,7 +53,7 @@ const turmaSelecionadaId = ref<number | null>(null);
 const dataInicio = ref<Date | null>(null);
 const dataFim = ref<Date | null>(null);
 
-// PrimeVue v4 — nova API Tabs usa string como value
+
 const autenticacao = usarAutenticacaoStore();
 const isAdministrativo = computed(() => autenticacao.isAdministrativo);
 
@@ -62,27 +62,26 @@ const dataResumo = ref<Date | null>(new Date());
 
 const abaAtiva = ref<string>("frequencia");
 
-// Resultados (um cache por aba; trocar de turma invalida os três)
+
 const frequencia = ref<FrequenciaVM | null>(null);
 const acompanhamento = ref<AcompanhamentoVM | null>(null);
 const ranking = ref<RankingVM | null>(null);
 
-// Referências das tabelas (exportação CSV)
+
 const tabelaAlunosRef = ref();
 const tabelaAulasRef = ref();
 const tabelaAcompanhamentoRef = ref();
 const tabelaRankingRef = ref();
 const tabelaResumoRef = ref();
 
-// Quantidade de alunos exibidos no ranking de faltas
+
 const topRanking = ref<number>(10);
 
-// Parâmetros do acompanhamento (critérios de alerta) — padrões alinhados ao backend.
-// O limiar crítico (50%) permanece como padrão do servidor, sem exposição na interface.
+
 const limiarAtencao = ref<number>(75);
 const faltasConsecutivasCritico = ref<number>(3);
 
-// Paleta alinhada aos tokens do style.css (--ipb-*)
+
 const CORES = {
   verde: "#234f32",
   verdeBg: "#edf5f0",
@@ -91,7 +90,7 @@ const CORES = {
   perigo: "#b83232",
 };
 
-// ── Helpers de formatação ──
+
 
 function corClassificacao(c: string): "danger" | "warn" {
   return c === "Critico" ? "danger" : "warn";
@@ -101,7 +100,7 @@ function rotuloClassificacao(c: string): string {
   return c === "Critico" ? "Crítico" : "Atenção";
 }
 
-// Percentual no padrão pt-BR, com no máximo 1 casa decimal (ex.: 87,5%)
+
 function formatarPercentual(v: number | null | undefined): string {
   const n = Number(v ?? 0);
   return `${n.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
@@ -121,7 +120,7 @@ function formatarData(valor?: string | null) {
   return Number.isNaN(d.getTime()) ? "-" : d.toLocaleDateString("pt-BR");
 }
 
-// Período padrão: últimos 30 dias
+
 function preencherPeriodoPadrao() {
   const hoje = new Date();
   const trintaDiasAtras = new Date();
@@ -143,7 +142,7 @@ const periodoFormatado = computed(() => {
   return `${inicio} a ${fim}`;
 });
 
-// Nome de arquivo do CSV: prefixo + nome da turma sem acentos/espaços
+
 function nomeArquivo(prefixo: string): string {
   const nome = (nomeTurmaSelecionada.value || "turma")
     .normalize("NFD")
@@ -160,17 +159,15 @@ const filtroValido = computed(() => {
   return true;
 });
 
-// O botão Buscar do cabeçalho atende a aba visível: no Resumo do dia
-// basta a data; nas demais abas valem turma e período.
+
 const podeBuscar = computed(() =>
   abaAtiva.value === "resumo" ? !!dataResumo.value : filtroValido.value,
 );
 
-// ── Dados dos gráficos (indicadores visuais — RF35/RF36) ──
 
-// Frequência: evolução do % de presença por aula, em ordem cronológica
+
 const dadosGraficoAulas = computed(() => {
-  // Só aulas com chamada registrada entram na linha (aula sem chamada não é 0%)
+
   const aulas = [...(frequencia.value?.aulas ?? [])]
     .filter(
       (a: any) =>
@@ -219,7 +216,7 @@ const opcoesGraficoAulas: any = {
   },
 };
 
-// Acompanhamento: distribuição da turma por situação (rosca)
+
 const dadosGraficoSituacao = computed(() => {
   const painel = acompanhamento.value;
   if (!painel) return null;
@@ -249,7 +246,7 @@ const opcoesGraficoSituacao: any = {
   plugins: { legend: { position: "bottom" } },
 };
 
-// Ranking: barras horizontais dos alunos mais faltosos (backend já ordena; reforço defensivo)
+
 const itensRankingOrdenados = computed(() =>
   [...(ranking.value?.itens ?? [])].sort(
     (a: any, b: any) =>
@@ -282,13 +279,13 @@ const opcoesGraficoRanking: any = {
   plugins: { legend: { display: false } },
 };
 
-// Altura do gráfico de barras cresce com a quantidade de alunos
+
 const alturaGraficoRanking = computed(() => {
   const quantidade = itensRankingOrdenados.value.length;
   return `${Math.max(180, quantidade * 34 + 60)}px`;
 });
 
-// ── Carregamento de dados ──
+
 
 async function carregarTurmas() {
   await run(async () => {
@@ -346,7 +343,6 @@ async function buscarResumo() {
   }, "Não foi possível carregar o resumo do dia.");
 }
 
-// Busca manual (botão): sempre atualiza a aba visível com os filtros atuais
 function buscar() {
   clearErrors();
   if (abaAtiva.value === "resumo") return buscarResumo();
@@ -359,7 +355,6 @@ function buscar() {
   return buscarFrequencia();
 }
 
-// Busca automática: carrega a aba visível apenas se ela ainda não tem dados
 function carregarAbaSeVazia() {
   if (abaAtiva.value === "resumo") {
     if (!resumo.value) buscarResumo();
@@ -375,14 +370,12 @@ function carregarAbaSeVazia() {
   }
 }
 
-// Trocar de aba carrega o relatório correspondente sem exigir novo clique em Buscar
 watch(abaAtiva, () => {
   clearErrors();
   carregarAbaSeVazia();
 });
 
-// Trocar de turma invalida os três relatórios e recarrega a aba visível.
-// Mudanças de período e de parâmetros são aplicadas pelo botão Buscar.
+
 watch(turmaSelecionadaId, () => {
   frequencia.value = null;
   acompanhamento.value = null;
@@ -402,8 +395,7 @@ function imprimir() {
 onMounted(async () => {
   preencherPeriodoPadrao();
   await carregarTurmas();
-  // A primeira busca é disparada pelo watch de turmaSelecionadaId
-  // quando a turma padrão é definida em carregarTurmas().
+ 
 });
 </script>
 
@@ -434,7 +426,7 @@ onMounted(async () => {
       </template>
     </PageHeader>
 
-    <!-- Cabeçalho visível apenas na impressão -->
+   
     <div class="apenas-impressao cabecalho-impressao">
       <strong>KoinoniaHub — Relatórios EBD</strong>
       <span v-if="abaAtiva === 'resumo'">
@@ -449,7 +441,7 @@ onMounted(async () => {
 
     <InlineMessage :texto="erro" tipo="erro" />
 
-    <!-- Filtros -->
+  
     <div class="filtros-relatorios nao-imprimir">
       <template v-if="abaAtiva !== 'resumo'">
         <div class="filtro-campo filtro-turma">
@@ -516,7 +508,7 @@ onMounted(async () => {
         </TabList>
 
         <TabPanels>
-          <!-- ══════════ Frequência da turma (RF35) ══════════ -->
+         
           <TabPanel value="frequencia">
             <div v-if="frequencia" class="conteudo-relatorio">
               <div class="linha-indicadores">
@@ -692,7 +684,7 @@ onMounted(async () => {
             />
           </TabPanel>
 
-          <!-- ══════════ Acompanhamento — apoio ao cuidado pastoral (RF36) ══════════ -->
+         
           <TabPanel value="acompanhamento">
             <div v-if="acompanhamento" class="conteudo-relatorio">
               <div class="linha-indicadores">
@@ -819,7 +811,7 @@ onMounted(async () => {
             />
           </TabPanel>
 
-          <!-- ══════════ Resumo do dia (RF38) ══════════ -->
+    
           <TabPanel v-if="isAdministrativo" value="resumo">
             <div v-if="resumo" class="conteudo-relatorio">
               <div class="linha-indicadores">
@@ -901,7 +893,7 @@ onMounted(async () => {
             />
           </TabPanel>
 
-          <!-- ══════════ Ranking de faltas ══════════ -->
+        
           <TabPanel value="ranking">
             <div v-if="ranking" class="conteudo-relatorio">
               <InlineMessage
@@ -1116,7 +1108,7 @@ onMounted(async () => {
 }
 </style>
 
-<!-- Regras globais de impressão: escondem navegação/filtros e mantêm só o relatório -->
+
 <style>
 @media print {
   .sidebar-ipb,

@@ -1,25 +1,24 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 
-// UI base
+
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
-// Composable
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-// Notificações
+
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-// Helpers de erro por campo
+
 import { firstFieldError } from "../../../aplicacao/servicos/apiError";
 
-// Store
+
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
 
-// Serviços
+
 import { listarPessoas } from "../../../aplicacao/servicos/pessoasServico";
 import {
   listarUsuarios,
@@ -28,10 +27,10 @@ import {
   resetarSenhaUsuario,
 } from "../../../aplicacao/servicos/usuariosServico";
 
-// Tipos
+
 import type { PessoaVM, UsuarioVM } from "../../../aplicacao/modelos/dtos";
 
-// PrimeVue
+
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";

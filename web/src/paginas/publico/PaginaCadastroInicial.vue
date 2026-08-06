@@ -13,13 +13,12 @@ const autenticacao = usarAutenticacaoStore();
 
 const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
 
-// Igreja
+
 const nomeIgreja = ref<string>("");
 const cidade = ref<string>("");
 const estado = ref<string>("");
 const emailIgreja = ref<string>("");
 
-// Admin
 const nomeAdmin = ref<string>("");
 const emailAdmin = ref<string>("");
 const senhaAdmin = ref<string>("");
@@ -79,7 +78,7 @@ async function concluirCadastro(): Promise<void> {
     <div
       style="margin-top: 16px; display: flex; flex-direction: column; gap: 14px"
     >
-      <!-- Dados da Igreja -->
+  
       <div
         style="
           padding: 12px;
@@ -156,7 +155,6 @@ async function concluirCadastro(): Promise<void> {
         </div>
       </div>
 
-      <!-- Admin -->
       <div
         style="
           padding: 12px;

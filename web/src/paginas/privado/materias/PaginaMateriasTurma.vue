@@ -2,22 +2,18 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 
-// UI base
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
-// Composable
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-// Notificações padronizadas
+
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-// Helpers de erro por campo
 import { firstFieldError } from "../../../aplicacao/servicos/apiError";
 
-// PrimeVue
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -26,10 +22,10 @@ import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
 import Checkbox from "primevue/checkbox";
 
-// PrimeVue services
+
 import { useConfirm } from "primevue/useconfirm";
 
-// Serviços
+
 import { obterDepartamento } from "../../../aplicacao/servicos/departamentosServico";
 import {
   listarMaterias,
@@ -37,7 +33,7 @@ import {
   atualizarMateria,
 } from "../../../aplicacao/servicos/materiasServico";
 
-// Tipos
+
 import type {
   DepartamentoVM,
   MateriaVM,
@@ -109,7 +105,7 @@ async function salvar() {
     Nome: form.nome.trim(),
     Descricao: null,
     ImagemUrl: null,
-    // Ordem em branco vira 0: o DTO da API usa int e null reprova no binding
+    
     OrdemExibicao: form.ordemExibicao ?? 0,
     Ativo: Boolean(form.ativo),
     DepartamentoId: departamentoId.value,

@@ -45,7 +45,6 @@ async function entrar() {
 
 <template>
   <div class="login-container">
-    <!-- Lado esquerdo: marca -->
     <div class="login-marca">
       <div class="login-marca-conteudo">
         <img :src="logoIPB2" alt="IPB" class="login-logo" />
@@ -60,7 +59,6 @@ async function entrar() {
       </div>
     </div>
 
-    <!-- Lado direito: formulário -->
     <div class="login-formulario-area">
       <div class="login-formulario-card">
         <div class="login-form-header">
@@ -129,7 +127,7 @@ async function entrar() {
   min-height: 100vh;
 }
 
-/* ── Lado esquerdo ── */
+
 .login-marca {
   flex: 1;
   background: linear-gradient(
@@ -292,7 +290,6 @@ async function entrar() {
   opacity: 0.7;
 }
 
-/* ── Responsivo ── */
 @media (max-width: 768px) {
   .login-container {
     flex-direction: column;

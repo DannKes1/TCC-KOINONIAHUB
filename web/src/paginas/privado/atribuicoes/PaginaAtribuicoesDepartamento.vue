@@ -2,25 +2,22 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 
-// Store de autenticação
+
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
 
-// UI base
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
-// Composable
+
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-// Notificações
+
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-// Helpers de erro por campo
 import { firstFieldError } from "../../../aplicacao/servicos/apiError";
 
-// Serviços
 import { obterDepartamento } from "../../../aplicacao/servicos/departamentosServico";
 import { listarPessoas } from "../../../aplicacao/servicos/pessoasServico";
 import {
@@ -31,14 +28,13 @@ import {
   encerrarAtribuicao,
 } from "../../../aplicacao/servicos/atribuicoesServico";
 
-// Tipos
+
 import type {
   DepartamentoVM,
   PessoaVM,
   AtribuicaoVM,
 } from "../../../aplicacao/modelos/dtos";
 
-// PrimeVue
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -47,7 +43,6 @@ import Dropdown from "primevue/dropdown";
 import Calendar from "primevue/calendar";
 import Tag from "primevue/tag";
 
-// PrimeVue services
 import { useConfirm } from "primevue/useconfirm";
 
 const autenticacao = usarAutenticacaoStore();

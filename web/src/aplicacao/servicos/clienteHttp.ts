@@ -5,12 +5,10 @@ import { toastError, toastWarn } from "./notificacoes";
 export const clienteHttp = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 20000,
-  // Envia e recebe o cookie httpOnly de autenticação (kh_token) em toda requisição.
+
   withCredentials: true,
 });
 
-// A autenticação viaja no cookie httpOnly, gravado pelo servidor no login.
-// Não há mais injeção do header Authorization: Bearer no cliente.
 
 clienteHttp.interceptors.response.use(
   (resposta) => resposta,
@@ -20,7 +18,6 @@ clienteHttp.interceptors.response.use(
     const urlAtual =
       window.location.pathname + window.location.search + window.location.hash;
 
-    // 0) Erro de rede (sem response)
     if (!erro?.response) {
       toastError(
         "Não foi possível conectar ao servidor. Verifique se a API está rodando e se a URL está correta.",
@@ -31,7 +28,6 @@ clienteHttp.interceptors.response.use(
       return Promise.reject(erro);
     }
 
-    // 1) 401: sessão inválida/expirada → limpa estado + redirect preservando rota
     if (status === 401) {
       const autenticacao = usarAutenticacaoStore();
       autenticacao.$reset();
@@ -51,7 +47,6 @@ clienteHttp.interceptors.response.use(
       return Promise.reject(erro);
     }
 
-    // 2) 403: sem permissão → toast + mensagem padrão
     if (status === 403) {
       const data = erro?.response?.data;
 
@@ -71,7 +66,6 @@ clienteHttp.interceptors.response.use(
       return Promise.reject(erro);
     }
 
-    // 3) 500+: erro inesperado no servidor
     if (status >= 500) {
       toastError(
         "O servidor retornou um erro inesperado. Tente novamente. Se persistir, verifique os logs da API.",

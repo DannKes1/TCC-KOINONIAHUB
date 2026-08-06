@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
-// UI base
+
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
-// Composable
+
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-// Notificações
+
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-// Helpers de erro por campo
+
 import { firstFieldError } from "../../../aplicacao/servicos/apiError";
 
-// Serviços
+
 import {
   listarPessoas,
   obterPessoa,
@@ -30,14 +30,14 @@ import {
 } from "../../../aplicacao/servicos/parentescosServico";
 import { listarHistoricoPresencasDaPessoa } from "../../../aplicacao/servicos/presencasPessoaServico";
 
-// Tipos
+
 import type {
   PessoaVM,
   ParentescoVM,
   HistoricoPresencaPessoaVM,
 } from "../../../aplicacao/modelos/dtos";
 
-// PrimeVue
+
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -48,7 +48,7 @@ import Calendar from "primevue/calendar";
 import Textarea from "primevue/textarea";
 import Tag from "primevue/tag";
 
-// PrimeVue services
+
 import { useConfirm } from "primevue/useconfirm";
 
 const confirm = useConfirm();
@@ -65,7 +65,7 @@ const dialogHistoricoAberto = ref(false);
 const pessoaSelecionadaParentescos = ref<PessoaVM | null>(null);
 const pessoaSelecionadaHistorico = ref<PessoaVM | null>(null);
 
-// Edição: id em edição (null = criando novo)
+
 const editandoId = ref<number | null>(null);
 
 const busca = ref("");
@@ -242,7 +242,7 @@ function formatarData(valor?: string | null) {
 }
 
 function sanitizarTelefone(valor: string): string {
-  // Bloqueia letras e símbolos; mantém dígitos e formatação comum de telefone.
+  
   return valor.replace(/[^\d()+\-\s]/g, "");
 }
 
@@ -250,7 +250,7 @@ function contarDigitos(valor: string): number {
   return (valor.match(/\d/g) ?? []).length;
 }
 
-// Impede letras nos campos de telefone/celular durante a digitação (e na colagem).
+
 watch(
   () => formulario.telefone,
   (v) => {

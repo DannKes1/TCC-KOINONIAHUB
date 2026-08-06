@@ -12,7 +12,7 @@ export type MeusDadosAtualizarDTO = {
   CEP?: string | null;
 };
 
-// PessoaVM já contém todos os campos retornados pelo /api/meus-dados.
+
 export type MeusDadosVM = PessoaVM;
 
 function normalizarMeusDados(bruto: any): MeusDadosVM {
@@ -92,7 +92,7 @@ export type MinhaFrequenciaAulaVM = {
   aulaId: number;
   data: string;
   tema: string | null;
-  situacao: string; // "Presente" | "Ausente" | "Não registrado"
+  situacao: string; 
 };
 
 export type MinhaFrequenciaTurmaVM = {

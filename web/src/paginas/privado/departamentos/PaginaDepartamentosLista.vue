@@ -4,7 +4,7 @@ import { useRouter } from "vue-router";
 
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
 
-// Tipos + serviços
+
 import type { DepartamentoVM } from "../../../aplicacao/modelos/dtos";
 import {
   listarDepartamentos,
@@ -12,22 +12,17 @@ import {
   atualizarDepartamento,
 } from "../../../aplicacao/servicos/departamentosServico";
 
-// UI base
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
-// Composable
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-// Notificações padronizadas
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-// Helpers de erro por campo
 import { firstFieldError } from "../../../aplicacao/servicos/apiError";
 
-// PrimeVue
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -37,7 +32,6 @@ import Checkbox from "primevue/checkbox";
 import Menu from "primevue/menu";
 import SelectButton from "primevue/selectbutton";
 
-// PrimeVue services
 import { useConfirm } from "primevue/useconfirm";
 
 const autenticacao = usarAutenticacaoStore();
@@ -75,7 +69,6 @@ const formulario = reactive({
   ativo: true,
 });
 
-// ── Menu de ações da turma ──
 const menuAcoes = ref();
 const turmaMenuSelecionada = ref<DepartamentoVM | null>(null);
 
@@ -112,7 +105,6 @@ function abrirMenu(event: Event, dep: DepartamentoVM) {
   menuAcoes.value.toggle(event);
 }
 
-// ── Navegação ──
 function abrirMatriculas(dep: DepartamentoVM) {
   router.push(`/departamentos/${dep.id}/matriculas`);
 }
@@ -126,7 +118,6 @@ function abrirAtribuicoes(dep: DepartamentoVM) {
   router.push(`/departamentos/${dep.id}/atribuicoes`);
 }
 
-// ── Formulário ──
 function limparFormulario() {
   formulario.nome = "";
   formulario.tipo = "EBD";

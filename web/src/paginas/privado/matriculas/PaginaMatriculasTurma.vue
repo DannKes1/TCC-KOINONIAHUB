@@ -2,15 +2,15 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 
-// UI base
+
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 
-// Composable
+
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-// PrimeVue
+
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -19,13 +19,13 @@ import Dropdown from "primevue/dropdown";
 import InputText from "primevue/inputtext";
 import Tag from "primevue/tag";
 
-// PrimeVue services
+
 import { useConfirm } from "primevue/useconfirm";
 
-// Notificações padronizadas
+
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-// Serviços
+
 import { obterDepartamento } from "../../../aplicacao/servicos/departamentosServico";
 import {
   listarPessoasDisponiveisDaTurma,
@@ -35,7 +35,7 @@ import {
 } from "../../../aplicacao/servicos/matriculasServico";
 import { listarParentescosDaPessoa } from "../../../aplicacao/servicos/parentescosServico";
 
-// Tipos
+
 import type {
   DepartamentoVM,
   PessoaVM,
@@ -61,7 +61,7 @@ const form = reactive({
   observacao: "",
 });
 
-// ── Estado do dialog de Responsáveis ──
+
 const dialogResponsaveisAberto = ref(false);
 const alunoSelecionado = ref<AlunoDaClasseVM | null>(null);
 const responsaveisDoAluno = ref<ParentescoVM[]>([]);
@@ -244,7 +244,7 @@ onMounted(carregarTudo);
       </DataTable>
     </LoadingOverlay>
 
-    <!-- Dialog: matricular aluno -->
+   
     <Dialog
       v-model:visible="dialogAberto"
       modal
@@ -291,7 +291,7 @@ onMounted(carregarTudo);
       </template>
     </Dialog>
 
-    <!-- Dialog: responsáveis do aluno -->
+  
     <Dialog
       v-model:visible="dialogResponsaveisAberto"
       modal

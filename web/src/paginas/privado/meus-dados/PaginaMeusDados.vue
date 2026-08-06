@@ -1,29 +1,29 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
-// Store
+
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
 
-// UI base
+
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
-// Composable
+
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-// Notificações padronizadas
+
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-// Helpers de erro por campo
+
 import { firstFieldError } from "../../../aplicacao/servicos/apiError";
 
-// PrimeVue
+
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 
-// Serviços
+
 import {
   obterMeusDados,
   atualizarMeusDados,
@@ -86,7 +86,7 @@ function contarDigitos(valor: string): number {
   return (valor.match(/\d/g) ?? []).length;
 }
 
-// Impede letras nos campos de telefone/celular durante a digitação (e na colagem).
+
 watch(
   () => form.telefone,
   (v) => {
@@ -170,7 +170,7 @@ onMounted(carregar);
     <InlineMessage :texto="erro" tipo="erro" />
 
     <LoadingOverlay :loading="carregando" texto="Carregando seus dados...">
-      <!-- Identidade (somente leitura) -->
+   
       <div
         v-if="dadosOriginais"
         style="
@@ -228,7 +228,7 @@ onMounted(carregar);
         tipo="info"
       />
 
-      <!-- Contato -->
+
       <h3 style="margin: 16px 0 6px">Contato</h3>
       <div
         style="
@@ -275,7 +275,6 @@ onMounted(carregar);
         </div>
       </div>
 
-      <!-- Endereço -->
       <h3 style="margin: 16px 0 6px">Endereço</h3>
       <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px">
         <div style="display: flex; flex-direction: column; gap: 6px">
