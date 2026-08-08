@@ -1,6 +1,4 @@
-
 @import url("https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Source+Sans+3:wght@300;400;500;600;700&display=swap");
-
 
 :root {
   --ipb-verde: #234f32;
@@ -25,7 +23,6 @@
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-
 *,
 *::before,
 *::after {
@@ -47,7 +44,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-
 .page-title {
   font-family: var(--font-display);
   font-size: 22px;
@@ -61,7 +57,6 @@ body {
   color: var(--ipb-cinza-claro);
   margin-bottom: 24px;
 }
-
 
 .card-ipb {
   background: var(--ipb-branco);
@@ -104,7 +99,6 @@ body {
 .btn-ipb-secondary:hover {
   background: var(--ipb-verde-bg);
 }
-
 
 .stats-grid {
   display: grid;
@@ -149,7 +143,6 @@ body {
   gap: 16px;
 }
 
-
 .card-tabela {
   background: var(--ipb-branco);
   border-radius: var(--radius-md);
@@ -166,13 +159,11 @@ body {
   margin-bottom: 14px;
 }
 
-
 .acoes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 10px;
 }
-
 
 .p-datatable .p-datatable-thead > tr > th {
   background: var(--ipb-verde-bg) !important;
@@ -202,7 +193,6 @@ body {
   border-color: var(--ipb-cinza-borda) !important;
 }
 
-
 .p-paginator {
   background: transparent !important;
   border: none !important;
@@ -213,7 +203,6 @@ body {
   color: #fff !important;
   border-color: var(--ipb-verde) !important;
 }
-
 
 .p-inputtext,
 .p-select,
@@ -231,7 +220,6 @@ body {
   box-shadow: 0 0 0 2px rgba(35, 79, 50, 0.15) !important;
 }
 
-
 .p-select-overlay,
 .p-select-panel {
   background: var(--ipb-branco) !important;
@@ -245,7 +233,6 @@ body {
   background: var(--ipb-verde-bg) !important;
   color: var(--ipb-verde-escuro) !important;
 }
-
 
 .p-button:not(.p-button-secondary):not(.p-button-danger):not(
     .p-button-info
@@ -261,13 +248,11 @@ body {
   border-color: var(--ipb-verde-claro) !important;
 }
 
-
 .p-tabview-nav-link.p-tabview-nav-link-active,
 .p-tab.p-tab-active {
   color: var(--ipb-verde) !important;
   border-color: var(--ipb-verde) !important;
 }
-
 
 .p-dialog {
   background: var(--ipb-branco) !important;
@@ -276,13 +261,25 @@ body {
 .p-dialog .p-dialog-header {
   background: var(--ipb-verde-bg) !important;
   color: var(--ipb-verde-escuro) !important;
+  /* O tema arredonda o contêiner do diálogo, mas o fundo verde do cabeçalho
+     é pintado por cima do raio e deixa os cantos superiores retos. O raio
+     replicado aqui devolve as pontas arredondadas em todos os popups
+     (Dialog e ConfirmDialog). */
+  border-top-left-radius: var(--p-dialog-border-radius, 12px);
+  border-top-right-radius: var(--p-dialog-border-radius, 12px);
 }
 
+.p-dialog .p-dialog-content {
+  /* No tema, o conteúdo nasce com padding-top zero: o respiro vinha do
+     padding inferior do cabeçalho, invisível quando ele era transparente.
+     Com o cabeçalho verde, a fronteira aparece e os campos ficam colados
+     nela — o respiro abaixo replica o mesmo espaçamento das laterais. */
+  padding-top: var(--p-overlay-modal-padding, 1.25rem);
+}
 
 .p-tag.p-tag-success {
   background: var(--ipb-sucesso) !important;
 }
-
 
 .p-dropdown,
 .p-multiselect {
@@ -317,7 +314,6 @@ body {
   border-color: var(--ipb-cinza-borda) !important;
 }
 
-
 .p-calendar .p-inputtext,
 .p-datepicker-input {
   background: var(--ipb-branco) !important;
@@ -345,7 +341,6 @@ body {
   color: var(--ipb-verde-escuro) !important;
 }
 
-
 .p-inputnumber .p-inputtext,
 .p-inputnumber-input {
   background: var(--ipb-branco) !important;
@@ -358,7 +353,6 @@ body {
   color: var(--ipb-verde-escuro) !important;
   border-color: var(--ipb-cinza-borda) !important;
 }
-
 
 .p-tabview .p-tabview-nav {
   background: var(--ipb-branco) !important;
@@ -381,7 +375,6 @@ body {
   color: var(--ipb-cinza) !important;
 }
 
-
 .p-tabs .p-tablist {
   background: var(--ipb-branco) !important;
 }
@@ -401,7 +394,6 @@ body {
   background: var(--ipb-branco) !important;
   color: var(--ipb-cinza) !important;
 }
-
 
 [data-pc-section="root"],
 [data-pc-section="panel"] {

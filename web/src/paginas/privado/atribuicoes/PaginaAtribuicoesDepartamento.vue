@@ -2,7 +2,6 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 
-
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
 
 import PageHeader from "../../../components/ui/PageHeader.vue";
@@ -10,11 +9,12 @@ import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
-
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-
-import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
+import {
+  toastSuccess,
+  toastWarn,
+} from "../../../aplicacao/servicos/notificacoes";
 
 import { firstFieldError } from "../../../aplicacao/servicos/apiError";
 
@@ -27,7 +27,6 @@ import {
   atualizarAtribuicao,
   encerrarAtribuicao,
 } from "../../../aplicacao/servicos/atribuicoesServico";
-
 
 import type {
   DepartamentoVM,
@@ -237,7 +236,7 @@ async function abrirEdicao(item: AtribuicaoVM) {
 async function salvarCriacao() {
   const msg = validarCriacao();
   if (msg) {
-    erro.value = msg;
+    toastWarn(msg);
     return;
   }
 
@@ -259,7 +258,7 @@ async function salvarCriacao() {
 async function salvarEdicao() {
   const msg = validarEdicao();
   if (msg) {
-    erro.value = msg;
+    toastWarn(msg);
     return;
   }
 

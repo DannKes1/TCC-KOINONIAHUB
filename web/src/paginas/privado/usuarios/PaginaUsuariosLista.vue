@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 
-
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
@@ -9,15 +8,14 @@ import FieldError from "../../../components/ui/FieldError.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-
-import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
-
+import {
+  toastSuccess,
+  toastWarn,
+} from "../../../aplicacao/servicos/notificacoes";
 
 import { firstFieldError } from "../../../aplicacao/servicos/apiError";
 
-
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
-
 
 import { listarPessoas } from "../../../aplicacao/servicos/pessoasServico";
 import {
@@ -27,9 +25,7 @@ import {
   resetarSenhaUsuario,
 } from "../../../aplicacao/servicos/usuariosServico";
 
-
 import type { PessoaVM, UsuarioVM } from "../../../aplicacao/modelos/dtos";
-
 
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -248,7 +244,7 @@ function severityPerfil(perfil: string) {
 async function salvarNovo() {
   const msg = validarCriacao();
   if (msg) {
-    erro.value = msg;
+    toastWarn(msg);
     return;
   }
 
@@ -269,7 +265,7 @@ async function salvarNovo() {
 async function salvarEdicao() {
   const msg = validarEdicao();
   if (msg) {
-    erro.value = msg;
+    toastWarn(msg);
     return;
   }
 
@@ -291,7 +287,7 @@ async function salvarEdicao() {
 async function salvarResetSenha() {
   const msg = validarResetSenha();
   if (msg) {
-    erro.value = msg;
+    toastWarn(msg);
     return;
   }
 

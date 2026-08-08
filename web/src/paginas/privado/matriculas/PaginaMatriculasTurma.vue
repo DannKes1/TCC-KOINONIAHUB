@@ -2,14 +2,11 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 
-
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 
-
 import { useAsync } from "../../../aplicacao/composables/useAsync";
-
 
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -19,12 +16,12 @@ import Dropdown from "primevue/dropdown";
 import InputText from "primevue/inputtext";
 import Tag from "primevue/tag";
 
-
 import { useConfirm } from "primevue/useconfirm";
 
-
-import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
-
+import {
+  toastSuccess,
+  toastWarn,
+} from "../../../aplicacao/servicos/notificacoes";
 
 import { obterDepartamento } from "../../../aplicacao/servicos/departamentosServico";
 import {
@@ -34,7 +31,6 @@ import {
   removerMatricula,
 } from "../../../aplicacao/servicos/matriculasServico";
 import { listarParentescosDaPessoa } from "../../../aplicacao/servicos/parentescosServico";
-
 
 import type {
   DepartamentoVM,
@@ -60,7 +56,6 @@ const form = reactive({
   pessoaId: null as number | null,
   observacao: "",
 });
-
 
 const dialogResponsaveisAberto = ref(false);
 const alunoSelecionado = ref<AlunoDaClasseVM | null>(null);
@@ -99,7 +94,7 @@ function validarForm(): string {
 async function salvar() {
   const msg = validarForm();
   if (msg) {
-    erro.value = msg;
+    toastWarn(msg);
     return;
   }
 
@@ -244,7 +239,6 @@ onMounted(carregarTudo);
       </DataTable>
     </LoadingOverlay>
 
-   
     <Dialog
       v-model:visible="dialogAberto"
       modal
@@ -291,7 +285,6 @@ onMounted(carregarTudo);
       </template>
     </Dialog>
 
-  
     <Dialog
       v-model:visible="dialogResponsaveisAberto"
       modal

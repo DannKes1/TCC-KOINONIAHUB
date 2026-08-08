@@ -7,15 +7,14 @@ import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
-
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-
-import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
-
+import {
+  toastSuccess,
+  toastWarn,
+} from "../../../aplicacao/servicos/notificacoes";
 
 import { firstFieldError } from "../../../aplicacao/servicos/apiError";
-
 
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -25,9 +24,7 @@ import Dropdown from "primevue/dropdown";
 import InputText from "primevue/inputtext";
 import Calendar from "primevue/calendar";
 
-
 import { useConfirm } from "primevue/useconfirm";
-
 
 import { obterDepartamento } from "../../../aplicacao/servicos/departamentosServico";
 import { listarMaterias } from "../../../aplicacao/servicos/materiasServico";
@@ -37,7 +34,6 @@ import {
   criarAula,
   consolidarAula,
 } from "../../../aplicacao/servicos/aulasServico";
-
 
 import type {
   AulaVM,
@@ -122,7 +118,7 @@ function validarRapido(): string {
 async function salvar() {
   const msg = validarRapido();
   if (msg) {
-    erro.value = msg;
+    toastWarn(msg);
     return;
   }
 

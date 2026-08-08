@@ -9,8 +9,10 @@ import FieldError from "../../../components/ui/FieldError.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-
-import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
+import {
+  toastSuccess,
+  toastWarn,
+} from "../../../aplicacao/servicos/notificacoes";
 
 import { firstFieldError } from "../../../aplicacao/servicos/apiError";
 
@@ -22,9 +24,7 @@ import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
 import Checkbox from "primevue/checkbox";
 
-
 import { useConfirm } from "primevue/useconfirm";
-
 
 import { obterDepartamento } from "../../../aplicacao/servicos/departamentosServico";
 import {
@@ -32,7 +32,6 @@ import {
   criarMateria,
   atualizarMateria,
 } from "../../../aplicacao/servicos/materiasServico";
-
 
 import type {
   DepartamentoVM,
@@ -97,7 +96,7 @@ function validarRapido(): string {
 async function salvar() {
   const msg = validarRapido();
   if (msg) {
-    erro.value = msg;
+    toastWarn(msg);
     return;
   }
 
@@ -105,7 +104,7 @@ async function salvar() {
     Nome: form.nome.trim(),
     Descricao: null,
     ImagemUrl: null,
-    
+
     OrdemExibicao: form.ordemExibicao ?? 0,
     Ativo: Boolean(form.ativo),
     DepartamentoId: departamentoId.value,

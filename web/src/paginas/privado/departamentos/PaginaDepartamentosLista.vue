@@ -4,7 +4,6 @@ import { useRouter } from "vue-router";
 
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
 
-
 import type { DepartamentoVM } from "../../../aplicacao/modelos/dtos";
 import {
   listarDepartamentos,
@@ -19,7 +18,10 @@ import FieldError from "../../../components/ui/FieldError.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
+import {
+  toastSuccess,
+  toastWarn,
+} from "../../../aplicacao/servicos/notificacoes";
 
 import { firstFieldError } from "../../../aplicacao/servicos/apiError";
 
@@ -148,7 +150,7 @@ async function carregarLista() {
 
 async function salvar() {
   if (!formulario.nome.trim()) {
-    erro.value = "Informe o nome do departamento/turma.";
+    toastWarn("Informe o nome do departamento/turma.");
     return;
   }
 

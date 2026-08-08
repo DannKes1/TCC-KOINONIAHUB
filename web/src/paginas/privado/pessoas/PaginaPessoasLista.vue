@@ -1,21 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
-
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
-
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-
-import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
-
+import {
+  toastSuccess,
+  toastWarn,
+} from "../../../aplicacao/servicos/notificacoes";
 
 import { firstFieldError } from "../../../aplicacao/servicos/apiError";
-
 
 import {
   listarPessoas,
@@ -30,13 +28,11 @@ import {
 } from "../../../aplicacao/servicos/parentescosServico";
 import { listarHistoricoPresencasDaPessoa } from "../../../aplicacao/servicos/presencasPessoaServico";
 
-
 import type {
   PessoaVM,
   ParentescoVM,
   HistoricoPresencaPessoaVM,
 } from "../../../aplicacao/modelos/dtos";
-
 
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -47,7 +43,6 @@ import Dropdown from "primevue/dropdown";
 import Calendar from "primevue/calendar";
 import Textarea from "primevue/textarea";
 import Tag from "primevue/tag";
-
 
 import { useConfirm } from "primevue/useconfirm";
 
@@ -64,7 +59,6 @@ const dialogHistoricoAberto = ref(false);
 
 const pessoaSelecionadaParentescos = ref<PessoaVM | null>(null);
 const pessoaSelecionadaHistorico = ref<PessoaVM | null>(null);
-
 
 const editandoId = ref<number | null>(null);
 
@@ -242,14 +236,12 @@ function formatarData(valor?: string | null) {
 }
 
 function sanitizarTelefone(valor: string): string {
-  
   return valor.replace(/[^\d()+\-\s]/g, "");
 }
 
 function contarDigitos(valor: string): number {
   return (valor.match(/\d/g) ?? []).length;
 }
-
 
 watch(
   () => formulario.telefone,
@@ -388,7 +380,7 @@ async function carregarHistorico() {
 async function salvarPessoa() {
   const msg = validarFormulario();
   if (msg) {
-    erro.value = msg;
+    toastWarn(msg);
     return;
   }
 
@@ -431,7 +423,7 @@ async function salvarPessoa() {
 async function salvarParentesco() {
   const msg = validarFormularioParentesco();
   if (msg) {
-    erro.value = msg;
+    toastWarn(msg);
     return;
   }
 
