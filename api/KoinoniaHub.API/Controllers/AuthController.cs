@@ -47,6 +47,44 @@ namespace KoinoniaHub.API.Controllers
             }
         }
 
+        // Valida um convite de primeiro acesso (tela pública).
+        // Retorna o e-mail/nome apenas para a página cumprimentar a pessoa.
+        [HttpGet("primeiro-acesso/{token}")]
+        public async Task<IActionResult> ValidarPrimeiroAcesso([FromRoute] string token)
+        {
+            try
+            {
+                var resposta = await _authServico.ValidarConviteAsync(token);
+                if (resposta is null)
+                    return NotFound(new { mensagem = "Convite inválido ou já utilizado. Solicite um novo link ao administrador." });
+
+                return Ok(resposta);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { mensagem = ex.Message });
+            }
+        }
+
+        // Consome o convite: a própria pessoa define a senha (uso único).
+        [HttpPost("primeiro-acesso")]
+        public async Task<IActionResult> AtivarPrimeiroAcesso([FromBody] PrimeiroAcessoAtivarRequisicaoDto dto)
+        {
+            try
+            {
+                var resposta = await _authServico.AtivarPrimeiroAcessoAsync(dto);
+                return Ok(new
+                {
+                    mensagem = "Senha definida com sucesso. Você já pode entrar no sistema.",
+                    email = resposta.Email
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { mensagem = ex.Message });
+            }
+        }
+
         // Encerra a sessão removendo o cookie httpOnly do navegador.
         [Authorize]
         [HttpPost("logout")]
@@ -56,13 +94,13 @@ namespace KoinoniaHub.API.Controllers
             return NoContent();
         }
 
-        
+
         private void GravarCookieToken(string token, DateTime expiraEm)
         {
             Response.Cookies.Append(NomeCookieToken, token, OpcoesCookie(expiraEm));
         }
 
-     
+
         private CookieOptions OpcoesCookie(DateTime expiraEm) => new()
         {
             HttpOnly = true,

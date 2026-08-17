@@ -6,6 +6,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Interfaces
     public interface IUsuarioServico
     {
         Task<UsuarioRespostaDto> CriarParaPessoaAsync(int igrejaId, UsuarioCriarRequisicaoDto dto);
+        Task<ConviteRespostaDto?> GerarConviteAsync(int igrejaId, int usuarioId);
         Task<List<UsuarioRespostaDto>> ListarAsync(int igrejaId);
         Task<UsuarioRespostaDto?> ObterPorIdAsync(int igrejaId, int usuarioId);
         Task<bool> AtualizarAsync(int igrejaId, int usuarioId, int usuarioLogadoId, UsuarioAtualizarRequisicaoDto dto);

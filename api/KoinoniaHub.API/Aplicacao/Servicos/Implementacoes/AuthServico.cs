@@ -1,6 +1,7 @@
 ﻿using BCrypt.Net;
 using KoinoniaHub.API.Aplicacao.DTOs.Requisicoes;
 using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
+using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
 using KoinoniaHub.API.Dominio.Entidades;
 using KoinoniaHub.API.Infraestrutura.Dados;
@@ -98,6 +99,67 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 IgrejaId = usuario.IgrejaId,
                 PessoaId = usuario.PessoaId
             };
+        }
+
+        // Valida um convite de primeiro acesso antes de exibir a tela pública
+        // de definição de senha. Retorna null quando o token não existe
+        // (ou já foi utilizado, pois o hash é apagado após o uso).
+        public async Task<PrimeiroAcessoValidarRespostaDto?> ValidarConviteAsync(string token)
+        {
+            var usuario = await BuscarPorTokenAsync(token);
+            if (usuario is null) return null;
+
+            GarantirConviteUtilizavel(usuario);
+
+            return new PrimeiroAcessoValidarRespostaDto
+            {
+                Email = usuario.Email,
+                NomePessoa = usuario.Pessoa?.Nome
+            };
+        }
+
+        // Consome o convite: a própria pessoa define a senha, o hash BCrypt é
+        // gravado e o token é invalidado (uso único).
+        public async Task<PrimeiroAcessoValidarRespostaDto> AtivarPrimeiroAcessoAsync(PrimeiroAcessoAtivarRequisicaoDto dto)
+        {
+            var usuario = await BuscarPorTokenAsync(dto.Token);
+
+            if (usuario is null)
+                throw new InvalidOperationException("Convite inválido ou já utilizado. Solicite um novo link ao administrador.");
+
+            GarantirConviteUtilizavel(usuario);
+
+            usuario.SenhaHash = BCrypt.Net.BCrypt.HashPassword(dto.NovaSenha.Trim());
+            usuario.ConviteTokenHash = null;
+            usuario.ConviteExpiraEm = null;
+
+            await _db.SaveChangesAsync();
+
+            return new PrimeiroAcessoValidarRespostaDto
+            {
+                Email = usuario.Email,
+                NomePessoa = usuario.Pessoa?.Nome
+            };
+        }
+
+        private async Task<Usuario?> BuscarPorTokenAsync(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token)) return null;
+
+            var hash = ConviteTokenHelper.CalcularHash(token.Trim());
+
+            return await _db.Usuarios
+                .Include(u => u.Pessoa)
+                .FirstOrDefaultAsync(u => u.ConviteTokenHash == hash);
+        }
+
+        private static void GarantirConviteUtilizavel(Usuario usuario)
+        {
+            if (!usuario.Ativo)
+                throw new InvalidOperationException("Este usuário está inativo. Procure o administrador.");
+
+            if (usuario.ConviteExpiraEm is null || usuario.ConviteExpiraEm.Value < DateTime.UtcNow)
+                throw new InvalidOperationException("Este convite expirou. Solicite um novo link ao administrador.");
         }
     }
 }

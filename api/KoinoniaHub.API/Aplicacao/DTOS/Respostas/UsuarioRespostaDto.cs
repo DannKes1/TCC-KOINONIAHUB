@@ -11,5 +11,12 @@
 
         public int? PessoaId { get; set; }
         public string? NomePessoa { get; set; }
+
+
+        public bool ConvitePendente { get; set; }
+
+
+        public string? ConviteToken { get; set; }
+        public DateTime? ConviteExpiraEm { get; set; }
     }
 }

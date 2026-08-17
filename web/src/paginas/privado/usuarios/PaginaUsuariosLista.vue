@@ -23,6 +23,7 @@ import {
   criarUsuario,
   atualizarUsuario,
   resetarSenhaUsuario,
+  gerarConviteUsuario,
 } from "../../../aplicacao/servicos/usuariosServico";
 
 import type { PessoaVM, UsuarioVM } from "../../../aplicacao/modelos/dtos";
@@ -35,6 +36,7 @@ import Dropdown from "primevue/dropdown";
 import InputText from "primevue/inputtext";
 import Password from "primevue/password";
 import Tag from "primevue/tag";
+import Checkbox from "primevue/checkbox";
 
 const autenticacao = usarAutenticacaoStore();
 const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
@@ -49,9 +51,18 @@ const filtroAtivo = ref<string | null>(null);
 const dialogCriacaoAberto = ref(false);
 const dialogEdicaoAberto = ref(false);
 const dialogResetSenhaAberto = ref(false);
+const dialogConviteAberto = ref(false);
 
 const editandoUsuario = ref<UsuarioVM | null>(null);
 const resetandoUsuario = ref<UsuarioVM | null>(null);
+
+// Dados do convite exibidos após a criação/geração (o token só aparece agora).
+const conviteAtual = ref<{
+  nomePessoa: string | null;
+  email: string;
+  link: string;
+  expiraEm: string | null;
+} | null>(null);
 
 const opcoesPerfil = [
   { label: "Admin", value: "Admin" },
@@ -71,6 +82,9 @@ const formularioCriacao = reactive({
   email: "",
   senha: "",
   perfil: "Usuario",
+  // false = gera convite (a própria pessoa define a senha pelo link);
+  // true  = fluxo antigo (o admin digita a senha inicial).
+  definirSenhaManual: false,
 });
 
 const formularioEdicao = reactive({
@@ -88,6 +102,7 @@ function limparCriacao() {
   formularioCriacao.email = "";
   formularioCriacao.senha = "";
   formularioCriacao.perfil = "Usuario";
+  formularioCriacao.definirSenhaManual = false;
 }
 
 function limparResetSenha() {
@@ -172,12 +187,14 @@ function validarCriacao(): string {
     return "Selecione a pessoa que será vinculada ao usuário.";
   }
 
-  if (!formularioCriacao.senha.trim()) {
-    return "Informe a senha inicial do usuário.";
-  }
+  if (formularioCriacao.definirSenhaManual) {
+    if (!formularioCriacao.senha.trim()) {
+      return "Informe a senha inicial do usuário.";
+    }
 
-  if (formularioCriacao.senha.trim().length < 6) {
-    return "A senha deve ter no mínimo 6 caracteres.";
+    if (formularioCriacao.senha.trim().length < 6) {
+      return "A senha deve ter no mínimo 6 caracteres.";
+    }
   }
 
   return "";
@@ -241,6 +258,90 @@ function severityPerfil(perfil: string) {
   return "secondary";
 }
 
+// ---------- Convite de primeiro acesso ----------
+
+function montarLinkConvite(token: string) {
+  return `${window.location.origin}/primeiro-acesso?token=${token}`;
+}
+
+function formatarDataConvite(valor: string | null) {
+  if (!valor) return "";
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return "";
+  return data.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function abrirDialogConvite(dados: {
+  nomePessoa: string | null;
+  email: string;
+  token: string;
+  expiraEm: string | null;
+}) {
+  conviteAtual.value = {
+    nomePessoa: dados.nomePessoa,
+    email: dados.email,
+    link: montarLinkConvite(dados.token),
+    expiraEm: dados.expiraEm,
+  };
+  dialogConviteAberto.value = true;
+}
+
+async function copiarLinkConvite() {
+  const link = conviteAtual.value?.link ?? "";
+  if (!link) return;
+
+  try {
+    await navigator.clipboard.writeText(link);
+    toastSuccess("Link copiado para a área de transferência.", "Copiado");
+  } catch {
+    // Fallback para navegadores sem permissão de clipboard.
+    const campo = document.createElement("textarea");
+    campo.value = link;
+    document.body.appendChild(campo);
+    campo.select();
+    document.execCommand("copy");
+    document.body.removeChild(campo);
+    toastSuccess("Link copiado para a área de transferência.", "Copiado");
+  }
+}
+
+function abrirWhatsAppConvite() {
+  const convite = conviteAtual.value;
+  if (!convite) return;
+
+  const nome = convite.nomePessoa ? `, ${convite.nomePessoa}` : "";
+  const validade = formatarDataConvite(convite.expiraEm);
+
+  const mensagem =
+    `Olá${nome}! Seu acesso ao KoinoniaHub foi criado. ` +
+    `Defina a sua senha pelo link abaixo` +
+    (validade ? ` (válido até ${validade})` : "") +
+    `:\n${convite.link}`;
+
+  window.open(`https://wa.me/?text=${encodeURIComponent(mensagem)}`, "_blank");
+}
+
+async function gerarConvite(usuario: UsuarioVM) {
+  await run(async () => {
+    const convite = await gerarConviteUsuario(usuario.id);
+
+    abrirDialogConvite({
+      nomePessoa: convite.nomePessoa ?? usuario.nomePessoa,
+      email: convite.email || usuario.email,
+      token: convite.token,
+      expiraEm: convite.expiraEm,
+    });
+
+    await carregarDados();
+  }, "Não foi possível gerar o convite.");
+}
+
+// ------------------------------------------------
+
 async function salvarNovo() {
   const msg = validarCriacao();
   if (msg) {
@@ -249,15 +350,32 @@ async function salvarNovo() {
   }
 
   await run(async () => {
-    await criarUsuario({
+    const criado = await criarUsuario({
       PessoaId: Number(formularioCriacao.pessoaId),
       Email: textoOuNull(formularioCriacao.email),
-      Senha: formularioCriacao.senha.trim(),
+      Senha: formularioCriacao.definirSenhaManual
+        ? formularioCriacao.senha.trim()
+        : null,
       Perfil: formularioCriacao.perfil.trim(),
     });
 
-    toastSuccess("Usuário criado com sucesso.", "Criado");
     dialogCriacaoAberto.value = false;
+
+    if (criado.conviteToken) {
+      toastSuccess(
+        "Usuário criado. Envie o link de convite para a pessoa definir a senha.",
+        "Criado",
+      );
+      abrirDialogConvite({
+        nomePessoa: criado.nomePessoa,
+        email: criado.email,
+        token: criado.conviteToken,
+        expiraEm: criado.conviteExpiraEm,
+      });
+    } else {
+      toastSuccess("Usuário criado com sucesso.", "Criado");
+    }
+
     await carregarDados();
   }, "Não foi possível criar o usuário.");
 }
@@ -329,7 +447,7 @@ onMounted(carregarDados);
     <InlineMessage :texto="erro" tipo="erro" />
 
     <InlineMessage
-      texto="A criação de usuário sempre exige vínculo com uma pessoa já cadastrada. Este módulo é restrito a administradores."
+      texto="A criação de usuário sempre exige vínculo com uma pessoa já cadastrada. Por padrão, o sistema gera um link de convite para a própria pessoa definir a senha. Este módulo é restrito a administradores."
       tipo="info"
     />
 
@@ -394,16 +512,26 @@ onMounted(carregarDados);
           </template>
         </Column>
 
-        <Column header="Status" style="width: 120px">
+        <Column header="Status" style="width: 200px">
           <template #body="{ data }">
-            <Tag
-              :value="rotuloStatus(data.ativo)"
-              :severity="severityStatus(data.ativo)"
-            />
+            <div style="display: flex; gap: 6px; flex-wrap: wrap">
+              <Tag
+                :value="rotuloStatus(data.ativo)"
+                :severity="severityStatus(data.ativo)"
+              />
+              <Tag
+                v-if="data.convitePendente"
+                value="Convite pendente"
+                severity="warning"
+                v-tooltip.top="
+                  'A pessoa ainda não definiu a senha pelo link de convite.'
+                "
+              />
+            </div>
           </template>
         </Column>
 
-        <Column header="Ações" style="width: 180px">
+        <Column header="Ações" style="width: 220px">
           <template #body="{ data }">
             <div style="display: flex; gap: 8px">
               <Button
@@ -413,6 +541,14 @@ onMounted(carregarDados);
                 v-tooltip.top="'Editar'"
                 :disabled="carregando"
                 @click="abrirEdicao(data)"
+              />
+              <Button
+                icon="pi pi-send"
+                severity="info"
+                size="small"
+                v-tooltip.top="'Gerar link de convite (primeiro acesso)'"
+                :disabled="carregando || !data.ativo"
+                @click="gerarConvite(data)"
               />
               <Button
                 icon="pi pi-key"
@@ -470,47 +606,67 @@ onMounted(carregarDados);
           />
         </div>
 
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label>Perfil</label>
+          <Dropdown
+            v-model="formularioCriacao.perfil"
+            :options="opcoesPerfil"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Selecione o perfil"
+          />
+          <FieldError
+            :texto="
+              firstFieldError(fieldErrors, 'Perfil') ||
+              firstFieldError(fieldErrors, 'perfil')
+            "
+          />
+        </div>
+
         <div
           style="
-            display: grid;
-            grid-template-columns: 1fr 220px;
-            gap: 12px;
-            align-items: start;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
           "
         >
-          <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Senha inicial *</label>
-            <Password
-              v-model="formularioCriacao.senha"
-              toggleMask
-              :feedback="false"
-              :inputStyle="{ width: '100%' }"
-              style="width: 100%"
-            />
-            <FieldError
-              :texto="
-                firstFieldError(fieldErrors, 'Senha') ||
-                firstFieldError(fieldErrors, 'senha')
-              "
-            />
-          </div>
+          <Checkbox
+            v-model="formularioCriacao.definirSenhaManual"
+            inputId="definirSenhaManual"
+            binary
+          />
+          <label for="definirSenhaManual" style="cursor: pointer">
+            Definir a senha manualmente (em vez de gerar link de convite)
+          </label>
+        </div>
 
-          <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Perfil</label>
-            <Dropdown
-              v-model="formularioCriacao.perfil"
-              :options="opcoesPerfil"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Selecione o perfil"
-            />
-            <FieldError
-              :texto="
-                firstFieldError(fieldErrors, 'Perfil') ||
-                firstFieldError(fieldErrors, 'perfil')
-              "
-            />
-          </div>
+        <InlineMessage
+          v-if="!formularioCriacao.definirSenhaManual"
+          texto="Será gerado um link de primeiro acesso, válido por 7 dias, para você enviar à pessoa (ex.: WhatsApp). Ela mesma define a senha, que não fica visível para o administrador."
+          tipo="info"
+        />
+
+        <div
+          v-if="formularioCriacao.definirSenhaManual"
+          style="display: flex; flex-direction: column; gap: 6px"
+        >
+          <label>Senha inicial *</label>
+          <Password
+            v-model="formularioCriacao.senha"
+            toggleMask
+            :feedback="false"
+            :inputStyle="{ width: '100%' }"
+            style="width: 100%"
+          />
+          <FieldError
+            :texto="
+              firstFieldError(fieldErrors, 'Senha') ||
+              firstFieldError(fieldErrors, 'senha')
+            "
+          />
         </div>
 
         <InlineMessage
@@ -651,6 +807,11 @@ onMounted(carregarDados);
             style="width: 100%"
           />
         </div>
+
+        <InlineMessage
+          texto="Dica: em vez de digitar uma senha para a pessoa, você pode fechar esta janela e usar o botão 'Gerar link de convite' — assim ela mesma define a própria senha."
+          tipo="info"
+        />
       </div>
 
       <template #footer>
@@ -665,6 +826,63 @@ onMounted(carregarDados);
           icon="pi pi-check"
           :loading="carregando"
           @click="salvarResetSenha"
+        />
+      </template>
+    </Dialog>
+
+    <Dialog
+      v-model:visible="dialogConviteAberto"
+      modal
+      header="Convite de primeiro acesso"
+      style="width: 620px; max-width: 96vw"
+    >
+      <div class="page-container" v-if="conviteAtual">
+        <p style="margin: 0">
+          Envie o link abaixo para
+          <strong>{{ conviteAtual.nomePessoa ?? conviteAtual.email }}</strong
+          >. Ao abrir o link, a pessoa define a própria senha e já pode entrar
+          com o e-mail <strong>{{ conviteAtual.email }}</strong
+          >.
+        </p>
+
+        <div style="display: flex; gap: 8px; align-items: center">
+          <InputText
+            :modelValue="conviteAtual.link"
+            readonly
+            style="flex: 1"
+            @focus="($event.target as HTMLInputElement).select()"
+          />
+          <Button
+            icon="pi pi-copy"
+            severity="secondary"
+            v-tooltip.top="'Copiar link'"
+            @click="copiarLinkConvite"
+          />
+        </div>
+
+        <Button
+          label="Enviar pelo WhatsApp"
+          icon="pi pi-whatsapp"
+          severity="success"
+          style="width: 100%"
+          @click="abrirWhatsAppConvite"
+        />
+
+        <InlineMessage
+          :texto="`O link é de uso único${
+            conviteAtual.expiraEm
+              ? ` e vale até ${formatarDataConvite(conviteAtual.expiraEm)}`
+              : ''
+          }. Por segurança, ele é exibido apenas agora — se precisar, gere um novo pelo botão de convite na listagem.`"
+          tipo="aviso"
+        />
+      </div>
+
+      <template #footer>
+        <Button
+          label="Fechar"
+          icon="pi pi-check"
+          @click="dialogConviteAberto = false"
         />
       </template>
     </Dialog>

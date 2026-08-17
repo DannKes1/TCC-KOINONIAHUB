@@ -1,6 +1,8 @@
 import { clienteHttp } from "./clienteHttp";
 import type {
   UsuarioVM,
+  UsuarioCriadoVM,
+  ConviteVM,
   UsuarioCriarDTO,
   UsuarioAtualizarDTO,
   UsuarioResetarSenhaDTO,
@@ -20,6 +22,21 @@ function normalizarUsuario(bruto: any): UsuarioVM {
     nomePessoa: (bruto?.NomePessoa ?? bruto?.nomePessoa ?? null) as
       | string
       | null,
+    convitePendente: Boolean(
+      bruto?.ConvitePendente ?? bruto?.convitePendente ?? false,
+    ),
+  };
+}
+
+function normalizarConvite(bruto: any, usuarioId: number): ConviteVM {
+  return {
+    usuarioId: Number(bruto?.UsuarioId ?? bruto?.usuarioId ?? usuarioId),
+    email: String(bruto?.Email ?? bruto?.email ?? ""),
+    nomePessoa: (bruto?.NomePessoa ?? bruto?.nomePessoa ?? null) as
+      | string
+      | null,
+    token: String(bruto?.Token ?? bruto?.token ?? ""),
+    expiraEm: String(bruto?.ExpiraEm ?? bruto?.expiraEm ?? ""),
   };
 }
 
@@ -34,9 +51,27 @@ export async function obterUsuario(id: number) {
   return normalizarUsuario(resposta.data);
 }
 
-export async function criarUsuario(dto: UsuarioCriarDTO) {
+export async function criarUsuario(
+  dto: UsuarioCriarDTO,
+): Promise<UsuarioCriadoVM> {
   const resposta = await clienteHttp.post("/api/usuarios", dto);
-  return normalizarUsuario(resposta.data);
+  const usuario = normalizarUsuario(resposta.data);
+
+  return {
+    ...usuario,
+    conviteToken: (resposta.data?.ConviteToken ??
+      resposta.data?.conviteToken ??
+      null) as string | null,
+    conviteExpiraEm: (resposta.data?.ConviteExpiraEm ??
+      resposta.data?.conviteExpiraEm ??
+      null) as string | null,
+  };
+}
+
+// Gera (ou regenera) um convite de primeiro acesso para uma conta existente.
+export async function gerarConviteUsuario(id: number): Promise<ConviteVM> {
+  const resposta = await clienteHttp.post(`/api/usuarios/${id}/convite`);
+  return normalizarConvite(resposta.data, id);
 }
 
 export async function atualizarUsuario(id: number, dto: UsuarioAtualizarDTO) {

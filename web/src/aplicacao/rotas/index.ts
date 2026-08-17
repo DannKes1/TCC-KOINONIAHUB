@@ -4,6 +4,7 @@ import { aplicarGuardas } from "./guardas";
 import PaginaMeusDados from "../../paginas/privado/meus-dados/PaginaMeusDados.vue";
 import PaginaLogin from "../../paginas/publico/PaginaLogin.vue";
 import PaginaCadastroInicial from "../../paginas/publico/PaginaCadastroInicial.vue";
+import PaginaPrimeiroAcesso from "../../paginas/publico/PaginaPrimeiroAcesso.vue";
 
 import LayoutPrincipal from "../../components/layout/LayoutPrincipal.vue";
 import PaginaPainel from "../../paginas/privado/PaginaPainel.vue";
@@ -28,6 +29,11 @@ const rotas: RouteRecordRaw[] = [
   {
     path: "/cadastro-inicial",
     component: PaginaCadastroInicial,
+    meta: { requerVisitante: true },
+  },
+  {
+    path: "/primeiro-acesso",
+    component: PaginaPrimeiroAcesso,
     meta: { requerVisitante: true },
   },
   {

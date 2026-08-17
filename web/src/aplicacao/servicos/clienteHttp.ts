@@ -9,7 +9,6 @@ export const clienteHttp = axios.create({
   withCredentials: true,
 });
 
-
 clienteHttp.interceptors.response.use(
   (resposta) => resposta,
   (erro) => {
@@ -35,12 +34,13 @@ clienteHttp.interceptors.response.use(
 
       const estaEmPublica =
         window.location.pathname.startsWith("/login") ||
-        window.location.pathname.startsWith("/cadastro-inicial");
+        window.location.pathname.startsWith("/cadastro-inicial") ||
+        window.location.pathname.startsWith("/primeiro-acesso");
 
       if (!estaEmPublica) {
         const destino = encodeURIComponent(urlAtual);
         window.location.href = `/login?redirecionar=${destino}`;
-      } else {
+      } else if (!window.location.pathname.startsWith("/primeiro-acesso")) {
         window.location.href = "/login";
       }
 

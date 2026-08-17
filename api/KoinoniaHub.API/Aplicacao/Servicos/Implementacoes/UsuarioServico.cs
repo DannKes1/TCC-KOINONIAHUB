@@ -1,6 +1,7 @@
 ﻿using BCrypt.Net;
 using KoinoniaHub.API.Aplicacao.DTOs.Requisicoes;
 using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
+using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
 using KoinoniaHub.API.Dominio.Entidades;
 using KoinoniaHub.API.Dominio.Interfaces.Repositorios;
@@ -11,6 +12,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 {
     public class UsuarioServico : IUsuarioServico
     {
+        private const int DiasValidadeConvite = 7;
+
         private readonly IUsuarioRepositorio _repositorio;
         private readonly KoinoniaHubDbContext _db;
 
@@ -59,28 +62,80 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (!PerfisValidos.Contains(perfil))
                 throw new InvalidOperationException("Perfil inválido. Use: Admin, Pastor, Superintendente, Professor ou Usuario.");
 
+            // Modo de definição da senha:
+            // - Senha informada -> fluxo original (o admin define a senha inicial).
+            // - Senha em branco -> convite de primeiro acesso: o sistema gera um
+            //   token de uso único e a própria pessoa define a senha pelo link.
+            var senhaInformada = !string.IsNullOrWhiteSpace(dto.Senha);
+
+            string? tokenConvite = null;
+            DateTime? conviteExpiraEm = null;
+            string senhaHash;
+
+            if (senhaInformada)
+            {
+                senhaHash = BCrypt.Net.BCrypt.HashPassword(dto.Senha!.Trim());
+            }
+            else
+            {
+                tokenConvite = ConviteTokenHelper.GerarToken();
+                conviteExpiraEm = DateTime.UtcNow.AddDays(DiasValidadeConvite);
+
+                // Senha aleatória impossível de adivinhar: a conta só se torna
+                // utilizável quando a pessoa define a senha pelo convite.
+                senhaHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N") + tokenConvite);
+            }
+
             // Criar usuário
             var usuario = new Usuario
             {
                 IgrejaId = igrejaId,
                 PessoaId = dto.PessoaId,
                 Email = emailNormalizado,
-                SenhaHash = BCrypt.Net.BCrypt.HashPassword(dto.Senha),
+                SenhaHash = senhaHash,
                 Perfil = perfil,
-                Ativo = true
+                Ativo = true,
+                ConviteTokenHash = tokenConvite is null ? null : ConviteTokenHelper.CalcularHash(tokenConvite),
+                ConviteExpiraEm = conviteExpiraEm
             };
 
             var criado = await _repositorio.CriarAsync(usuario);
 
-            return new UsuarioRespostaDto
+            var resposta = MapearParaResposta(criado, pessoa.Nome);
+            resposta.ConviteToken = tokenConvite;
+            resposta.ConviteExpiraEm = conviteExpiraEm;
+
+            return resposta;
+        }
+
+        // Gera (ou regenera) um convite de primeiro acesso para uma conta já
+        // existente. Útil quando o link expirou, foi perdido, ou quando o admin
+        // prefere que a própria pessoa defina uma nova senha em vez de digitá-la.
+        // Observação: a senha atual do usuário continua válida até que o convite
+        // seja utilizado.
+        public async Task<ConviteRespostaDto?> GerarConviteAsync(int igrejaId, int usuarioId)
+        {
+            var usuario = await _repositorio.ObterPorIdAsync(igrejaId, usuarioId);
+            if (usuario is null) return null;
+
+            if (!usuario.Ativo)
+                throw new InvalidOperationException("Não é possível gerar convite para um usuário inativo.");
+
+            var token = ConviteTokenHelper.GerarToken();
+            var expiraEm = DateTime.UtcNow.AddDays(DiasValidadeConvite);
+
+            usuario.ConviteTokenHash = ConviteTokenHelper.CalcularHash(token);
+            usuario.ConviteExpiraEm = expiraEm;
+
+            await _repositorio.AtualizarAsync(usuario);
+
+            return new ConviteRespostaDto
             {
-                Id = criado.Id,
-                IgrejaId = criado.IgrejaId,
-                Email = criado.Email,
-                Perfil = criado.Perfil,
-                Ativo = criado.Ativo,
-                PessoaId = criado.PessoaId,
-                NomePessoa = pessoa.Nome
+                UsuarioId = usuario.Id,
+                Email = usuario.Email,
+                NomePessoa = usuario.Pessoa?.Nome,
+                Token = token,
+                ExpiraEm = expiraEm
             };
         }
 
@@ -88,16 +143,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
         {
             var usuarios = await _repositorio.ListarAsync(igrejaId);
 
-            return usuarios.Select(u => new UsuarioRespostaDto
-            {
-                Id = u.Id,
-                IgrejaId = u.IgrejaId,
-                Email = u.Email,
-                Perfil = u.Perfil,
-                Ativo = u.Ativo,
-                PessoaId = u.PessoaId,
-                NomePessoa = u.Pessoa?.Nome
-            }).ToList();
+            return usuarios
+                .Select(u => MapearParaResposta(u, u.Pessoa?.Nome))
+                .ToList();
         }
 
         public async Task<UsuarioRespostaDto?> ObterPorIdAsync(int igrejaId, int usuarioId)
@@ -105,16 +153,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             var u = await _repositorio.ObterPorIdAsync(igrejaId, usuarioId);
             if (u is null) return null;
 
-            return new UsuarioRespostaDto
-            {
-                Id = u.Id,
-                IgrejaId = u.IgrejaId,
-                Email = u.Email,
-                Perfil = u.Perfil,
-                Ativo = u.Ativo,
-                PessoaId = u.PessoaId,
-                NomePessoa = u.Pessoa?.Nome
-            };
+            return MapearParaResposta(u, u.Pessoa?.Nome);
         }
 
         public async Task<bool> AtualizarAsync(int igrejaId, int usuarioId, int usuarioLogadoId, UsuarioAtualizarRequisicaoDto dto)
@@ -122,7 +161,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             var usuario = await _repositorio.ObterPorIdAsync(igrejaId, usuarioId);
             if (usuario is null) return false;
 
-            
+
             if (dto.Ativo.HasValue && dto.Ativo.Value == false && usuarioId == usuarioLogadoId)
                 throw new InvalidOperationException("Você não pode desativar o seu próprio usuário.");
 
@@ -148,9 +187,29 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (usuario is null) return false;
 
             usuario.SenhaHash = BCrypt.Net.BCrypt.HashPassword(dto.NovaSenha);
+
+            // Um reset manual do admin invalida qualquer convite pendente.
+            usuario.ConviteTokenHash = null;
+            usuario.ConviteExpiraEm = null;
+
             await _repositorio.AtualizarAsync(usuario);
 
             return true;
+        }
+
+        private static UsuarioRespostaDto MapearParaResposta(Usuario u, string? nomePessoa)
+        {
+            return new UsuarioRespostaDto
+            {
+                Id = u.Id,
+                IgrejaId = u.IgrejaId,
+                Email = u.Email,
+                Perfil = u.Perfil,
+                Ativo = u.Ativo,
+                PessoaId = u.PessoaId,
+                NomePessoa = nomePessoa,
+                ConvitePendente = u.ConviteTokenHash != null
+            };
         }
     }
 }

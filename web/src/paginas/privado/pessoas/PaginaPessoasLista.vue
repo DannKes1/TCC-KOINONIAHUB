@@ -8,6 +8,8 @@ import FieldError from "../../../components/ui/FieldError.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
+import DialogImportarPessoas from "./DialogImportarPessoas.vue";
+
 import {
   toastSuccess,
   toastWarn,
@@ -48,6 +50,8 @@ import { useConfirm } from "primevue/useconfirm";
 
 const confirm = useConfirm();
 const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
+
+const dialogImportarAberto = ref(false);
 
 const pessoas = ref<PessoaVM[]>([]);
 const parentescos = ref<ParentescoVM[]>([]);
@@ -475,6 +479,12 @@ onMounted(carregarLista);
       <template #acoes>
         <Button label="Nova Pessoa" icon="pi pi-plus" @click="abrirNovo" />
         <Button
+          label="Importar CSV"
+          icon="pi pi-upload"
+          severity="secondary"
+          @click="dialogImportarAberto = true"
+        />
+        <Button
           label="Recarregar"
           icon="pi pi-refresh"
           severity="secondary"
@@ -525,6 +535,11 @@ onMounted(carregarLista);
           placeholder="Todas"
         />
       </div>
+
+      <DialogImportarPessoas
+        v-model:visible="dialogImportarAberto"
+        @importado="carregarLista"
+      />
     </div>
 
     <LoadingOverlay :loading="carregando" texto="Carregando pessoas...">

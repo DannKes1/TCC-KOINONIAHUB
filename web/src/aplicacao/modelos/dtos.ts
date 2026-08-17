@@ -19,7 +19,6 @@ export type DepartamentoAtualizarDTO = {
   Ativo: boolean;
 };
 
-
 export type PessoaVM = {
   id: number;
   nome: string;
@@ -93,12 +92,14 @@ export type UsuarioVM = {
   ativo: boolean;
   pessoaId: number | null;
   nomePessoa: string | null;
+  convitePendente: boolean;
 };
 
 export type UsuarioCriarDTO = {
   PessoaId: number;
   Email?: string | null;
-  Senha: string;
+  // Senha agora é opcional: null/ausente => o sistema gera convite de primeiro acesso
+  Senha?: string | null;
   Perfil: string;
 };
 
@@ -109,6 +110,39 @@ export type UsuarioAtualizarDTO = {
 
 export type UsuarioResetarSenhaDTO = {
   NovaSenha: string;
+};
+
+// Retorno da criação de usuário (pode vir com o token do convite,
+// exibido uma única vez).
+export type UsuarioCriadoVM = UsuarioVM & {
+  conviteToken: string | null;
+  conviteExpiraEm: string | null;
+};
+
+// Convite de primeiro acesso gerado/regenerado pelo administrador.
+export type ConviteVM = {
+  usuarioId: number;
+  email: string;
+  nomePessoa: string | null;
+  token: string;
+  expiraEm: string;
+};
+
+// Resultado da importação de pessoas via CSV.
+export type ImportacaoPessoasItemVM = {
+  linha: number;
+  nome: string;
+  email: string | null;
+  status: string; // "Criado" | "Ignorado" | "Erro"
+  mensagem: string | null;
+};
+
+export type ImportacaoPessoasResultadoVM = {
+  totalLinhas: number;
+  criados: number;
+  ignorados: number;
+  erros: number;
+  itens: ImportacaoPessoasItemVM[];
 };
 
 export type AtribuicaoVM = {
@@ -137,7 +171,6 @@ export type AtribuicaoAtualizarDTO = {
   DataFim?: string | null;
 };
 
-
 export type MatriculaRespostaVM = {
   id: number;
   pessoaId: number;
@@ -164,7 +197,6 @@ export type AlunoDaClasseVM = {
   dataMatricula: string;
 };
 
-
 export type MateriaVM = {
   id: number;
   nome: string;
@@ -187,7 +219,6 @@ export type MateriaCriarDTO = {
 
 export type MateriaAtualizarDTO = MateriaCriarDTO;
 
-
 export type AulaVM = {
   id: number;
   data: string;
@@ -209,7 +240,6 @@ export type AulaCriarDTO = {
   MateriaId: number;
   ProfessorId: number;
 };
-
 
 export type ItemChamadaCompletaVM = {
   alunoDepartamentoId: number;
@@ -239,7 +269,6 @@ export type ChamadaRegistrarDTO = {
   }>;
 };
 
-
 export type FrequenciaTurmaVM = {
   departamentoId: number;
   nomeDepartamento: string;
@@ -262,7 +291,6 @@ export type RankingFaltasVM = {
   dataFim: string;
   itens: any[];
 };
-
 
 export type HistoricoPresencaPessoaVM = {
   aulaId: number;

@@ -14,11 +14,16 @@ namespace KoinoniaHub.API.Controllers
     public class PessoasController : ControllerBase
     {
         private readonly IPessoaServico _pessoaServico;
+        private readonly IPessoaImportacaoServico _importacaoServico;
         private readonly KoinoniaHubDbContext _db;
 
-        public PessoasController(IPessoaServico pessoaServico, KoinoniaHubDbContext db)
+        public PessoasController(
+            IPessoaServico pessoaServico,
+            IPessoaImportacaoServico importacaoServico,
+            KoinoniaHubDbContext db)
         {
             _pessoaServico = pessoaServico;
+            _importacaoServico = importacaoServico;
             _db = db;
         }
 
@@ -32,6 +37,34 @@ namespace KoinoniaHub.API.Controllers
             {
                 var resposta = await _pessoaServico.CriarAsync(igrejaId, dto);
                 return CreatedAtAction(nameof(ObterPorId), new { id = resposta.Id }, resposta);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { mensagem = ex.Message });
+            }
+        }
+
+        // Importa pessoas em lote a partir de um arquivo CSV
+        // (ex.: rol de membros mantido pela secretaria).
+        [HttpPost("importar")]
+        [Authorize(Roles = "Admin,Pastor,Superintendente")]
+        [RequestSizeLimit(2_000_000)]
+        public async Task<IActionResult> Importar(IFormFile? arquivo)
+        {
+            if (arquivo is null || arquivo.Length == 0)
+                return BadRequest(new { mensagem = "Envie um arquivo CSV." });
+
+            var extensao = Path.GetExtension(arquivo.FileName).ToLowerInvariant();
+            if (extensao != ".csv" && extensao != ".txt")
+                return BadRequest(new { mensagem = "Formato inválido. Envie um arquivo .csv (você pode baixar o modelo na tela de importação)." });
+
+            var igrejaId = UsuarioAutenticado.ObterIgrejaId(User);
+
+            try
+            {
+                await using var conteudo = arquivo.OpenReadStream();
+                var resposta = await _importacaoServico.ImportarCsvAsync(igrejaId, conteudo);
+                return Ok(resposta);
             }
             catch (InvalidOperationException ex)
             {
@@ -65,7 +98,7 @@ namespace KoinoniaHub.API.Controllers
             var igrejaId = UsuarioAutenticado.ObterIgrejaId(User);
             var perfil = UsuarioAutenticado.ObterPerfil(User);
 
-            
+
             if (string.Equals(perfil, "Usuario", StringComparison.OrdinalIgnoreCase))
             {
                 var usuarioId = UsuarioAutenticado.ObterUsuarioId(User);

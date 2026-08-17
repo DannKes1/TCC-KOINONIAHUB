@@ -3,6 +3,7 @@ using System;
 using KoinoniaHub.API.Infraestrutura.Dados;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace KoinoniaHub.API.Migrations
 {
     [DbContext(typeof(KoinoniaHubDbContext))]
-    partial class KoinoniaHubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260811041229_ConvitePrimeiroAcessoUsuario")]
+    partial class ConvitePrimeiroAcessoUsuario
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KoinoniaHub.API.Dominio.Entidades
 {
-  
+
     public class Usuario : EntidadeBase
     {
         [Required(ErrorMessage = "O email é obrigatório")]
@@ -17,11 +17,19 @@ namespace KoinoniaHub.API.Dominio.Entidades
 
         [StringLength(50)]
         public string Perfil { get; set; } = "Usuario";
-        
+
 
         public bool Ativo { get; set; } = true;
 
         public DateTime? UltimoAcesso { get; set; }
+
+        // Convite de primeiro acesso: guarda apenas o HASH (SHA-256) do token.
+        // O token em claro é exibido uma única vez ao administrador, que o envia
+        // à pessoa (ex.: WhatsApp). A própria pessoa define a senha pelo link.
+        [StringLength(100)]
+        public string? ConviteTokenHash { get; set; }
+
+        public DateTime? ConviteExpiraEm { get; set; }
 
         // Chaves estrangeiras
         [ForeignKey("Igreja")]

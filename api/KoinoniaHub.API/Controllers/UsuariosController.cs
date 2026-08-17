@@ -34,6 +34,25 @@ namespace KoinoniaHub.API.Controllers
             }
         }
 
+        // Gera (ou regenera) um convite de primeiro acesso para a conta.
+        // O token retorna em claro apenas nesta resposta; no banco fica só o hash.
+        [HttpPost("{id:int}/convite")]
+        public async Task<IActionResult> GerarConvite([FromRoute] int id)
+        {
+            var igrejaId = UsuarioAutenticado.ObterIgrejaId(User);
+
+            try
+            {
+                var resposta = await _servico.GerarConviteAsync(igrejaId, id);
+                if (resposta is null) return NotFound();
+                return Ok(resposta);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { mensagem = ex.Message });
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> Listar()
         {

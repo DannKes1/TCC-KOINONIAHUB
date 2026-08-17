@@ -133,6 +133,7 @@ builder.Services.AddScoped<ITokenServico, TokenServico>();
 builder.Services.AddScoped<IAuthServico, AuthServico>();
 builder.Services.AddScoped<IUsuarioRepositorio, UsuarioRepositorio>();
 builder.Services.AddScoped<IUsuarioServico, UsuarioServico>();
+builder.Services.AddScoped<IPessoaImportacaoServico, PessoaImportacaoServico>();
 
 // Segurança por atribuição
 builder.Services.AddScoped<IAutorizacaoEbdServico, AutorizacaoEbdServico>();

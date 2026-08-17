@@ -3,6 +3,7 @@ import type {
   PessoaVM,
   PessoaCriarDTO,
   PessoaAtualizarDTO,
+  ImportacaoPessoasResultadoVM,
 } from "../modelos/dtos";
 
 function normalizarPessoa(bruto: any): PessoaVM {
@@ -53,4 +54,33 @@ export async function criarPessoa(dto: PessoaCriarDTO) {
 
 export async function atualizarPessoa(id: number, dto: PessoaAtualizarDTO) {
   await clienteHttp.put(`/api/pessoas/${id}`, dto); // 204
+}
+
+// Importa pessoas em lote a partir de um arquivo CSV.
+export async function importarPessoas(
+  arquivo: File,
+): Promise<ImportacaoPessoasResultadoVM> {
+  const form = new FormData();
+  form.append("arquivo", arquivo);
+
+  const resposta = await clienteHttp.post("/api/pessoas/importar", form);
+  const bruto = resposta.data ?? {};
+
+  const itens = Array.isArray(bruto.Itens ?? bruto.itens)
+    ? (bruto.Itens ?? bruto.itens)
+    : [];
+
+  return {
+    totalLinhas: Number(bruto.TotalLinhas ?? bruto.totalLinhas ?? 0),
+    criados: Number(bruto.Criados ?? bruto.criados ?? 0),
+    ignorados: Number(bruto.Ignorados ?? bruto.ignorados ?? 0),
+    erros: Number(bruto.Erros ?? bruto.erros ?? 0),
+    itens: itens.map((i: any) => ({
+      linha: Number(i.Linha ?? i.linha ?? 0),
+      nome: String(i.Nome ?? i.nome ?? ""),
+      email: (i.Email ?? i.email ?? null) as string | null,
+      status: String(i.Status ?? i.status ?? "Erro"),
+      mensagem: (i.Mensagem ?? i.mensagem ?? null) as string | null,
+    })),
+  };
 }

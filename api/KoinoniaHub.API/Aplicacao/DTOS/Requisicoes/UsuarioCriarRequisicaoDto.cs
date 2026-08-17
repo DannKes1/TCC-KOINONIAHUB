@@ -10,11 +10,11 @@ namespace KoinoniaHub.API.Aplicacao.DTOs.Requisicoes
         // Se não informar, usa o e-mail da Pessoa.
         public string? Email { get; set; }
 
-        [Required]
-        [MinLength(6, ErrorMessage = "A senha deve ter no mínimo 6 caracteres.")]
-        public string Senha { get; set; } = string.Empty;
 
-        
+        [MinLength(6, ErrorMessage = "A senha deve ter no mínimo 6 caracteres.")]
+        public string? Senha { get; set; }
+
+
         public string Perfil { get; set; } = "Usuario";
     }
 }
