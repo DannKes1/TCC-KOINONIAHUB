@@ -2,15 +2,12 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
 
-
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import CardIndicador from "../../../components/ui/CardIndicador.vue";
 
-
 import { useAsync } from "../../../aplicacao/composables/useAsync";
-
 
 import Button from "primevue/button";
 import Tabs from "primevue/tabs";
@@ -27,7 +24,6 @@ import Tag from "primevue/tag";
 import Chart from "primevue/chart";
 import ProgressBar from "primevue/progressbar";
 
-
 import { listarDepartamentos } from "../../../aplicacao/servicos/departamentosServico";
 import {
   obterFrequenciaTurma,
@@ -37,9 +33,7 @@ import {
   type ResumoDiaVM,
 } from "../../../aplicacao/servicos/relatoriosServico";
 
-
 import type { DepartamentoVM } from "../../../aplicacao/modelos/dtos";
-
 
 type FrequenciaVM = Awaited<ReturnType<typeof obterFrequenciaTurma>>;
 type AcompanhamentoVM = Awaited<ReturnType<typeof obterPainelAcompanhamento>>;
@@ -53,7 +47,6 @@ const turmaSelecionadaId = ref<number | null>(null);
 const dataInicio = ref<Date | null>(null);
 const dataFim = ref<Date | null>(null);
 
-
 const autenticacao = usarAutenticacaoStore();
 const isAdministrativo = computed(() => autenticacao.isAdministrativo);
 
@@ -62,11 +55,9 @@ const dataResumo = ref<Date | null>(new Date());
 
 const abaAtiva = ref<string>("frequencia");
 
-
 const frequencia = ref<FrequenciaVM | null>(null);
 const acompanhamento = ref<AcompanhamentoVM | null>(null);
 const ranking = ref<RankingVM | null>(null);
-
 
 const tabelaAlunosRef = ref();
 const tabelaAulasRef = ref();
@@ -74,13 +65,10 @@ const tabelaAcompanhamentoRef = ref();
 const tabelaRankingRef = ref();
 const tabelaResumoRef = ref();
 
-
 const topRanking = ref<number>(10);
-
 
 const limiarAtencao = ref<number>(75);
 const faltasConsecutivasCritico = ref<number>(3);
-
 
 const CORES = {
   verde: "#234f32",
@@ -90,8 +78,6 @@ const CORES = {
   perigo: "#b83232",
 };
 
-
-
 function corClassificacao(c: string): "danger" | "warn" {
   return c === "Critico" ? "danger" : "warn";
 }
@@ -99,7 +85,6 @@ function corClassificacao(c: string): "danger" | "warn" {
 function rotuloClassificacao(c: string): string {
   return c === "Critico" ? "Crítico" : "Atenção";
 }
-
 
 function formatarPercentual(v: number | null | undefined): string {
   const n = Number(v ?? 0);
@@ -119,7 +104,6 @@ function formatarData(valor?: string | null) {
   const d = new Date(valor);
   return Number.isNaN(d.getTime()) ? "-" : d.toLocaleDateString("pt-BR");
 }
-
 
 function preencherPeriodoPadrao() {
   const hoje = new Date();
@@ -142,7 +126,6 @@ const periodoFormatado = computed(() => {
   return `${inicio} a ${fim}`;
 });
 
-
 function nomeArquivo(prefixo: string): string {
   const nome = (nomeTurmaSelecionada.value || "turma")
     .normalize("NFD")
@@ -159,15 +142,11 @@ const filtroValido = computed(() => {
   return true;
 });
 
-
 const podeBuscar = computed(() =>
   abaAtiva.value === "resumo" ? !!dataResumo.value : filtroValido.value,
 );
 
-
-
 const dadosGraficoAulas = computed(() => {
-
   const aulas = [...(frequencia.value?.aulas ?? [])]
     .filter(
       (a: any) =>
@@ -216,7 +195,6 @@ const opcoesGraficoAulas: any = {
   },
 };
 
-
 const dadosGraficoSituacao = computed(() => {
   const painel = acompanhamento.value;
   if (!painel) return null;
@@ -245,7 +223,6 @@ const opcoesGraficoSituacao: any = {
   cutout: "62%",
   plugins: { legend: { position: "bottom" } },
 };
-
 
 const itensRankingOrdenados = computed(() =>
   [...(ranking.value?.itens ?? [])].sort(
@@ -279,13 +256,10 @@ const opcoesGraficoRanking: any = {
   plugins: { legend: { display: false } },
 };
 
-
 const alturaGraficoRanking = computed(() => {
   const quantidade = itensRankingOrdenados.value.length;
   return `${Math.max(180, quantidade * 34 + 60)}px`;
 });
-
-
 
 async function carregarTurmas() {
   await run(async () => {
@@ -375,7 +349,6 @@ watch(abaAtiva, () => {
   carregarAbaSeVazia();
 });
 
-
 watch(turmaSelecionadaId, () => {
   frequencia.value = null;
   acompanhamento.value = null;
@@ -395,7 +368,6 @@ function imprimir() {
 onMounted(async () => {
   preencherPeriodoPadrao();
   await carregarTurmas();
- 
 });
 </script>
 
@@ -426,7 +398,6 @@ onMounted(async () => {
       </template>
     </PageHeader>
 
-   
     <div class="apenas-impressao cabecalho-impressao">
       <strong>KoinoniaHub — Relatórios EBD</strong>
       <span v-if="abaAtiva === 'resumo'">
@@ -441,7 +412,6 @@ onMounted(async () => {
 
     <InlineMessage :texto="erro" tipo="erro" />
 
-  
     <div class="filtros-relatorios nao-imprimir">
       <template v-if="abaAtiva !== 'resumo'">
         <div class="filtro-campo filtro-turma">
@@ -508,7 +478,6 @@ onMounted(async () => {
         </TabList>
 
         <TabPanels>
-         
           <TabPanel value="frequencia">
             <div v-if="frequencia" class="conteudo-relatorio">
               <div class="linha-indicadores">
@@ -684,7 +653,6 @@ onMounted(async () => {
             />
           </TabPanel>
 
-         
           <TabPanel value="acompanhamento">
             <div v-if="acompanhamento" class="conteudo-relatorio">
               <div class="linha-indicadores">
@@ -811,7 +779,6 @@ onMounted(async () => {
             />
           </TabPanel>
 
-    
           <TabPanel v-if="isAdministrativo" value="resumo">
             <div v-if="resumo" class="conteudo-relatorio">
               <div class="linha-indicadores">
@@ -893,7 +860,6 @@ onMounted(async () => {
             />
           </TabPanel>
 
-        
           <TabPanel value="ranking">
             <div v-if="ranking" class="conteudo-relatorio">
               <InlineMessage
@@ -1108,7 +1074,6 @@ onMounted(async () => {
 }
 </style>
 
-
 <style>
 @media print {
   .sidebar-ipb,
@@ -1150,6 +1115,16 @@ onMounted(async () => {
   .pagina-relatorios .card-indicador {
     break-inside: avoid;
     border-color: #ccc;
+  }
+
+  .pagina-relatorios canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .pagina-relatorios .grafico-area {
+    height: auto !important;
+    overflow: visible !important;
   }
 }
 </style>
