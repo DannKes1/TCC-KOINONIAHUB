@@ -23,6 +23,7 @@ import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
 import InputText from "primevue/inputtext";
 import Calendar from "primevue/calendar";
+import Tag from "primevue/tag";
 
 import { useConfirm } from "primevue/useconfirm";
 
@@ -51,6 +52,27 @@ const departamentoId = computed(() => Number(route.params.departamentoId));
 
 const turma = ref<DepartamentoVM | null>(null);
 const aulas = ref<AulaVM[]>([]);
+const busca = ref("");
+
+/** Busca local por tema, matéria, professor ou data (dd/mm/aaaa). */
+const aulasFiltradas = computed(() => {
+  const termo = busca.value.trim().toLowerCase();
+  if (!termo) return aulas.value;
+
+  return aulas.value.filter(
+    (a) =>
+      String(a.tema ?? "")
+        .toLowerCase()
+        .includes(termo) ||
+      String(a.nomeMateria ?? "")
+        .toLowerCase()
+        .includes(termo) ||
+      String(a.nomeProfessor ?? "")
+        .toLowerCase()
+        .includes(termo) ||
+      formatarData(a.data).includes(termo),
+  );
+});
 const materias = ref<MateriaVM[]>([]);
 const professores = ref<{ id: number; nome: string }[]>([]);
 
@@ -192,9 +214,17 @@ onMounted(carregarTudo);
 
     <InlineMessage :texto="erro" tipo="erro" />
 
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+      <InputText
+        v-model="busca"
+        placeholder="Buscar por tema, matéria, professor ou data..."
+        style="min-width: 320px"
+      />
+    </div>
+
     <LoadingOverlay :loading="carregando" texto="Carregando aulas.">
       <DataTable
-        :value="aulas"
+        :value="aulasFiltradas"
         paginator
         :rows="10"
         rowHover
@@ -213,9 +243,12 @@ onMounted(carregarTudo);
         <Column field="nomeProfessor" header="Professor" sortable />
         <Column field="tema" header="Tema" />
 
-        <Column header="Consolidada" style="width: 140px">
+        <Column header="Consolidada" style="width: 150px">
           <template #body="{ data }">
-            {{ data.consolidada ? "Sim" : "Não" }}
+            <Tag
+              :severity="data.consolidada ? 'success' : 'secondary'"
+              :value="data.consolidada ? 'Consolidada' : 'Em aberto'"
+            />
           </template>
         </Column>
 
@@ -250,6 +283,11 @@ onMounted(carregarTudo);
             </div>
           </template>
         </Column>
+        <template #empty>
+          <div style="padding: 14px; opacity: 0.7">
+            Nenhuma aula encontrada para a busca.
+          </div>
+        </template>
       </DataTable>
     </LoadingOverlay>
 

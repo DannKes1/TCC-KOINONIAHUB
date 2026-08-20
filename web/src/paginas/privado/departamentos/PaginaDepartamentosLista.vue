@@ -33,6 +33,7 @@ import InputText from "primevue/inputtext";
 import Checkbox from "primevue/checkbox";
 import Menu from "primevue/menu";
 import SelectButton from "primevue/selectbutton";
+import Tag from "primevue/tag";
 
 import { useConfirm } from "primevue/useconfirm";
 
@@ -54,15 +55,25 @@ const dialogAberto = ref(false);
 const editandoId = ref<number | null>(null);
 
 const filtroStatus = ref<"ativas" | "inativas" | "todas">("ativas");
+const busca = ref("");
 
 const departamentosFiltrados = computed(() => {
-  if (filtroStatus.value === "ativas") {
-    return departamentos.value.filter((d) => d.ativo);
-  }
-  if (filtroStatus.value === "inativas") {
-    return departamentos.value.filter((d) => !d.ativo);
-  }
-  return departamentos.value;
+  const termo = busca.value.trim().toLowerCase();
+
+  return departamentos.value.filter((d) => {
+    const bateStatus =
+      filtroStatus.value === "todas" ||
+      (filtroStatus.value === "ativas" ? d.ativo : !d.ativo);
+
+    const bateBusca =
+      !termo ||
+      d.nome.toLowerCase().includes(termo) ||
+      String(d.tipo ?? "")
+        .toLowerCase()
+        .includes(termo);
+
+    return bateStatus && bateBusca;
+  });
 });
 
 const formulario = reactive({
@@ -237,7 +248,7 @@ onMounted(carregarLista);
 
     <InlineMessage :texto="erro" tipo="erro" />
 
-    <div style="display: flex; align-items: center; gap: 12px">
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
       <span style="font-size: 13px; opacity: 0.8">Mostrar:</span>
       <SelectButton
         v-model="filtroStatus"
@@ -248,6 +259,12 @@ onMounted(carregarLista);
         ]"
         optionLabel="label"
         optionValue="value"
+      />
+
+      <InputText
+        v-model="busca"
+        placeholder="Buscar por nome ou tipo..."
+        style="min-width: 260px; margin-left: auto"
       />
     </div>
 
@@ -262,12 +279,20 @@ onMounted(carregarLista);
         dataKey="id"
         responsiveLayout="scroll"
       >
-        <Column field="nome" header="Nome" sortable />
-        <Column field="tipo" header="Tipo" sortable />
+        <Column field="nome" header="Nome da turma" sortable />
 
-        <Column header="Ativo" style="width: 100px">
+        <Column field="tipo" header="Tipo" sortable style="width: 130px">
           <template #body="{ data }">
-            {{ data.ativo ? "Sim" : "Não" }}
+            <Tag :value="data.tipo || '-'" severity="secondary" />
+          </template>
+        </Column>
+
+        <Column header="Ativo" style="width: 120px">
+          <template #body="{ data }">
+            <Tag
+              :severity="data.ativo ? 'success' : 'danger'"
+              :value="data.ativo ? 'Ativo' : 'Inativo'"
+            />
           </template>
         </Column>
 
@@ -303,6 +328,11 @@ onMounted(carregarLista);
             </div>
           </template>
         </Column>
+        <template #empty>
+          <div style="padding: 14px; opacity: 0.7">
+            Nenhuma turma encontrada para os filtros aplicados.
+          </div>
+        </template>
       </DataTable>
     </LoadingOverlay>
 

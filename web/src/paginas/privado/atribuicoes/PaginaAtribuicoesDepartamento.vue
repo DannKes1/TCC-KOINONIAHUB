@@ -39,6 +39,7 @@ import Column from "primevue/column";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
+import InputText from "primevue/inputtext";
 import Calendar from "primevue/calendar";
 import Tag from "primevue/tag";
 
@@ -70,6 +71,23 @@ const editandoId = ref<number | null>(null);
 
 const filtroFuncao = ref<string | null>(null);
 const filtroAtivo = ref<string | null>(null);
+const busca = ref("");
+
+/** Busca local por nome da pessoa ou função (os demais filtros são aplicados pela API). */
+const atribuicoesFiltradas = computed(() => {
+  const termo = busca.value.trim().toLowerCase();
+  if (!termo) return atribuicoes.value;
+
+  return atribuicoes.value.filter(
+    (a) =>
+      String(a.pessoaNome ?? "")
+        .toLowerCase()
+        .includes(termo) ||
+      String(a.funcao ?? "")
+        .toLowerCase()
+        .includes(termo),
+  );
+});
 
 const opcoesFuncao = [
   { label: "Professor", value: "Professor" },
@@ -336,11 +354,19 @@ onMounted(carregarTela);
     <div
       style="
         display: grid;
-        grid-template-columns: 220px 180px auto auto;
+        grid-template-columns: 1.4fr 220px 180px auto auto;
         gap: 10px;
         align-items: end;
       "
     >
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label>Buscar</label>
+        <InputText
+          v-model="busca"
+          placeholder="Pesquisar por pessoa ou função..."
+        />
+      </div>
+
       <div style="display: flex; flex-direction: column; gap: 6px">
         <label>Função</label>
         <Dropdown
@@ -384,7 +410,7 @@ onMounted(carregarTela);
 
     <LoadingOverlay :loading="carregando" texto="Carregando atribuições...">
       <DataTable
-        :value="atribuicoes"
+        :value="atribuicoesFiltradas"
         paginator
         :rows="10"
         rowHover
@@ -448,6 +474,11 @@ onMounted(carregarTela);
             </div>
           </template>
         </Column>
+        <template #empty>
+          <div style="padding: 14px; opacity: 0.7">
+            Nenhuma atribuição encontrada para os filtros aplicados.
+          </div>
+        </template>
       </DataTable>
     </LoadingOverlay>
 
