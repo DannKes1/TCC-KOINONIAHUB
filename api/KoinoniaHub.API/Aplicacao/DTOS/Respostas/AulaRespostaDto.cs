@@ -5,7 +5,11 @@
         public int Id { get; set; }
         public DateTime Data { get; set; }
         public string? Tema { get; set; }
-        public bool Consolidada { get; set; }
+       
+        public string Situacao { get; set; } = string.Empty;
+
+        public bool PendenteFechamento { get; set; }
+
         public int QuantidadeVisitantes { get; set; }
 
         public int MateriaId { get; set; }

@@ -21,7 +21,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
         public async Task<AulaRespostaDto> CriarAsync(int igrejaId, AulaCriarRequisicaoDto dto)
         {
-            // Matéria deve existir e ser da igreja 
+          
             var materia = await _db.Materias
                 .Include(m => m.Departamento)
                 .FirstOrDefaultAsync(m =>
@@ -31,8 +31,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (materia is null)
                 throw new InvalidOperationException("Matéria não encontrada para esta igreja.");
 
-            //  Professor deve existir e ser da igreja
-            // Professor deve ter atribuição ativa de "Professor" 
+  
             var professor = await _db.Pessoas.AsNoTracking()
                 .Where(p => p.IgrejaId == igrejaId && p.Id == dto.ProfessorId)
                 .Where(p => p.Atribuicoes.Any(a =>
@@ -52,7 +51,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 Observacoes = dto.Observacoes,
                 MateriaId = dto.MateriaId,
                 ProfessorId = dto.ProfessorId,
-                Consolidada = false
+                Situacao = SituacaoAula.EmAberto
             };
 
             var criada = await _repositorio.CriarAsync(aula);
@@ -62,7 +61,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 Id = criada.Id,
                 Data = criada.Data,
                 Tema = criada.Tema,
-                Consolidada = criada.Consolidada,
+                Situacao = criada.Situacao,
+                PendenteFechamento = CalcularPendenteFechamento(criada),
                 QuantidadeVisitantes = criada.QuantidadeVisitantes,
                 MateriaId = materia.Id,
                 NomeMateria = materia.Nome,
@@ -74,7 +74,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
         public async Task<List<AulaRespostaDto>> ListarPorDepartamentoAsync(int igrejaId, int departamentoId)
         {
-            
+
             var depOk = await _db.Departamentos.AnyAsync(d => d.IgrejaId == igrejaId && d.Id == departamentoId);
             if (!depOk)
                 throw new InvalidOperationException("Departamento não encontrado para esta igreja.");
@@ -86,7 +86,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 Id = a.Id,
                 Data = a.Data,
                 Tema = a.Tema,
-                Consolidada = a.Consolidada,
+                Situacao = a.Situacao,
+                PendenteFechamento = CalcularPendenteFechamento(a),
                 QuantidadeVisitantes = a.QuantidadeVisitantes,
                 MateriaId = a.MateriaId,
                 NomeMateria = a.Materia.Nome,
@@ -106,7 +107,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 Id = aula.Id,
                 Data = aula.Data,
                 Tema = aula.Tema,
-                Consolidada = aula.Consolidada,
+                Situacao = aula.Situacao,
+                PendenteFechamento = CalcularPendenteFechamento(aula),
                 QuantidadeVisitantes = aula.QuantidadeVisitantes,
                 MateriaId = aula.MateriaId,
                 NomeMateria = aula.Materia.Nome,
@@ -125,13 +127,18 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             if (aula is null) return false;
 
-            if (aula.Consolidada) return true;
+    
+            if (aula.Situacao == SituacaoAula.Consolidada) return true;
 
-            aula.Consolidada = true;
+            aula.Situacao = SituacaoAula.Consolidada;
             await _db.SaveChangesAsync();
 
             return true;
         }
+
+        
+        private static bool CalcularPendenteFechamento(Aula aula) =>
+            aula.Situacao == SituacaoAula.EmAberto && aula.Data.Date < DateTime.UtcNow.Date;
 
     }
 

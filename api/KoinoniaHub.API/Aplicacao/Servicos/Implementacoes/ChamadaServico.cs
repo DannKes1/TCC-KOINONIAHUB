@@ -71,19 +71,20 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (aula is null)
                 throw new InvalidOperationException("Aula não encontrada para esta igreja.");
 
-            if (aula.Consolidada)
-                throw new InvalidOperationException("A aula está consolidada e não permite alterar a chamada.");
+            // RNF 32.2: somente aulas Em aberto permitem lançar ou alterar a chamada.
+            if (aula.Situacao != SituacaoAula.EmAberto)
+                throw new InvalidOperationException("Somente aulas Em aberto permitem lançar ou alterar a chamada.");
 
             var departamentoId = aula.Materia.DepartamentoId;
 
-           
+
             if (dto.QuantidadeVisitantes.HasValue)
             {
                 aula.QuantidadeVisitantes = Math.Max(0, dto.QuantidadeVisitantes.Value);
                 await _db.SaveChangesAsync();
             }
 
-            
+
             var idsMatriculas = dto.Itens.Select(i => i.AlunoDepartamentoId).Distinct().ToList();
 
             var matriculas = await _db.AlunosDepartamentos
@@ -99,7 +100,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (matriculas.Count != idsMatriculas.Count)
                 throw new InvalidOperationException("Uma ou mais matrículas são inválidas para esta aula/classe.");
 
-          
+
             var respostas = new List<PresencaRespostaDto>();
 
             foreach (var item in dto.Itens)
