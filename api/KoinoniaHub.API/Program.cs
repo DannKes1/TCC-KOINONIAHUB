@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,30 +24,24 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 
 // Swagger + JWT
+// Swashbuckle 10 depende do Microsoft.OpenApi 2.x: o esquema não carrega mais
+// "Reference" e o requisito de segurança passou a receber um delegado que
+// referencia o esquema pelo nome (OpenApiSecuritySchemeReference).
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "KoinoniaHub.API", Version = "v1" });
 
-    var jwtSecurityScheme = new OpenApiSecurityScheme
+    c.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
     {
-        BearerFormat = "JWT",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
-        Description = "Cole aqui o token JWT: Bearer {seu_token}",
-        Reference = new OpenApiReference
-        {
-            Id = JwtBearerDefaults.AuthenticationScheme,
-            Type = ReferenceType.SecurityScheme
-        }
-    };
+        BearerFormat = "JWT",
+        Description = "Cole aqui apenas o token JWT (sem o prefixo Bearer)."
+    });
 
-    c.AddSecurityDefinition(jwtSecurityScheme.Reference.Id, jwtSecurityScheme);
-
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
-        { jwtSecurityScheme, Array.Empty<string>() }
+        [new OpenApiSecuritySchemeReference(JwtBearerDefaults.AuthenticationScheme, document)] = []
     });
 });
 
@@ -157,3 +151,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Torna a classe gerada pelos top-level statements visível ao projeto de testes
+// (WebApplicationFactory<Program> em KoinoniaHub.API.Tests).
+public partial class Program { }

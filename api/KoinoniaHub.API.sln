@@ -5,6 +5,8 @@ VisualStudioVersion = 17.13.35931.197 d17.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KoinoniaHub.API", "KoinoniaHub.API\KoinoniaHub.API.csproj", "{C60EF350-AD15-48AF-BA5C-5676649AB766}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KoinoniaHub.API.Tests", "KoinoniaHub.API.Tests\KoinoniaHub.API.Tests.csproj", "{7D1B7C42-6E7A-4F4B-9C6C-3E2C1A0B5E10}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{C60EF350-AD15-48AF-BA5C-5676649AB766}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C60EF350-AD15-48AF-BA5C-5676649AB766}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C60EF350-AD15-48AF-BA5C-5676649AB766}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D1B7C42-6E7A-4F4B-9C6C-3E2C1A0B5E10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D1B7C42-6E7A-4F4B-9C6C-3E2C1A0B5E10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D1B7C42-6E7A-4F4B-9C6C-3E2C1A0B5E10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D1B7C42-6E7A-4F4B-9C6C-3E2C1A0B5E10}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

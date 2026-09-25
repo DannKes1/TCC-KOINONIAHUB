@@ -22,13 +22,13 @@ O tratamento de dados observa a LGPD (Lei nº 13.709/2018), com atenção especi
 
 | Camada            | Stack                                                                                                                     |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Backend (`/api`)  | ASP.NET Core 8 (.NET 8), Entity Framework Core, PostgreSQL, autenticação JWT em cookie httpOnly, multi-tenancy por igreja |
+| Backend (`/api`)  | ASP.NET Core 10 (.NET 10 LTS), Entity Framework Core 10, PostgreSQL, autenticação JWT em cookie httpOnly, multi-tenancy por igreja |
 | Frontend (`/web`) | Vue 3, TypeScript, PrimeVue, Pinia, Vite                                                                                  |
 
 ## Estrutura do repositório
 
 ```
-api/   → KoinoniaHub.API (ASP.NET Core 8)
+api/   → KoinoniaHub.API (ASP.NET Core 10) e KoinoniaHub.API.Tests (xUnit)
 web/   → koinoniahub.web (Vue 3 + TypeScript)
 ```
 
@@ -37,7 +37,7 @@ web/   → koinoniahub.web (Vue 3 + TypeScript)
 ### Backend
 
 ```bash
-cd cd api/KoinoniaHub.API
+cd api/KoinoniaHub.API
 dotnet user-secrets init
 dotnet user-secrets set "ConnectionStrings:Postgres" "Host=localhost;Database=koinoniahub;Username=postgres;Password=SUA_SENHA"
 dotnet user-secrets set "Jwt:ChaveSecreta" "uma-chave-longa-e-aleatoria-com-mais-de-32-caracteres"
