@@ -83,3 +83,78 @@ Não relacionada ao .NET 10; ocorreria igualmente no .NET 8.
 | 3 testes de fumaça verdes | OK |
 | Migration existente aplica limpo no PostgreSQL | OK (após correção do histórico) |
 | API sobe, login e listagem funcionam pelo front | OK |
+
+---
+
+## Etapa 1.1 — Situação da aula: modelo + migration (25/09/2026)
+
+Pré-condição atendida: Etapa 0 compilando e `Etapa0_FumacaTests` verde.
+
+### Arquivos aplicados
+
+9 arquivos copiados para os caminhos do repositório (entidade `Aula`, constantes `SituacaoAula`, `AulaRespostaDto`, `AulaServico`, `ChamadaServico`, `ContextoDeTeste`, `Etapa1_SituacaoAulaTests`, `dtos.ts`, `aulasServico.ts`). Nenhuma outra referência a `Consolidada` restava na API.
+
+### Migration `20260925041839_SituacaoAula`
+
+```
+PS> dotnet ef migrations add SituacaoAula
+An operation was scaffolded that may result in the loss of data. Please review the migration for accuracy.
+Done.
+```
+
+Contagem antes do `database update`:
+
+```sql
+SELECT COUNT(*) FILTER (WHERE "Consolidada") AS consolidadas, COUNT(*) AS total FROM "Aulas";
+-- consolidadas = 10 | total = 18
+```
+
+**Ocorrência registrada.** O `dotnet ef database update` foi executado antes de o corpo da migration ser substituído pelo entregue, de modo que rodou a versão gerada automaticamente:
+
+```
+ALTER TABLE "Aulas" DROP COLUMN "Consolidada";
+ALTER TABLE "Aulas" ADD "Situacao" character varying(20) NOT NULL DEFAULT '';
+```
+
+Resultado: as 18 aulas ficaram com `Situacao = ''` e a informação de quais estavam consolidadas foi perdida — exatamente o risco que o corpo entregue (criar → converter → apagar) evita. Como a base é de teste, a correção foi feita por SQL:
+
+```sql
+UPDATE "Aulas" SET "Situacao" = 'EmAberto' WHERE "Situacao" = '';
+ALTER TABLE "Aulas" ALTER COLUMN "Situacao" SET DEFAULT 'EmAberto';
+UPDATE "Aulas" SET "Situacao" = 'Consolidada'
+WHERE "Id" NOT IN (SELECT "Id" FROM "Aulas" ORDER BY "Data" DESC LIMIT 2);
+```
+
+Contagem depois: `Consolidada = 16`, `EmAberto = 2` (total 18). O arquivo `Migrations/20260925041839_SituacaoAula.cs` foi então substituído pelo corpo entregue (com o `UPDATE` de conversão), que é o versionado no repositório e o que rodará em qualquer outro banco. Lição para as próximas migrations editadas à mão: colar → salvar → só então `database update`.
+
+### Build e testes (`api/`)
+
+```
+PS> dotnet build
+  KoinoniaHub.API net10.0 êxito
+  KoinoniaHub.API.Tests net10.0 êxito
+Construir êxito em 3,9s   (0 avisos, 0 erros)
+
+PS> dotnet test
+Resumo do teste: total: 7; falhou: 0; bem-sucedido: 7; ignorado: 0; duração: 3,1s
+```
+
+Casos novos: `Etapa1_SituacaoAulaTests` (4). O esquema gerado pelo SQLite nos testes já traz `"Situacao" TEXT NOT NULL` em `Aulas`.
+
+### Front (`web/`)
+
+```
+PS> npx vue-tsc -b
+(sem saída — sem erros)
+```
+
+### Teste manual (RF31 / RNF 32.2)
+
+1. Aulas da turma: consolidadas marcadas; as 2 em aberto exibidas como "Em aberto". Lançamento de chamada e consolidação de uma aula em aberto funcionaram.
+2. Aula consolidada na tela de chamada: modo somente leitura ("Esta aula está consolidada. A chamada está em modo somente leitura.").
+3. Pela API (Swagger, autenticado via Authorize): `POST /api/aulas/16/presencas` em aula consolidada → **400** `{"mensagem": "Somente aulas Em aberto permitem lançar ou alterar a chamada."}`.
+4. `GET /api/aulas/16` → `"situacao": "Consolidada"`, `"pendenteFechamento": false`.
+
+### Observação de ambiente
+
+O Visual Studio 2022 17.13 recusa compilar `net10.0` (NETSDK1233 como erro; a partir do 17.14 é aviso). Build, testes e execução da API foram feitos pela CLI (`dotnet build/test/run`). Atualização do VS 2022 ou instalação do VS 2026 pendente.
