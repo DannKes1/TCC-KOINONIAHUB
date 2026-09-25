@@ -1,12 +1,30 @@
 import { clienteHttp } from "./clienteHttp";
-import type { AulaVM, AulaCriarDTO } from "../modelos/dtos";
+import type { AulaVM, AulaCriarDTO, SituacaoAula } from "../modelos/dtos";
+
+const SITUACOES_AULA: SituacaoAula[] = [
+  "EmAberto",
+  "Consolidada",
+  "NaoRealizada",
+];
+
+function normalizarSituacao(valor: unknown): SituacaoAula {
+  const texto = String(valor ?? "");
+  return (SITUACOES_AULA as string[]).includes(texto)
+    ? (texto as SituacaoAula)
+    : "EmAberto";
+}
 
 function normalizarAula(bruto: any): AulaVM {
+  const situacao = normalizarSituacao(bruto?.Situacao ?? bruto?.situacao);
   return {
     id: bruto?.Id ?? bruto?.id ?? 0,
     data: String(bruto?.Data ?? bruto?.data ?? ""),
     tema: bruto?.Tema ?? bruto?.tema ?? null,
-    consolidada: Boolean(bruto?.Consolidada ?? bruto?.consolidada ?? false),
+    situacao,
+    pendenteFechamento: Boolean(
+      bruto?.PendenteFechamento ?? bruto?.pendenteFechamento ?? false,
+    ),
+    consolidada: situacao === "Consolidada",
     quantidadeVisitantes: Number(
       bruto?.QuantidadeVisitantes ?? bruto?.quantidadeVisitantes ?? 0,
     ),

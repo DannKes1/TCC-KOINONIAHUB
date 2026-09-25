@@ -219,10 +219,18 @@ export type MateriaCriarDTO = {
 
 export type MateriaAtualizarDTO = MateriaCriarDTO;
 
+export type SituacaoAula = "EmAberto" | "Consolidada" | "NaoRealizada";
+
 export type AulaVM = {
   id: number;
   data: string;
   tema: string | null;
+  // Situação da aula (RF31): EmAberto | Consolidada | NaoRealizada.
+  situacao: SituacaoAula;
+  // Em aberto com data já ocorrida (RNF 31.3), calculado pela API.
+  pendenteFechamento: boolean;
+  // Derivado de situacao === "Consolidada". Mantido temporariamente para as
+  // telas atuais; será substituído pelas tags de situação na Etapa 3.
   consolidada: boolean;
   quantidadeVisitantes: number;
   materiaId: number;
