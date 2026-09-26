@@ -17,6 +17,7 @@ namespace KoinoniaHub.API.Infraestrutura.Dados
         public DbSet<Atribuicao> Atribuicoes => Set<Atribuicao>();
         public DbSet<AlunoDepartamento> AlunosDepartamentos => Set<AlunoDepartamento>();
         public DbSet<Parentesco> Parentescos => Set<Parentesco>();
+        public DbSet<AceiteTermo> AceitesTermo => Set<AceiteTermo>();
 
         public override int SaveChanges()
         {
@@ -48,7 +49,7 @@ namespace KoinoniaHub.API.Infraestrutura.Dados
         {
             base.OnModelCreating(modelBuilder);
 
-            
+
             modelBuilder.Entity<Parentesco>()
                 .HasOne(p => p.Pessoa)
                 .WithMany(p => p.Parentescos)
@@ -61,33 +62,46 @@ namespace KoinoniaHub.API.Infraestrutura.Dados
                 .HasForeignKey(p => p.ParenteId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            
+
             modelBuilder.Entity<Presenca>()
                 .HasOne(p => p.Aula)
                 .WithMany(a => a.Presencas)
                 .HasForeignKey(p => p.AulaId);
 
-            
+
             modelBuilder.Entity<AlunoDepartamento>()
                 .HasIndex(m => new { m.DepartamentoId, m.PessoaId })
                 .IsUnique()
                 .HasFilter("\"Ativo\" = true");
 
-            
+
             modelBuilder.Entity<Presenca>()
                 .HasOne(p => p.AlunoDepartamento)
                 .WithMany(m => m.Presencas)
                 .HasForeignKey(p => p.AlunoDepartamentoId);
 
-            
+
             modelBuilder.Entity<Presenca>()
                 .HasIndex(p => new { p.AulaId, p.AlunoDepartamentoId })
                 .IsUnique();
 
-            
+
             modelBuilder.Entity<Usuario>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
+
+
+            modelBuilder.Entity<AceiteTermo>()
+                .HasOne(a => a.Usuario)
+                .WithMany()
+                .HasForeignKey(a => a.UsuarioId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<AceiteTermo>()
+                .HasOne(a => a.Igreja)
+                .WithMany()
+                .HasForeignKey(a => a.IgrejaId)
+                .OnDelete(DeleteBehavior.Restrict);
 
 
         }
