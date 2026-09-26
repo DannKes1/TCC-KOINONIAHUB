@@ -77,12 +77,12 @@ Não relacionada ao .NET 10; ocorreria igualmente no .NET 8.
 
 ### Definição de pronto da Etapa 0
 
-| Critério | Resultado |
-|---|---|
-| Build da solution (API + testes) sem erros | OK |
-| 3 testes de fumaça verdes | OK |
-| Migration existente aplica limpo no PostgreSQL | OK (após correção do histórico) |
-| API sobe, login e listagem funcionam pelo front | OK |
+| Critério                                        | Resultado                       |
+| ----------------------------------------------- | ------------------------------- |
+| Build da solution (API + testes) sem erros      | OK                              |
+| 3 testes de fumaça verdes                       | OK                              |
+| Migration existente aplica limpo no PostgreSQL  | OK (após correção do histórico) |
+| API sobe, login e listagem funcionam pelo front | OK                              |
 
 ---
 
@@ -158,7 +158,6 @@ PS> npx vue-tsc -b
 ### Observação de ambiente
 
 O Visual Studio 2022 17.13 recusa compilar `net10.0` (NETSDK1233 como erro; a partir do 17.14 é aviso). Build, testes e execução da API foram feitos pela CLI (`dotnet build/test/run`). Atualização do VS 2022 ou instalação do VS 2026 pendente.
-
 
 ---
 
@@ -239,3 +238,69 @@ Evidência da Etapa 1 em banco limpo (migrations do zero + preservação das
 aulas consolidadas pela `SituacaoAula`) será produzida ao fim da Etapa 1.3,
 conforme seção 5 do LEIA-ME da 1.2.
 
+---
+
+## Etapa 1.3 — Pessoa enxuta · Bloco 1: API (26/09/2026)
+
+Pré-condição atendida: Etapa 1.2 aplicada e os 10 testes verdes.
+
+### Arquivos aplicados
+
+13 arquivos copiados para os caminhos do repositório: entidade `Pessoa` (saem
+`CPF`, `Telefone`, `Categoria`, `DataBatismo`, `DataMembresia`, `FotoUrl`,
+`Observacoes`), DTOs de pessoa (criar/atualizar/resposta),
+`MeusDadosAtualizarRequisicaoDto` (sai `Telefone`), `ParentescoRespostaDto`
+(sai `ParenteTelefone`), `PessoaServico`, `PessoaImportacaoServico` (parser no
+modelo do Plano 6.4; `EstadoCivil` passa a ser importado; mensagem da RNF 41.3;
+`Situacao` deixa de ser lida — importados nascem Ativos), `MatriculaServico`,
+`ParentescoServico`, `AuthServico`, e os testes novos `Etapa1_PessoaEnxutaTests`
+e `RF41_ImportacaoTests`. Controllers, interfaces e rotas intactos.
+Compilação verificada ANTES do `migrations add` (lição da 1.2): 0 erros, 0 avisos.
+
+### Migration `20260926203116_PessoaEnxuta`
+
+`Up()` conferido antes do `database update`: somente os sete `DropColumn` em
+`Pessoas`; `Down()` com os sete `AddColumn`. O aviso "may result in the loss
+of data" é esperado — a perda é intencional (RNF 7.5, princípio da necessidade).
+
+```
+PS> dotnet ef database update
+Applying migration '20260926203116_PessoaEnxuta'.
+ALTER TABLE "Pessoas" DROP COLUMN "CPF";
+ALTER TABLE "Pessoas" DROP COLUMN "Categoria";
+ALTER TABLE "Pessoas" DROP COLUMN "DataBatismo";
+ALTER TABLE "Pessoas" DROP COLUMN "DataMembresia";
+ALTER TABLE "Pessoas" DROP COLUMN "FotoUrl";
+ALTER TABLE "Pessoas" DROP COLUMN "Observacoes";
+ALTER TABLE "Pessoas" DROP COLUMN "Telefone";
+Done.
+```
+
+A contagem prévia por `Categoria` (sugerida no guia como opcional) não foi
+registrada. Base de desenvolvimento; sem impacto para as evidências.
+
+### Build e testes (`api/`)
+
+```
+PS> dotnet test
+Resumo do teste: total: 17; falhou: 0; bem-sucedido: 17; ignorado: 0; duração: 3,0s
+```
+
+Casos novos: `Etapa1_PessoaEnxutaTests` (2) — o modelo EF de `Pessoa` tem
+exatamente as 17 colunas do DER; pessoa só com nome persiste (RNF 7.5) — e
+`RF41_ImportacaoTests` (5) — colunas do modelo preenchem os campos; coluna fora
+do modelo é ignorada (inclusive `Situacao`: importado nasce Ativo); e-mail
+repetido ignora; nome repetido sem e-mail ignora e sinaliza (RNF 41.3, mensagem
+exata do Plano 6.4); mais de 1.000 linhas lança erro (RNF 41.4). O esquema do
+SQLite nos testes já cria `Pessoas` com as 17 colunas.
+
+### Swagger (autenticado como Admin)
+
+1. `GET /api/pessoas` → 200, itens **sem** `cpf`, `categoria`, `telefone`,
+   `dataBatismo`, `dataMembresia`, `fotoUrl`, `observacoes`.
+2. `POST /api/pessoas` ("Teste Etapa 1.3") → **201**, `Location` `/api/pessoas/70`.
+3. `GET /api/pessoas/5/parentescos` → 200, itens com `parenteCelular`, sem
+   `parenteTelefone`.
+
+Front não testado nesta entrega: as telas de Pessoas, Meus Dados, Matrículas e
+Parentescos quebram por design até o Bloco 2 (front da Etapa 1.3).
