@@ -39,8 +39,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 Nome = dto.NomeAdmin,
                 Email = email,
                 IgrejaId = igrejaCriada.Id,
-                Situacao = "Ativo",
-                Categoria = "Membro"
+                Situacao = "Ativo"
             };
             _db.Pessoas.Add(pessoaAdmin);
             await _db.SaveChangesAsync();

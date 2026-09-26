@@ -22,7 +22,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
         public async Task<PessoaRespostaDto> CriarAsync(int igrejaId, PessoaCriarRequisicaoDto dto)
         {
-            
+
             if (!string.IsNullOrWhiteSpace(dto.Email))
             {
                 var email = dto.Email.Trim().ToLowerInvariant();
@@ -35,11 +35,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             {
                 IgrejaId = igrejaId,
                 Nome = dto.Nome.Trim(),
-                CPF = dto.CPF,
                 DataNascimento = dto.DataNascimento,
                 Sexo = dto.Sexo,
                 EstadoCivil = dto.EstadoCivil,
-                Telefone = dto.Telefone,
                 Celular = dto.Celular,
                 Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim().ToLowerInvariant(),
                 Endereco = dto.Endereco,
@@ -48,14 +46,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 Estado = dto.Estado,
                 CEP = dto.CEP,
                 Situacao = dto.Situacao,
-                Categoria = dto.Categoria,
                 DataInativacao = string.Equals(dto.Situacao, "Inativo", StringComparison.OrdinalIgnoreCase)
                     ? DateTime.UtcNow
-                    : null,
-                DataBatismo = dto.DataBatismo,
-                DataMembresia = dto.DataMembresia,
-                FotoUrl = dto.FotoUrl,
-                Observacoes = dto.Observacoes
+                    : null
             };
 
             var criada = await _repositorio.CriarAsync(pessoa);
@@ -79,7 +72,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             var pessoa = await _db.Pessoas.FirstOrDefaultAsync(p => p.IgrejaId == igrejaId && p.Id == pessoaId);
             if (pessoa is null) return false;
 
-           
+
             var estavaInativa = string.Equals(pessoa.Situacao, "Inativo", StringComparison.OrdinalIgnoreCase);
 
             if (!string.IsNullOrWhiteSpace(dto.Email))
@@ -96,11 +89,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             }
 
             pessoa.Nome = dto.Nome.Trim();
-            pessoa.CPF = dto.CPF;
             pessoa.DataNascimento = dto.DataNascimento;
             pessoa.Sexo = dto.Sexo;
             pessoa.EstadoCivil = dto.EstadoCivil;
-            pessoa.Telefone = dto.Telefone;
             pessoa.Celular = dto.Celular;
             pessoa.Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim().ToLowerInvariant();
             pessoa.Endereco = dto.Endereco;
@@ -109,17 +100,12 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             pessoa.Estado = dto.Estado;
             pessoa.CEP = dto.CEP;
             pessoa.Situacao = dto.Situacao;
-            pessoa.Categoria = dto.Categoria;
-            pessoa.DataBatismo = dto.DataBatismo;
-            pessoa.DataMembresia = dto.DataMembresia;
-            pessoa.FotoUrl = dto.FotoUrl;
-            pessoa.Observacoes = dto.Observacoes;
 
             var ficaInativa = string.Equals(pessoa.Situacao, "Inativo", StringComparison.OrdinalIgnoreCase);
 
             if (!estavaInativa && ficaInativa)
             {
-         
+
                 var agora = DateTime.UtcNow;
                 pessoa.DataInativacao = agora;
 
@@ -130,7 +116,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 foreach (var matricula in matriculasAtivas)
                 {
                     matricula.Ativo = false;
-                    matricula.DataSaida ??= agora; 
+                    matricula.DataSaida ??= agora;
                 }
 
                 var atribuicoesAtivas = await _db.Atribuicoes
@@ -140,12 +126,12 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 foreach (var atribuicao in atribuicoesAtivas)
                 {
                     atribuicao.Ativo = false;
-                    atribuicao.DataFim ??= agora; 
+                    atribuicao.DataFim ??= agora;
                 }
             }
             else if (estavaInativa && !ficaInativa)
             {
-            
+
                 pessoa.DataInativacao = null;
             }
 
@@ -159,14 +145,11 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             {
                 Id = p.Id,
                 Nome = p.Nome,
-                CPF = p.CPF,
                 DataNascimento = p.DataNascimento,
                 Sexo = p.Sexo,
                 EstadoCivil = p.EstadoCivil,
                 Situacao = p.Situacao,
-                Categoria = p.Categoria,
                 DataInativacao = p.DataInativacao,
-                Telefone = p.Telefone,
                 Celular = p.Celular,
                 Email = p.Email,
                 Endereco = p.Endereco,
@@ -174,10 +157,6 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 Cidade = p.Cidade,
                 Estado = p.Estado,
                 CEP = p.CEP,
-                DataBatismo = p.DataBatismo,
-                DataMembresia = p.DataMembresia,
-                FotoUrl = p.FotoUrl,
-                Observacoes = p.Observacoes,
                 CriadoEm = p.CriadoEm,
                 AtualizadoEm = p.AtualizadoEm
             };
@@ -221,7 +200,6 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                     throw new InvalidOperationException("Já existe uma pessoa com este e-mail nesta igreja.");
             }
 
-            pessoa.Telefone = dto.Telefone;
             pessoa.Celular = dto.Celular;
             pessoa.Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim().ToLowerInvariant();
             pessoa.Endereco = dto.Endereco;
@@ -246,7 +224,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             var pessoaId = usuario.PessoaId.Value;
             var resultado = new Dictionary<int, MinhaTurmaRespostaDto>();
 
-         
+
             var matriculas = await _db.AlunosDepartamentos.AsNoTracking()
                 .Where(m => m.PessoaId == pessoaId && m.Ativo)
                 .Include(m => m.Departamento)
@@ -266,7 +244,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 };
             }
 
-            
+
             var atribuicoes = await _db.Atribuicoes.AsNoTracking()
                 .Where(a => a.PessoaId == pessoaId && a.Ativo)
                 .Include(a => a.Departamento)
@@ -276,7 +254,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             {
                 if (a.Departamento is null || a.Departamento.IgrejaId != igrejaId) continue;
 
-               
+
                 resultado[a.DepartamentoId] = new MinhaTurmaRespostaDto
                 {
                     DepartamentoId = a.DepartamentoId,
@@ -287,7 +265,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 };
             }
 
-       
+
             var depIds = resultado.Keys.ToList();
             if (depIds.Count > 0)
             {

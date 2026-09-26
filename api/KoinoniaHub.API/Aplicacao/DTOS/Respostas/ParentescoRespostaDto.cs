@@ -7,7 +7,6 @@
         public int ParenteId { get; set; }
         public string TipoRelacionamento { get; set; } = string.Empty;
         public string ParenteNome { get; set; } = string.Empty;
-        public string? ParenteTelefone { get; set; }
         public string? ParenteCelular { get; set; }
     }
 }

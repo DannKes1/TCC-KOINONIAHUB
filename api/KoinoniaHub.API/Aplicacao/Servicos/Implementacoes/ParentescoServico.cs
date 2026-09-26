@@ -39,7 +39,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             var tipo = dto.TipoRelacionamento.Trim();
 
-            
+
             var existe = await _db.Parentescos.AnyAsync(p =>
                 p.PessoaId == pessoaId &&
                 p.ParenteId == dto.ParenteId &&
@@ -65,7 +65,6 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 ParenteId = dto.ParenteId,
                 TipoRelacionamento = tipo,
                 ParenteNome = parente.Nome,
-                ParenteTelefone = parente.Telefone,
                 ParenteCelular = parente.Celular
             };
         }
@@ -81,7 +80,6 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 ParenteId = p.ParenteId,
                 TipoRelacionamento = p.TipoRelacionamento,
                 ParenteNome = p.Parente?.Nome ?? string.Empty,
-                ParenteTelefone = p.Parente?.Telefone,
                 ParenteCelular = p.Parente?.Celular
             }).ToList();
         }
