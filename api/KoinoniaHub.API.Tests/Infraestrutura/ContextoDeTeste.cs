@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KoinoniaHub.API.Tests.Infraestrutura
 {
-    
+
     public sealed class ContextoDeTeste : IDisposable
     {
         private readonly SqliteConnection _conexao;
@@ -13,7 +13,7 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
 
         public ContextoDeTeste()
         {
-            _conexao = new SqliteConnection("DataSource=:memory:");
+            _conexao = new SqliteConnection("DataSource=:memory:;Foreign Keys=True");
             _conexao.Open();
 
             var opcoes = new DbContextOptionsBuilder<KoinoniaHubDbContext>()
@@ -24,7 +24,7 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
             Db.Database.EnsureCreated();
         }
 
-     
+
         public KoinoniaHubDbContext NovoContexto()
         {
             var opcoes = new DbContextOptionsBuilder<KoinoniaHubDbContext>()
