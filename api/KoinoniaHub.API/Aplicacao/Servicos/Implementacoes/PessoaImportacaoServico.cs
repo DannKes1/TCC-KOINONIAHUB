@@ -9,13 +9,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 {
-    // Importa pessoas (membros/visitantes) a partir de um arquivo CSV,
-    // por exemplo o rol de membros mantido pela secretaria da igreja.
+    // Importa pessoas do rol da igreja a partir de um arquivo CSV (RF41).
+    // Modelo: Nome;Sexo;DataNascimento;EstadoCivil;Email;Celular;Endereco;Bairro;Cidade;Estado;CEP.
     // Regras:
-    //  - Coluna "Nome" é obrigatória; as demais são opcionais.
+    //  - Coluna "Nome" é obrigatória; as demais são opcionais (RNF 41.2).
+    //  - Colunas fora do modelo são ignoradas (RF41).
     //  - Separador ";" ou "," ou TAB (detectado automaticamente).
-    //  - Linhas duplicadas (mesmo e-mail, ou mesmo nome sem e-mail) são
-    //    ignoradas, permitindo reimportar o arquivo com segurança.
+    //  - E-mail repetido: linha ignorada. Nome repetido sem e-mail: linha
+    //    ignorada e sinalizada para conferência (RNF 41.3).
+    //  - Limite de 1.000 linhas de dados (RNF 41.4).
     public class PessoaImportacaoServico : IPessoaImportacaoServico
     {
         private const int LimiteLinhas = 1000;
@@ -53,20 +55,16 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (idxNome < 0)
                 throw new InvalidOperationException("O arquivo precisa ter uma coluna 'Nome'. Baixe o modelo CSV para conferir o formato.");
 
+            var idxSexo = Coluna("sexo");
+            var idxNascimento = Coluna("datanascimento", "datadenascimento", "nascimento");
+            var idxEstadoCivil = Coluna("estadocivil");
             var idxEmail = Coluna("email");
             var idxCelular = Coluna("celular", "whatsapp");
-            var idxTelefone = Coluna("telefone", "fone");
-            var idxNascimento = Coluna("datanascimento", "datadenascimento", "nascimento");
-            var idxSexo = Coluna("sexo");
-            var idxCategoria = Coluna("categoria");
-            var idxSituacao = Coluna("situacao");
+            var idxEndereco = Coluna("endereco");
+            var idxBairro = Coluna("bairro");
             var idxCidade = Coluna("cidade");
             var idxEstado = Coluna("estado", "uf");
-            var idxBairro = Coluna("bairro");
-            var idxEndereco = Coluna("endereco");
             var idxCep = Coluna("cep");
-            var idxCpf = Coluna("cpf");
-            var idxObs = Coluna("observacoes", "observacao", "obs");
 
             if (linhas.Count - 1 > LimiteLinhas)
                 throw new InvalidOperationException($"O arquivo tem {linhas.Count - 1} linhas de dados. O limite por importação é {LimiteLinhas}.");
@@ -146,9 +144,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 }
                 else if (nomesConhecidos.Contains(nome.ToLowerInvariant()))
                 {
-                    // Sem e-mail para diferenciar: trata como possível duplicado.
                     item.Status = "Ignorado";
-                    item.Mensagem = "Já existe uma pessoa com este nome (linha ignorada).";
+                    item.Mensagem = "Já existe uma pessoa com este nome; linha ignorada para conferência. Se for outra pessoa, cadastre manualmente.";
                     continue;
                 }
 
@@ -165,28 +162,21 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                         avisos.Add("data de nascimento ignorada (use dd/mm/aaaa)");
                 }
 
-                var categoria = NormalizarOpcao(Valor(idxCategoria), "Membro", "Visitante") ?? "Membro";
-                var situacao = NormalizarOpcao(Valor(idxSituacao), "Ativo", "Inativo") ?? "Ativo";
-
                 var pessoa = new Pessoa
                 {
                     IgrejaId = igrejaId,
                     Nome = nome,
+                    Sexo = Limitar(Valor(idxSexo), 20),
+                    DataNascimento = dataNascimento,
+                    EstadoCivil = Limitar(Valor(idxEstadoCivil), 50),
                     Email = string.IsNullOrWhiteSpace(email) ? null : email,
                     Celular = Limitar(Valor(idxCelular), 20),
-                    Telefone = Limitar(Valor(idxTelefone), 20),
-                    DataNascimento = dataNascimento,
-                    Sexo = Limitar(Valor(idxSexo), 20),
-                    Categoria = categoria,
-                    Situacao = situacao,
-                    DataInativacao = situacao == "Inativo" ? DateTime.UtcNow : null,
+                    Endereco = Limitar(Valor(idxEndereco), 500),
+                    Bairro = Limitar(Valor(idxBairro), 100),
                     Cidade = Limitar(Valor(idxCidade), 100),
                     Estado = Limitar(Valor(idxEstado), 2),
-                    Bairro = Limitar(Valor(idxBairro), 100),
-                    Endereco = Limitar(Valor(idxEndereco), 500),
                     CEP = Limitar(Valor(idxCep), 10),
-                    CPF = Limitar(Valor(idxCpf), 14),
-                    Observacoes = Limitar(Valor(idxObs), 1000)
+                    Situacao = "Ativo"
                 };
 
                 novasPessoas.Add(pessoa);
@@ -232,13 +222,6 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (string.IsNullOrWhiteSpace(valor)) return null;
             valor = valor.Trim();
             return valor.Length <= maximo ? valor : valor[..maximo];
-        }
-
-        private static string? NormalizarOpcao(string valor, params string[] opcoes)
-        {
-            if (string.IsNullOrWhiteSpace(valor)) return null;
-            var normalizado = NormalizarChave(valor);
-            return opcoes.FirstOrDefault(o => NormalizarChave(o) == normalizado);
         }
 
         private static DateTime? ConverterData(string valor)
