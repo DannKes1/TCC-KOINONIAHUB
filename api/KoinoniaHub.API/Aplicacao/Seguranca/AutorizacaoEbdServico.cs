@@ -1,10 +1,13 @@
-﻿using KoinoniaHub.API.Infraestrutura.Dados;
+﻿using KoinoniaHub.API.Dominio.Entidades;
+using KoinoniaHub.API.Infraestrutura.Dados;
 using Microsoft.EntityFrameworkCore;
 
 namespace KoinoniaHub.API.Aplicacao.Seguranca
 {
     public class AutorizacaoEbdServico : IAutorizacaoEbdServico
     {
+        private static readonly string[] FuncoesDeAtribuicao = { "Professor", "Auxiliar" };
+
         private readonly KoinoniaHubDbContext _db;
 
         public AutorizacaoEbdServico(KoinoniaHubDbContext db)
@@ -12,47 +15,25 @@ namespace KoinoniaHub.API.Aplicacao.Seguranca
             _db = db;
         }
 
-        private static bool EhPerfilAdministrativo(string perfil)
-        {
-            var perfisAdministrativos = new[] { "Admin", "Pastor", "Superintendente" };
-            return perfisAdministrativos.Contains(perfil, StringComparer.OrdinalIgnoreCase);
-        }
-
         public async Task GarantirAcessoDepartamentoAsync(int igrejaId, int usuarioId, string perfil, int departamentoId)
         {
-            // Perfis administrativos (Admin, Pastor e Superintendente) operam
-           
-            if (EhPerfilAdministrativo(perfil))
+            if (Perfis.EhAdministrativo(perfil))
                 return;
 
-            // Departamento precisa pertencer à igreja
             var depExiste = await _db.Departamentos.AsNoTracking()
                 .AnyAsync(d => d.IgrejaId == igrejaId && d.Id == departamentoId);
 
             if (!depExiste)
                 throw new InvalidOperationException("Departamento não encontrado para esta igreja.");
 
-            // Pegar PessoaId do usuário
-            var usuario = await _db.Usuarios.AsNoTracking()
-                .FirstOrDefaultAsync(u => u.IgrejaId == igrejaId && u.Id == usuarioId && u.Ativo);
-
-            if (usuario is null)
-                throw new InvalidOperationException("Usuário não encontrado ou inativo.");
-
-            if (!usuario.PessoaId.HasValue)
-                throw new InvalidOperationException("Seu usuário não está vinculado a uma Pessoa (PessoaId).");
-
-            var pessoaId = usuario.PessoaId.Value;
-
-            // Exigir atribuição ativa na turma
-            var funcoesPermitidas = new[] { "Professor", "Auxiliar" };
+            var pessoaId = await ObterPessoaIdDoUsuarioAsync(igrejaId, usuarioId);
 
             var possuiAtribuicao = await _db.Atribuicoes.AsNoTracking()
                 .AnyAsync(a =>
                     a.Ativo &&
                     a.DepartamentoId == departamentoId &&
                     a.PessoaId == pessoaId &&
-                    funcoesPermitidas.Contains(a.Funcao));
+                    FuncoesDeAtribuicao.Contains(a.Funcao));
 
             if (!possuiAtribuicao)
                 throw new UnauthorizedAccessException("Você não tem permissão para operar esta turma (sem atribuição ativa).");
@@ -60,7 +41,7 @@ namespace KoinoniaHub.API.Aplicacao.Seguranca
 
         public async Task GarantirAcessoMateriaAsync(int igrejaId, int usuarioId, string perfil, int materiaId)
         {
-            if (EhPerfilAdministrativo(perfil))
+            if (Perfis.EhAdministrativo(perfil))
                 return;
 
             var materia = await _db.Materias.AsNoTracking()
@@ -75,7 +56,7 @@ namespace KoinoniaHub.API.Aplicacao.Seguranca
 
         public async Task GarantirAcessoAulaAsync(int igrejaId, int usuarioId, string perfil, int aulaId)
         {
-            if (EhPerfilAdministrativo(perfil))
+            if (Perfis.EhAdministrativo(perfil))
                 return;
 
             var aula = await _db.Aulas.AsNoTracking()
@@ -87,6 +68,77 @@ namespace KoinoniaHub.API.Aplicacao.Seguranca
                 throw new InvalidOperationException("Aula não encontrada para esta igreja.");
 
             await GarantirAcessoDepartamentoAsync(igrejaId, usuarioId, perfil, aula.Materia.DepartamentoId);
+        }
+
+        public async Task GarantirAcessoPessoaAsync(int igrejaId, int usuarioId, string perfil, int pessoaId)
+        {
+            if (Perfis.EhAdministrativo(perfil))
+                return;
+
+            var usuario = await ObterUsuarioAtivoAsync(igrejaId, usuarioId);
+
+            if (Perfis.EhUsuarioComum(perfil))
+            {
+                if (usuario.PessoaId != pessoaId)
+                    throw new UnauthorizedAccessException("Você só pode acessar o seu próprio registro.");
+
+                return;
+            }
+
+            if (!usuario.PessoaId.HasValue)
+                throw new InvalidOperationException("Seu usuário não está vinculado a uma Pessoa (PessoaId).");
+
+            var departamentos = await ListarDepartamentosDaPessoaAsync(igrejaId, usuario.PessoaId.Value);
+
+            var permitido = departamentos.Count > 0 && await _db.AlunosDepartamentos.AsNoTracking()
+                .AnyAsync(m =>
+                    m.Ativo &&
+                    m.PessoaId == pessoaId &&
+                    m.Departamento.IgrejaId == igrejaId &&
+                    departamentos.Contains(m.DepartamentoId));
+
+            if (!permitido)
+                throw new UnauthorizedAccessException("Você só pode consultar alunos das turmas em que possui atribuição ativa.");
+        }
+
+        public async Task<List<int>> ListarDepartamentosComAtribuicaoAtivaAsync(int igrejaId, int usuarioId)
+        {
+            var pessoaId = await ObterPessoaIdDoUsuarioAsync(igrejaId, usuarioId);
+            return await ListarDepartamentosDaPessoaAsync(igrejaId, pessoaId);
+        }
+
+        private async Task<List<int>> ListarDepartamentosDaPessoaAsync(int igrejaId, int pessoaId)
+        {
+            return await _db.Atribuicoes.AsNoTracking()
+                .Where(a =>
+                    a.Ativo &&
+                    a.PessoaId == pessoaId &&
+                    a.Departamento.IgrejaId == igrejaId &&
+                    FuncoesDeAtribuicao.Contains(a.Funcao))
+                .Select(a => a.DepartamentoId)
+                .Distinct()
+                .ToListAsync();
+        }
+
+        private async Task<Usuario> ObterUsuarioAtivoAsync(int igrejaId, int usuarioId)
+        {
+            var usuario = await _db.Usuarios.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.IgrejaId == igrejaId && u.Id == usuarioId && u.Ativo);
+
+            if (usuario is null)
+                throw new InvalidOperationException("Usuário não encontrado ou inativo.");
+
+            return usuario;
+        }
+
+        private async Task<int> ObterPessoaIdDoUsuarioAsync(int igrejaId, int usuarioId)
+        {
+            var usuario = await ObterUsuarioAtivoAsync(igrejaId, usuarioId);
+
+            if (!usuario.PessoaId.HasValue)
+                throw new InvalidOperationException("Seu usuário não está vinculado a uma Pessoa (PessoaId).");
+
+            return usuario.PessoaId.Value;
         }
     }
 }
