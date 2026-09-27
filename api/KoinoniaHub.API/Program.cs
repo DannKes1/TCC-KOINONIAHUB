@@ -145,6 +145,31 @@ app.UseHttpsRedirection();
 // CORS antes de auth
 app.UseCors("CorsVueDev");
 
+// RNF 2.6: escrita só de origens autorizadas (defesa em profundidade contra CSRF).
+// Com SameSite=None, POST sem corpo JSON (convite, logout) e multipart (importação CSV)
+// são requisições simples e não passam pelo preflight do CORS; aqui o servidor confere
+// o Origin, que o navegador preenche em toda requisição de escrita e scripts não alteram.
+// Requisições de escrita sem Origin também são recusadas (OWASP, CSRF Prevention Cheat Sheet).
+app.Use(async (contexto, proximo) =>
+{
+    var metodo = contexto.Request.Method;
+    var ehLeitura = HttpMethods.IsGet(metodo) || HttpMethods.IsHead(metodo) || HttpMethods.IsOptions(metodo);
+
+    if (!ehLeitura)
+    {
+        var origem = contexto.Request.Headers.Origin.ToString();
+
+        if (!origensPermitidas.Contains(origem, StringComparer.OrdinalIgnoreCase))
+        {
+            contexto.Response.StatusCode = StatusCodes.Status403Forbidden;
+            await contexto.Response.WriteAsJsonAsync(new { mensagem = "Origem não autorizada." });
+            return;
+        }
+    }
+
+    await proximo();
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 
