@@ -51,10 +51,10 @@ function limparEFechar() {
 function baixarModelo() {
   const conteudo =
     "\uFEFF" +
-    "Nome;Email;Celular;DataNascimento;Sexo;Categoria\n" +
-    "Maria da Silva;maria@email.com;69 99999-0000;05/03/1990;Feminino;Membro\n" +
-    "João Pereira;;69 98888-0000;20/11/1985;Masculino;Membro\n" +
-    "Ana Souza (visitante);ana@email.com;;;;Visitante\n";
+    "Nome;Sexo;DataNascimento;EstadoCivil;Email;Celular;Endereco;Bairro;Cidade;Estado;CEP\n" +
+    "Maria da Silva;Feminino;05/03/1990;Casado(a);maria@email.com;69 99999-0000;Rua das Flores, 100;Centro;Ji-Paraná;RO;76900-000\n" +
+    "João Pereira;Masculino;20/11/1985;Solteiro(a);;69 98888-0000;;;;;\n" +
+    "Ana Souza;;;;ana@email.com;;;;;;\n";
 
   const blob = new Blob([conteudo], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -117,7 +117,7 @@ function severityItem(status: string) {
   >
     <div class="page-container">
       <InlineMessage
-        texto="Importe de uma só vez o rol de membros da igreja. O arquivo precisa da coluna 'Nome'; as demais (Email, Celular, DataNascimento, Sexo, Categoria...) são opcionais. Linhas repetidas são ignoradas, então é seguro reenviar o mesmo arquivo."
+        texto="Importe de uma só vez o rol de membros da igreja. O arquivo precisa da coluna 'Nome'; as demais colunas do modelo (Sexo, DataNascimento, EstadoCivil, Email, Celular, Endereco, Bairro, Cidade, Estado, CEP) são opcionais e colunas fora do modelo são ignoradas. Linhas com e-mail já cadastrado são ignoradas; linhas sem e-mail cujo nome já existe são ignoradas e sinalizadas para conferência."
         tipo="info"
       />
 
