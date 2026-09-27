@@ -2,6 +2,7 @@
 using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KoinoniaHub.API.Controllers
@@ -12,10 +13,12 @@ namespace KoinoniaHub.API.Controllers
     public class ParentescosController : ControllerBase
     {
         private readonly IParentescoServico _servico;
+        private readonly IAutorizacaoEbdServico _autorizacao;
 
-        public ParentescosController(IParentescoServico servico)
+        public ParentescosController(IParentescoServico servico, IAutorizacaoEbdServico autorizacao)
         {
             _servico = servico;
+            _autorizacao = autorizacao;
         }
 
         [HttpPost]
@@ -40,6 +43,22 @@ namespace KoinoniaHub.API.Controllers
         public async Task<IActionResult> Listar([FromRoute] int pessoaId)
         {
             var igrejaId = UsuarioAutenticado.ObterIgrejaId(User);
+            var usuarioId = UsuarioAutenticado.ObterUsuarioId(User);
+            var perfil = UsuarioAutenticado.ObterPerfil(User);
+
+            try
+            {
+                await _autorizacao.GarantirAcessoPessoaAsync(igrejaId, usuarioId, perfil, pessoaId);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { mensagem = ex.Message });
+            }
+
             var resposta = await _servico.ListarAsync(igrejaId, pessoaId);
             return Ok(resposta);
         }

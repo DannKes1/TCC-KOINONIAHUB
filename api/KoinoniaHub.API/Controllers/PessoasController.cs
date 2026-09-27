@@ -1,10 +1,9 @@
 ﻿using KoinoniaHub.API.Aplicacao.DTOs.Requisicoes;
 using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
-using KoinoniaHub.API.Infraestrutura.Dados;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace KoinoniaHub.API.Controllers
 {
@@ -15,16 +14,16 @@ namespace KoinoniaHub.API.Controllers
     {
         private readonly IPessoaServico _pessoaServico;
         private readonly IPessoaImportacaoServico _importacaoServico;
-        private readonly KoinoniaHubDbContext _db;
+        private readonly IAutorizacaoEbdServico _autorizacao;
 
         public PessoasController(
             IPessoaServico pessoaServico,
             IPessoaImportacaoServico importacaoServico,
-            KoinoniaHubDbContext db)
+            IAutorizacaoEbdServico autorizacao)
         {
             _pessoaServico = pessoaServico;
             _importacaoServico = importacaoServico;
-            _db = db;
+            _autorizacao = autorizacao;
         }
 
         [HttpPost]
@@ -81,40 +80,37 @@ namespace KoinoniaHub.API.Controllers
             return Ok(resposta);
         }
 
-        //[HttpGet("{id:int}")]
-        //public async Task<IActionResult> ObterPorId([FromRoute] int id)
-        //{
-        //    var igrejaId = UsuarioAutenticado.ObterIgrejaId(User);
-
-        //    var resposta = await _pessoaServico.ObterPorIdAsync(igrejaId, id);
-        //    if (resposta is null) return NotFound();
-
-        //    return Ok(resposta);
-        //}
-
         [HttpGet("{id:int}")]
         public async Task<IActionResult> ObterPorId([FromRoute] int id)
         {
             var igrejaId = UsuarioAutenticado.ObterIgrejaId(User);
+            var usuarioId = UsuarioAutenticado.ObterUsuarioId(User);
             var perfil = UsuarioAutenticado.ObterPerfil(User);
 
-
-            if (string.Equals(perfil, "Usuario", StringComparison.OrdinalIgnoreCase))
+            try
             {
-                var usuarioId = UsuarioAutenticado.ObterUsuarioId(User);
-                var usuario = await _db.Usuarios.AsNoTracking()
-                    .FirstOrDefaultAsync(u => u.Id == usuarioId && u.IgrejaId == igrejaId);
-
-                if (usuario?.PessoaId != id)
-                    return StatusCode(403, new { mensagem = "Você só pode visualizar seus próprios dados." });
+                await _autorizacao.GarantirAcessoPessoaAsync(igrejaId, usuarioId, perfil, id);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { mensagem = ex.Message });
             }
 
-            var resposta = await _pessoaServico.ObterPorIdAsync(igrejaId, id);
-            if (resposta is null) return NotFound();
-            return Ok(resposta);
+            if (Perfis.EhAdministrativo(perfil) || Perfis.EhUsuarioComum(perfil))
+            {
+                var resposta = await _pessoaServico.ObterPorIdAsync(igrejaId, id);
+                if (resposta is null) return NotFound();
+                return Ok(resposta);
+            }
+
+            var reduzida = await _pessoaServico.ObterParaTurmaAsync(igrejaId, id);
+            if (reduzida is null) return NotFound();
+            return Ok(reduzida);
         }
-
-
 
         [HttpPut("{id:int}")]
         [Authorize(Roles = "Admin,Pastor,Superintendente")]

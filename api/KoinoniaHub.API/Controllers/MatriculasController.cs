@@ -76,8 +76,10 @@ namespace KoinoniaHub.API.Controllers
             {
                 await _autorizacao.GarantirAcessoDepartamentoAsync(igrejaId, usuarioId, perfil, departamentoId);
 
-                var resposta = await _servico.ListarPessoasDisponiveisAsync(igrejaId, departamentoId);
-                return Ok(resposta);
+                if (Perfis.EhAdministrativo(perfil))
+                    return Ok(await _servico.ListarPessoasDisponiveisAsync(igrejaId, departamentoId));
+
+                return Ok(await _servico.ListarPessoasDisponiveisReduzidoAsync(igrejaId, departamentoId));
             }
             catch (UnauthorizedAccessException ex)
             {

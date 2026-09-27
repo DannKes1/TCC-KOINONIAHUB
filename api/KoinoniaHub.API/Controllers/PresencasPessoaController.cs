@@ -1,9 +1,8 @@
 ﻿using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
-using KoinoniaHub.API.Infraestrutura.Dados;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace KoinoniaHub.API.Controllers
 {
@@ -13,36 +12,35 @@ namespace KoinoniaHub.API.Controllers
     public class PresencasPessoaController : ControllerBase
     {
         private readonly IPresencaHistoricoServico _servico;
-        private readonly KoinoniaHubDbContext _db;
+        private readonly IAutorizacaoEbdServico _autorizacao;
 
-        public PresencasPessoaController(IPresencaHistoricoServico servico, KoinoniaHubDbContext db)
+        public PresencasPessoaController(IPresencaHistoricoServico servico, IAutorizacaoEbdServico autorizacao)
         {
             _servico = servico;
-            _db = db;
+            _autorizacao = autorizacao;
         }
-
 
         [HttpGet]
         public async Task<IActionResult> Listar([FromRoute] int pessoaId)
         {
             var igrejaId = UsuarioAutenticado.ObterIgrejaId(User);
+            var usuarioId = UsuarioAutenticado.ObterUsuarioId(User);
             var perfil = UsuarioAutenticado.ObterPerfil(User);
-
-            
-            if (string.Equals(perfil, "Usuario", StringComparison.OrdinalIgnoreCase))
-            {
-                var usuarioId = UsuarioAutenticado.ObterUsuarioId(User);
-                var usuario = await _db.Usuarios.AsNoTracking()
-                    .FirstOrDefaultAsync(u => u.Id == usuarioId && u.IgrejaId == igrejaId);
-
-                if (usuario?.PessoaId != pessoaId)
-                    return StatusCode(403, new { mensagem = "Você só pode visualizar suas próprias presenças." });
-            }
 
             try
             {
-                var resposta = await _servico.ListarPorPessoaAsync(igrejaId, pessoaId);
+                await _autorizacao.GarantirAcessoPessoaAsync(igrejaId, usuarioId, perfil, pessoaId);
+
+                IReadOnlyCollection<int>? departamentosPermitidos = null;
+                if (!Perfis.EhAdministrativo(perfil) && !Perfis.EhUsuarioComum(perfil))
+                    departamentosPermitidos = await _autorizacao.ListarDepartamentosComAtribuicaoAtivaAsync(igrejaId, usuarioId);
+
+                var resposta = await _servico.ListarPorPessoaAsync(igrejaId, pessoaId, departamentosPermitidos);
                 return Ok(resposta);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = ex.Message });
             }
             catch (InvalidOperationException ex)
             {
