@@ -9,6 +9,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Interfaces
         Task<PessoaRespostaDto> CriarAsync(int igrejaId, PessoaCriarRequisicaoDto dto);
         Task<List<PessoaRespostaDto>> ListarAsync(int igrejaId);
         Task<PessoaRespostaDto?> ObterPorIdAsync(int igrejaId, int pessoaId);
+        Task<PessoaTurmaRespostaDto?> ObterParaTurmaAsync(int igrejaId, int pessoaId);
         Task<bool> AtualizarAsync(int igrejaId, int pessoaId, PessoaAtualizarRequisicaoDto dto);
         Task<List<MinhaTurmaRespostaDto>> ListarMinhasTurmasAsync(int igrejaId, int usuarioId);
         Task<PessoaRespostaDto?> ObterMeusDadosAsync(int igrejaId, int usuarioId);

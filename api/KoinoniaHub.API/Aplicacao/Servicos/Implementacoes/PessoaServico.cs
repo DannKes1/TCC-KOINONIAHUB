@@ -67,6 +67,33 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             return pessoa is null ? null : Mapear(pessoa);
         }
 
+        public async Task<PessoaTurmaRespostaDto?> ObterParaTurmaAsync(int igrejaId, int pessoaId)
+        {
+            var pessoa = await _db.Pessoas.AsNoTracking()
+                .Include(p => p.Parentescos)
+                    .ThenInclude(x => x.Parente)
+                .FirstOrDefaultAsync(p => p.IgrejaId == igrejaId && p.Id == pessoaId);
+
+            if (pessoa is null) return null;
+
+            return new PessoaTurmaRespostaDto
+            {
+                Id = pessoa.Id,
+                Nome = pessoa.Nome,
+                Situacao = pessoa.Situacao,
+                Celular = pessoa.Celular,
+                Parentescos = pessoa.Parentescos
+                    .OrderBy(x => x.Parente.Nome)
+                    .Select(x => new PessoaTurmaParentescoRespostaDto
+                    {
+                        ParenteNome = x.Parente.Nome,
+                        TipoRelacionamento = x.TipoRelacionamento,
+                        ParenteCelular = x.Parente.Celular
+                    })
+                    .ToList()
+            };
+        }
+
         public async Task<bool> AtualizarAsync(int igrejaId, int pessoaId, PessoaAtualizarRequisicaoDto dto)
         {
             var pessoa = await _db.Pessoas.FirstOrDefaultAsync(p => p.IgrejaId == igrejaId && p.Id == pessoaId);

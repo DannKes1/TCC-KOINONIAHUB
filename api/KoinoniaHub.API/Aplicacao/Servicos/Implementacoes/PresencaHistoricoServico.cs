@@ -14,7 +14,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             _db = db;
         }
 
-        public async Task<List<HistoricoPresencaRespostaDto>> ListarPorPessoaAsync(int igrejaId, int pessoaId)
+        public async Task<List<HistoricoPresencaRespostaDto>> ListarPorPessoaAsync(int igrejaId, int pessoaId, IReadOnlyCollection<int>? departamentosPermitidos = null)
         {
             var pessoaExiste = await _db.Pessoas.AsNoTracking()
                 .AnyAsync(p => p.IgrejaId == igrejaId && p.Id == pessoaId);
@@ -22,11 +22,16 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (!pessoaExiste)
                 throw new InvalidOperationException("Pessoa não encontrada para esta igreja.");
 
-            var itens = await _db.Presencas
+            var consulta = _db.Presencas
                 .AsNoTracking()
                 .Where(p =>
                     p.AlunoDepartamento.PessoaId == pessoaId &&
-                    p.AlunoDepartamento.Departamento.IgrejaId == igrejaId)
+                    p.AlunoDepartamento.Departamento.IgrejaId == igrejaId);
+
+            if (departamentosPermitidos is not null)
+                consulta = consulta.Where(p => departamentosPermitidos.Contains(p.AlunoDepartamento.DepartamentoId));
+
+            var itens = await consulta
                 .Select(p => new HistoricoPresencaRespostaDto
                 {
                     AulaId = p.AulaId,

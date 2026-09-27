@@ -98,26 +98,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
         public async Task<List<PessoaRespostaDto>> ListarPessoasDisponiveisAsync(int igrejaId, int departamentoId)
         {
+            var consulta = await ConsultarPessoasDisponiveisAsync(igrejaId, departamentoId);
 
-            var depOk = await _db.Departamentos.AsNoTracking()
-                .AnyAsync(d => d.IgrejaId == igrejaId && d.Id == departamentoId);
-
-            if (!depOk)
-                throw new InvalidOperationException("Departamento não encontrado para esta igreja.");
-
-
-            var jaMatriculadosIds = await _db.AlunosDepartamentos.AsNoTracking()
-                .Where(m => m.DepartamentoId == departamentoId && m.Ativo)
-                .Select(m => m.PessoaId)
-                .ToListAsync();
-
-
-            var disponiveis = await _db.Pessoas.AsNoTracking()
-                .Where(p =>
-                    p.IgrejaId == igrejaId &&
-                    p.Situacao == "Ativo" &&
-                    !jaMatriculadosIds.Contains(p.Id))
-                .OrderBy(p => p.Nome)
+            return await consulta
                 .Select(p => new PessoaRespostaDto
                 {
                     Id = p.Id,
@@ -127,8 +110,41 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                     Situacao = p.Situacao
                 })
                 .ToListAsync();
+        }
 
-            return disponiveis;
+        public async Task<List<PessoaDisponivelRespostaDto>> ListarPessoasDisponiveisReduzidoAsync(int igrejaId, int departamentoId)
+        {
+            var consulta = await ConsultarPessoasDisponiveisAsync(igrejaId, departamentoId);
+
+            return await consulta
+                .Select(p => new PessoaDisponivelRespostaDto
+                {
+                    Id = p.Id,
+                    Nome = p.Nome,
+                    Situacao = p.Situacao
+                })
+                .ToListAsync();
+        }
+
+        private async Task<IQueryable<Pessoa>> ConsultarPessoasDisponiveisAsync(int igrejaId, int departamentoId)
+        {
+            var depOk = await _db.Departamentos.AsNoTracking()
+                .AnyAsync(d => d.IgrejaId == igrejaId && d.Id == departamentoId);
+
+            if (!depOk)
+                throw new InvalidOperationException("Departamento não encontrado para esta igreja.");
+
+            var jaMatriculadosIds = await _db.AlunosDepartamentos.AsNoTracking()
+                .Where(m => m.DepartamentoId == departamentoId && m.Ativo)
+                .Select(m => m.PessoaId)
+                .ToListAsync();
+
+            return _db.Pessoas.AsNoTracking()
+                .Where(p =>
+                    p.IgrejaId == igrejaId &&
+                    p.Situacao == "Ativo" &&
+                    !jaMatriculadosIds.Contains(p.Id))
+                .OrderBy(p => p.Nome);
         }
     }
 }

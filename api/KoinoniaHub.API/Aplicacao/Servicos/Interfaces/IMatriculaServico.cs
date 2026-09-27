@@ -9,5 +9,6 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Interfaces
         Task<List<AlunoDaClasseRespostaDto>> ListarAlunosDaClasseAsync(int igrejaId, int departamentoId);
         Task<bool> InativarMatriculaAsync(int igrejaId, int departamentoId, int matriculaId);
         Task<List<PessoaRespostaDto>> ListarPessoasDisponiveisAsync(int igrejaId, int departamentoId);
+        Task<List<PessoaDisponivelRespostaDto>> ListarPessoasDisponiveisReduzidoAsync(int igrejaId, int departamentoId);
     }
 }
