@@ -22,6 +22,10 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
         private const string ChaveJwtDeTeste =
             "koinoniahub-chave-de-teste-nao-usar-em-producao-0123456789abcdef";
 
+        // Origem que o middleware da RNF 2.6 aceita nos testes. Todo HttpClient criado
+        // pela fábrica envia este Origin; RF2_OrigemTests troca ou remove o cabeçalho.
+        public const string OrigemAutorizada = "http://localhost:5173";
+
         private SqliteConnection? _conexao;
 
         public KoinoniaHubWebApplicationFactory()
@@ -41,6 +45,7 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
             builder.UseSetting("Jwt:Emissor", "KoinoniaHub");
             builder.UseSetting("Jwt:Audiencia", "KoinoniaHub");
             builder.UseSetting("ConnectionStrings:Postgres", "Host=localhost;Database=nao-usado-nos-testes");
+            builder.UseSetting("Cors:OrigensPermitidas:0", OrigemAutorizada);
 
             builder.ConfigureServices(services =>
             {
@@ -57,6 +62,12 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
 
                 services.AddDbContext<KoinoniaHubDbContext>(opcoes => opcoes.UseSqlite(conexao));
             });
+        }
+
+        protected override void ConfigureClient(HttpClient client)
+        {
+            base.ConfigureClient(client);
+            client.DefaultRequestHeaders.Add("Origin", OrigemAutorizada);
         }
 
         protected override IHost CreateHost(IHostBuilder builder)
