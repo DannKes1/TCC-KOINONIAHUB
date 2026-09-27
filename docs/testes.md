@@ -305,7 +305,6 @@ SQLite nos testes já cria `Pessoas` com as 17 colunas.
 Front não testado nesta entrega: as telas de Pessoas, Meus Dados, Matrículas e
 Parentescos quebram por design até o Bloco 2 (front da Etapa 1.3).
 
-
 ---
 
 ## Etapa 1.3 — Pessoa enxuta · Bloco 2: front (26/09/2026)
@@ -332,24 +331,25 @@ PS> npx vue-tsc -b
 
 ### Testes manuais (API + `npm run dev`)
 
-| # | Tela | Resultado |
-|---|---|---|
-| 1 | Pessoas → lista | OK — sem coluna/filtro Categoria; busca por nome/e-mail/celular. |
-| 2 | Nova pessoa só com nome | OK — "Pessoa cadastrada" (RNF 7.5). |
-| 3 | Editar pessoa | OK — carrega e salva; validação de celular mantida. |
-| 4 | Parentescos | OK — adicionar e remover. |
-| 5 | Meus Dados | OK — bloco Nome/Situação; sem campo Telefone; salvar contato. |
-| 6 | Matrículas → disponíveis / responsáveis | OK — lista sem categoria; contato do parente só celular. |
-| 7 | Baixar e importar modelo CSV | OK — cabeçalho com as 11 colunas; 1ª importação criou as 3; reimportação ignorou as 3. |
-| 8 | Importar nome repetido sem e-mail | OK — linha "Ignorado" com a mensagem da RNF 41.3 ("linha ignorada para conferência..."). |
+| #   | Tela                                    | Resultado                                                                                |
+| --- | --------------------------------------- | ---------------------------------------------------------------------------------------- |
+| 1   | Pessoas → lista                         | OK — sem coluna/filtro Categoria; busca por nome/e-mail/celular.                         |
+| 2   | Nova pessoa só com nome                 | OK — "Pessoa cadastrada" (RNF 7.5).                                                      |
+| 3   | Editar pessoa                           | OK — carrega e salva; validação de celular mantida.                                      |
+| 4   | Parentescos                             | OK — adicionar e remover.                                                                |
+| 5   | Meus Dados                              | OK — bloco Nome/Situação; sem campo Telefone; salvar contato.                            |
+| 6   | Matrículas → disponíveis / responsáveis | OK — lista sem categoria; contato do parente só celular.                                 |
+| 7   | Baixar e importar modelo CSV            | OK — cabeçalho com as 11 colunas; 1ª importação criou as 3; reimportação ignorou as 3.   |
+| 8   | Importar nome repetido sem e-mail       | OK — linha "Ignorado" com a mensagem da RNF 41.3 ("linha ignorada para conferência..."). |
 
 ---
 
 ## Etapa 1 — Fechamento: evidência em banco limpo (26/09/2026)
 
 Definição de pronto: "`database update` limpo em base nova e em base existente"
-+ prova de que `SituacaoAula` preserva as aulas consolidadas (pendência
-registrada na 1.1, quando a base de desenvolvimento perdeu essa contagem).
+
+- prova de que `SituacaoAula` preserva as aulas consolidadas (pendência
+  registrada na 1.1, quando a base de desenvolvimento perdeu essa contagem).
 
 Roteiro executado no banco descartável `koinoniahub_evidencia` (psql 18.1):
 
@@ -388,3 +388,58 @@ AceitoEm, Ip, Meio, CriadoEm).
 Conclusão: as três migrations aplicam do zero e sobre base existente, a
 conversão da `SituacaoAula` preserva as consolidadas, e o esquema final confere
 com o DER. **Etapa 1 (Migrations) concluída.**
+
+---
+
+## Etapa 2.1 — Restrições de leitura para o Professor: RF11/RF28/RF34 (27/09/2026)
+
+Pré-condição atendida: Etapa 1 concluída (28 = 17 + 11 testes ao fim desta etapa).
+
+### Arquivos aplicados
+
+19 arquivos, sem migration e sem front: `Perfis` (constantes dos perfis),
+`GarantirAcessoPessoaAsync` e `ListarDepartamentosComAtribuicaoAtivaAsync` no
+`AutorizacaoEbdServico`, DTOs reduzidos `PessoaTurmaRespostaDto` e
+`PessoaDisponivelRespostaDto`, `ObterParaTurmaAsync` no `PessoaServico`,
+`ListarPessoasDisponiveisReduzidoAsync` no `MatriculaServico`, filtro por
+turmas no `PresencaHistoricoServico`, guard nos controllers de Pessoas,
+Presenças, Matrículas e Parentescos, e os testes de integração com a semente
+`CenarioAcessoPessoa`.
+
+**Ocorrência registrada.** Na primeira aplicação, 2 dos 19 arquivos ficaram de
+fora (`IPresencaHistoricoServico.cs` e `PessoaTurmaRespostaDto.cs`), e o build
+acusou exatamente os dois (`CS0535` e `CS0246`). Copiados, build limpo. Nada
+chegou ao banco (etapa sem migration).
+
+### Regra (Plano 6.5)
+
+Gestão passa sem verificação; Usuario só o próprio registro; Professor só
+alunos com matrícula ativa em turma onde tenha atribuição ativa — 403 fora,
+verificado **antes** do 404 (não revela se a pessoa existe). O guard também
+cobre `GET /api/pessoas/{id}/parentescos` (decisão 4.3 do LEIA-ME 2.1:
+**opção (a)** — Professor mantido no endpoint, limitado às suas turmas;
+RNF 12.1 lida como gestão dos vínculos; registrado no Plano).
+
+### Build e testes (`api/`)
+
+```
+PS> dotnet test
+Resumo do teste: total: 28; falhou: 0; bem-sucedido: 28; ignorado: 0; duração: 6,8s
+```
+
+Casos novos: `RF11_PessoaAcessoTests` (5), `RF28_DisponiveisTests` (3),
+`RF34_PresencasPessoaTests` (3) — incluem as contraprovas de que Admin segue
+com DTO completo e Usuario acessa só o próprio registro.
+
+### Evidências no Swagger (autenticado como Professor — Plano 7.5)
+
+| RNF  | Resultado                                                                                                                                                                                                                    | Evidência                      |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| 11.3 | `GET /api/pessoas/3` (fora da turma) → **403** "Você só pode consultar alunos das turmas em que possui atribuição ativa."; `GET /api/pessoas/5` (aluna da turma) → 200 apenas com `id, nome, situacao, celular, parentescos` | `docs/evidencias/RNF-11.3.png` |
+| 28.3 | `GET /api/departamentos/2/pessoas-disponiveis` → itens apenas com `id, nome, situacao`                                                                                                                                       | `docs/evidencias/RNF-28.3.png` |
+| 34.3 | `GET /api/pessoas/3/presencas` → **403**; `GET /api/pessoas/5/presencas` → 200 somente com presenças da turma 4 (Adolescentes)                                                                                               | `docs/evidencias/RNF-34.3.png` |
+
+### Teste manual pelo front
+
+Professor: Matrículas (lista de disponíveis e diálogo Responsáveis) ok;
+Usuario: painel próprio ok; Admin: Pessoas/Parentescos inalterados.
