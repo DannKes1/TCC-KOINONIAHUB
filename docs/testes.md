@@ -304,3 +304,87 @@ SQLite nos testes já cria `Pessoas` com as 17 colunas.
 
 Front não testado nesta entrega: as telas de Pessoas, Meus Dados, Matrículas e
 Parentescos quebram por design até o Bloco 2 (front da Etapa 1.3).
+
+
+---
+
+## Etapa 1.3 — Pessoa enxuta · Bloco 2: front (26/09/2026)
+
+Pré-condição atendida: Bloco 1 aplicado (17 testes verdes, Swagger conferido).
+
+### Arquivos aplicados
+
+9 arquivos copiados para os caminhos do repositório: `dtos.ts` (`PessoaVM`,
+`PessoaCriarDTO` e `ParentescoVM` sem os campos removidos), `pessoasServico.ts`,
+`meusDadosServico.ts`, `parentescosServico.ts`, `matriculasServico.ts`, e as
+telas `PaginaPessoasLista.vue` (sem filtro/coluna Categoria; formulário
+reduzido), `PaginaMeusDados.vue` (bloco Nome/Situação; sem Telefone),
+`PaginaMatriculasTurma.vue` (contato do parente só celular) e
+`DialogImportarPessoas.vue` (arquivo-modelo com as 11 colunas do Plano 6.4).
+Nenhuma rota, store ou componente compartilhado tocado.
+
+### Typecheck (`web/`)
+
+```
+PS> npx vue-tsc -b
+(sem saída — sem erros)
+```
+
+### Testes manuais (API + `npm run dev`)
+
+| # | Tela | Resultado |
+|---|---|---|
+| 1 | Pessoas → lista | OK — sem coluna/filtro Categoria; busca por nome/e-mail/celular. |
+| 2 | Nova pessoa só com nome | OK — "Pessoa cadastrada" (RNF 7.5). |
+| 3 | Editar pessoa | OK — carrega e salva; validação de celular mantida. |
+| 4 | Parentescos | OK — adicionar e remover. |
+| 5 | Meus Dados | OK — bloco Nome/Situação; sem campo Telefone; salvar contato. |
+| 6 | Matrículas → disponíveis / responsáveis | OK — lista sem categoria; contato do parente só celular. |
+| 7 | Baixar e importar modelo CSV | OK — cabeçalho com as 11 colunas; 1ª importação criou as 3; reimportação ignorou as 3. |
+| 8 | Importar nome repetido sem e-mail | OK — linha "Ignorado" com a mensagem da RNF 41.3 ("linha ignorada para conferência..."). |
+
+---
+
+## Etapa 1 — Fechamento: evidência em banco limpo (26/09/2026)
+
+Definição de pronto: "`database update` limpo em base nova e em base existente"
++ prova de que `SituacaoAula` preserva as aulas consolidadas (pendência
+registrada na 1.1, quando a base de desenvolvimento perdeu essa contagem).
+
+Roteiro executado no banco descartável `koinoniahub_evidencia` (psql 18.1):
+
+1. `dotnet ef database update 20260811041229_ConvitePrimeiroAcessoUsuario`
+   (com `--connection` para o banco de evidência) → aplicou as 6 migrations do
+   modelo antigo, `Done.`.
+2. Dados mínimos inseridos no modelo antigo (igreja, pessoa com `Categoria`,
+   departamento, matéria, 3 aulas com `Consolidada` = true/true/false):
+
+```
+ consolidadas | total
+--------------+-------
+            2 |     3
+```
+
+3. `dotnet ef database update` (as três migrations da Etapa 1: `SituacaoAula`,
+   `AceitesTermo`, `PessoaEnxuta`) → `Done.`.
+4. Resultados após as migrations:
+
+```
+  Situacao   | count
+-------------+-------
+ Consolidada |     2
+ EmAberto    |     1
+```
+
+`Pessoas`: 17 colunas (Id, Nome, DataNascimento, Sexo, EstadoCivil, Celular,
+Email, Endereco, Bairro, Cidade, Estado, CEP, IgrejaId, CriadoEm, AtualizadoEm,
+DataInativacao, Situacao) — nenhuma das 7 removidas.
+
+`AceitesTermo`: 9 colunas (Id, UsuarioId, IgrejaId, TermoVersao, TermoHash,
+AceitoEm, Ip, Meio, CriadoEm).
+
+5. `DROP DATABASE koinoniahub_evidencia;`.
+
+Conclusão: as três migrations aplicam do zero e sobre base existente, a
+conversão da `SituacaoAula` preserva as consolidadas, e o esquema final confere
+com o DER. **Etapa 1 (Migrations) concluída.**
