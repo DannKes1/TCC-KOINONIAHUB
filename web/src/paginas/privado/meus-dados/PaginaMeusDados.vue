@@ -1,28 +1,21 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
-
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
-
 
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
-
 import { useAsync } from "../../../aplicacao/composables/useAsync";
-
 
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-
 import { firstFieldError } from "../../../aplicacao/servicos/apiError";
-
 
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
-
 
 import {
   obterMeusDados,
@@ -43,7 +36,6 @@ const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
 const dadosOriginais = ref<MeusDadosVM | null>(null);
 
 const form = reactive({
-  telefone: "",
   celular: "",
   email: "",
   endereco: "",
@@ -54,7 +46,6 @@ const form = reactive({
 });
 
 function popularForm(dados: MeusDadosVM) {
-  form.telefone = dados.telefone ?? "";
   form.celular = dados.celular ?? "";
   form.email = dados.email ?? "";
   form.endereco = dados.endereco ?? "";
@@ -86,14 +77,6 @@ function contarDigitos(valor: string): number {
   return (valor.match(/\d/g) ?? []).length;
 }
 
-
-watch(
-  () => form.telefone,
-  (v) => {
-    const limpo = sanitizarTelefone(v ?? "");
-    if (limpo !== v) form.telefone = limpo;
-  },
-);
 watch(
   () => form.celular,
   (v) => {
@@ -105,12 +88,6 @@ watch(
 async function salvar() {
   clearErrors();
 
-  const telDigitos = contarDigitos(form.telefone);
-  if (telDigitos > 0 && (telDigitos < 8 || telDigitos > 11)) {
-    erro.value = "Telefone inválido. Informe DDD + número (8 a 11 dígitos).";
-    return;
-  }
-
   const celDigitos = contarDigitos(form.celular);
   if (celDigitos > 0 && (celDigitos < 8 || celDigitos > 11)) {
     erro.value = "Celular inválido. Informe DDD + número (8 a 11 dígitos).";
@@ -119,7 +96,6 @@ async function salvar() {
 
   await run(async () => {
     await atualizarMeusDados({
-      Telefone: limparOuNull(form.telefone),
       Celular: limparOuNull(form.celular),
       Email: limparOuNull(form.email),
       Endereco: limparOuNull(form.endereco),
@@ -170,7 +146,6 @@ onMounted(carregar);
     <InlineMessage :texto="erro" tipo="erro" />
 
     <LoadingOverlay :loading="carregando" texto="Carregando seus dados...">
-   
       <div
         v-if="dadosOriginais"
         style="
@@ -195,39 +170,22 @@ onMounted(carregar);
           <div
             style="font-size: 11px; opacity: 0.75; text-transform: uppercase"
           >
-            CPF
-          </div>
-          <div>{{ dadosOriginais.cpf || "—" }}</div>
-        </div>
-        <div>
-          <div
-            style="font-size: 11px; opacity: 0.75; text-transform: uppercase"
-          >
             Situação
           </div>
           <div>{{ dadosOriginais.situacao || "—" }}</div>
-        </div>
-        <div>
-          <div
-            style="font-size: 11px; opacity: 0.75; text-transform: uppercase"
-          >
-            Categoria
-          </div>
-          <div>{{ dadosOriginais.categoria || "—" }}</div>
         </div>
       </div>
 
       <InlineMessage
         v-if="!isAdministrativo"
-        texto="Para alterar nome, CPF, situação ou categoria, fale com a secretaria/administração da igreja."
+        texto="Para alterar nome ou situação, fale com a secretaria/administração da igreja."
         tipo="info"
       />
       <InlineMessage
         v-else
-        texto="Para editar nome, CPF, situação ou categoria (de qualquer pessoa, incluindo o seu), use a tela Pessoas."
+        texto="Para editar nome ou situação (de qualquer pessoa, incluindo o seu), use a tela Pessoas."
         tipo="info"
       />
-
 
       <h3 style="margin: 16px 0 6px">Contato</h3>
       <div
@@ -237,17 +195,6 @@ onMounted(carregar);
           gap: 14px;
         "
       >
-        <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Telefone</label>
-          <InputText v-model="form.telefone" placeholder="(00) 0000-0000" />
-          <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Telefone') ||
-              firstFieldError(fieldErrors, 'telefone')
-            "
-          />
-        </div>
-
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label>Celular</label>
           <InputText v-model="form.celular" placeholder="(00) 00000-0000" />

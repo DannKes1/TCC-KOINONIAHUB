@@ -10,9 +10,6 @@ function normalizarParentesco(bruto: any): ParentescoVM {
       bruto?.TipoRelacionamento ?? bruto?.tipoRelacionamento ?? "",
     ),
     parenteNome: String(bruto?.ParenteNome ?? bruto?.parenteNome ?? ""),
-    parenteTelefone: (bruto?.ParenteTelefone ??
-      bruto?.parenteTelefone ??
-      null) as string | null,
     parenteCelular: (bruto?.ParenteCelular ?? bruto?.parenteCelular ?? null) as
       | string
       | null,

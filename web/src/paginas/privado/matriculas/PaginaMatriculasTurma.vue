@@ -161,7 +161,7 @@ function severityRelacionamento(tipo: string) {
 }
 
 function temAlgumContato(p: ParentescoVM) {
-  return Boolean(p.parenteCelular) || Boolean(p.parenteTelefone);
+  return Boolean(p.parenteCelular);
 }
 
 function linkTelefone(numero: string | null) {
@@ -364,25 +364,11 @@ onMounted(carregarTudo);
                 <i class="pi pi-mobile"></i>
                 {{ r.parenteCelular }}
               </a>
-
-              <a
-                v-if="r.parenteTelefone"
-                :href="linkTelefone(r.parenteTelefone)"
-                style="
-                  display: inline-flex;
-                  align-items: center;
-                  gap: 6px;
-                  text-decoration: none;
-                "
-              >
-                <i class="pi pi-phone"></i>
-                {{ r.parenteTelefone }}
-              </a>
             </div>
 
             <div v-else style="opacity: 0.65; font-size: 13px">
               <i class="pi pi-info-circle"></i>
-              Sem telefone/celular cadastrado.
+              Sem celular cadastrado.
             </div>
           </div>
         </div>

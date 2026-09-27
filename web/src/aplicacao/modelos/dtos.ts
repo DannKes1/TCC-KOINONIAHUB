@@ -22,14 +22,11 @@ export type DepartamentoAtualizarDTO = {
 export type PessoaVM = {
   id: number;
   nome: string;
-  cpf: string | null;
   dataNascimento: string | null;
   sexo: string | null;
   estadoCivil: string | null;
   situacao: string | null;
-  categoria: string | null;
   dataInativacao: string | null;
-  telefone: string | null;
   celular: string | null;
   email: string | null;
   endereco: string | null;
@@ -37,21 +34,15 @@ export type PessoaVM = {
   cidade: string | null;
   estado: string | null;
   cep: string | null;
-  dataBatismo: string | null;
-  dataMembresia: string | null;
-  fotoUrl: string | null;
-  observacoes: string | null;
   criadoEm: string;
   atualizadoEm: string | null;
 };
 
 export type PessoaCriarDTO = {
   Nome: string;
-  CPF?: string | null;
   DataNascimento?: string | null;
   Sexo?: string | null;
   EstadoCivil?: string | null;
-  Telefone?: string | null;
   Celular?: string | null;
   Email?: string | null;
   Endereco?: string | null;
@@ -60,11 +51,6 @@ export type PessoaCriarDTO = {
   Estado?: string | null;
   CEP?: string | null;
   Situacao?: string | null;
-  Categoria?: string | null;
-  DataBatismo?: string | null;
-  DataMembresia?: string | null;
-  FotoUrl?: string | null;
-  Observacoes?: string | null;
 };
 
 export type PessoaAtualizarDTO = PessoaCriarDTO;
@@ -75,7 +61,6 @@ export type ParentescoVM = {
   parenteId: number;
   tipoRelacionamento: string;
   parenteNome: string;
-  parenteTelefone: string | null;
   parenteCelular: string | null;
 };
 

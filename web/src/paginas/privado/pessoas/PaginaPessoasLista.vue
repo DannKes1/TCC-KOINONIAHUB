@@ -43,7 +43,6 @@ import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
 import Dropdown from "primevue/dropdown";
 import Calendar from "primevue/calendar";
-import Textarea from "primevue/textarea";
 import Tag from "primevue/tag";
 
 import { useConfirm } from "primevue/useconfirm";
@@ -68,16 +67,10 @@ const editandoId = ref<number | null>(null);
 
 const busca = ref("");
 const filtroSituacao = ref<string | null>(null);
-const filtroCategoria = ref<string | null>(null);
 
 const opcoesSituacao = [
   { label: "Ativo", value: "Ativo" },
   { label: "Inativo", value: "Inativo" },
-];
-
-const opcoesCategoria = [
-  { label: "Membro", value: "Membro" },
-  { label: "Visitante", value: "Visitante" },
 ];
 
 const opcoesSexo = [
@@ -104,11 +97,9 @@ const opcoesRelacionamento = [
 
 const formulario = reactive({
   nome: "",
-  cpf: "",
   dataNascimento: null as Date | null,
   sexo: null as string | null,
   estadoCivil: null as string | null,
-  telefone: "",
   celular: "",
   email: "",
   endereco: "",
@@ -117,11 +108,6 @@ const formulario = reactive({
   estado: "",
   cep: "",
   situacao: "Ativo",
-  categoria: "Membro",
-  dataBatismo: null as Date | null,
-  dataMembresia: null as Date | null,
-  fotoUrl: "",
-  observacoes: "",
 });
 
 const formularioParentesco = reactive({
@@ -131,11 +117,9 @@ const formularioParentesco = reactive({
 
 function limparFormulario() {
   formulario.nome = "";
-  formulario.cpf = "";
   formulario.dataNascimento = null;
   formulario.sexo = null;
   formulario.estadoCivil = null;
-  formulario.telefone = "";
   formulario.celular = "";
   formulario.email = "";
   formulario.endereco = "";
@@ -144,23 +128,16 @@ function limparFormulario() {
   formulario.estado = "";
   formulario.cep = "";
   formulario.situacao = "Ativo";
-  formulario.categoria = "Membro";
-  formulario.dataBatismo = null;
-  formulario.dataMembresia = null;
-  formulario.fotoUrl = "";
-  formulario.observacoes = "";
   editandoId.value = null;
 }
 
 function popularFormulario(p: PessoaVM) {
   formulario.nome = p.nome ?? "";
-  formulario.cpf = p.cpf ?? "";
   formulario.dataNascimento = p.dataNascimento
     ? new Date(p.dataNascimento)
     : null;
   formulario.sexo = p.sexo ?? null;
   formulario.estadoCivil = p.estadoCivil ?? null;
-  formulario.telefone = p.telefone ?? "";
   formulario.celular = p.celular ?? "";
   formulario.email = p.email ?? "";
   formulario.endereco = p.endereco ?? "";
@@ -169,11 +146,6 @@ function popularFormulario(p: PessoaVM) {
   formulario.estado = p.estado ?? "";
   formulario.cep = p.cep ?? "";
   formulario.situacao = p.situacao ?? "Ativo";
-  formulario.categoria = p.categoria ?? "Membro";
-  formulario.dataBatismo = p.dataBatismo ? new Date(p.dataBatismo) : null;
-  formulario.dataMembresia = p.dataMembresia ? new Date(p.dataMembresia) : null;
-  formulario.fotoUrl = p.fotoUrl ?? "";
-  formulario.observacoes = p.observacoes ?? "";
 }
 
 function limparFormularioParentesco() {
@@ -248,13 +220,6 @@ function contarDigitos(valor: string): number {
 }
 
 watch(
-  () => formulario.telefone,
-  (v) => {
-    const limpo = sanitizarTelefone(v ?? "");
-    if (limpo !== v) formulario.telefone = limpo;
-  },
-);
-watch(
   () => formulario.celular,
   (v) => {
     const limpo = sanitizarTelefone(v ?? "");
@@ -264,10 +229,6 @@ watch(
 
 function validarFormulario(): string {
   if (!formulario.nome.trim()) return "Informe o nome da pessoa.";
-
-  const telDigitos = contarDigitos(formulario.telefone);
-  if (telDigitos > 0 && (telDigitos < 8 || telDigitos > 11))
-    return "Telefone inválido. Informe DDD + número (8 a 11 dígitos).";
 
   const celDigitos = contarDigitos(formulario.celular);
   if (celDigitos > 0 && (celDigitos < 8 || celDigitos > 11))
@@ -305,16 +266,12 @@ function severityPresenca(presente: boolean) {
 const pessoasFiltradas = computed(() => {
   const termo = busca.value.trim().toLowerCase();
   const situacao = filtroSituacao.value?.trim().toLowerCase() || "";
-  const categoria = filtroCategoria.value?.trim().toLowerCase() || "";
 
   return pessoas.value.filter((pessoa) => {
     const bateBusca =
       !termo ||
       pessoa.nome.toLowerCase().includes(termo) ||
       String(pessoa.email ?? "")
-        .toLowerCase()
-        .includes(termo) ||
-      String(pessoa.cpf ?? "")
         .toLowerCase()
         .includes(termo) ||
       String(pessoa.celular ?? "")
@@ -324,10 +281,7 @@ const pessoasFiltradas = computed(() => {
     const bateSituacao =
       !situacao || String(pessoa.situacao ?? "").toLowerCase() === situacao;
 
-    const bateCategoria =
-      !categoria || String(pessoa.categoria ?? "").toLowerCase() === categoria;
-
-    return bateBusca && bateSituacao && bateCategoria;
+    return bateBusca && bateSituacao;
   });
 });
 
@@ -390,11 +344,9 @@ async function salvarPessoa() {
 
   const payload = {
     Nome: formulario.nome.trim(),
-    CPF: textoOuNull(formulario.cpf),
     DataNascimento: dataParaEnvio(formulario.dataNascimento),
     Sexo: textoOuNull(formulario.sexo),
     EstadoCivil: textoOuNull(formulario.estadoCivil),
-    Telefone: textoOuNull(formulario.telefone),
     Celular: textoOuNull(formulario.celular),
     Email: textoOuNull(formulario.email),
     Endereco: textoOuNull(formulario.endereco),
@@ -403,11 +355,6 @@ async function salvarPessoa() {
     Estado: textoOuNull(formulario.estado)?.toUpperCase(),
     CEP: textoOuNull(formulario.cep),
     Situacao: textoOuNull(formulario.situacao) ?? "Ativo",
-    Categoria: textoOuNull(formulario.categoria) ?? "Membro",
-    DataBatismo: dataParaEnvio(formulario.dataBatismo),
-    DataMembresia: dataParaEnvio(formulario.dataMembresia),
-    FotoUrl: textoOuNull(formulario.fotoUrl),
-    Observacoes: textoOuNull(formulario.observacoes),
   };
 
   await run(async () => {
@@ -508,7 +455,7 @@ onMounted(carregarLista);
         <label>Buscar</label>
         <InputText
           v-model="busca"
-          placeholder="Pesquisar por nome, e-mail, CPF ou celular..."
+          placeholder="Pesquisar por nome, e-mail ou celular..."
         />
       </div>
 
@@ -517,18 +464,6 @@ onMounted(carregarLista);
         <Dropdown
           v-model="filtroSituacao"
           :options="opcoesSituacao"
-          optionLabel="label"
-          optionValue="value"
-          showClear
-          placeholder="Todas"
-        />
-      </div>
-
-      <div style="display: flex; flex-direction: column; gap: 6px">
-        <label>Categoria</label>
-        <Dropdown
-          v-model="filtroCategoria"
-          :options="opcoesCategoria"
           optionLabel="label"
           optionValue="value"
           showClear
@@ -555,7 +490,6 @@ onMounted(carregarLista);
       >
         <Column field="nome" header="Nome" sortable />
         <Column field="situacao" header="Situação" sortable />
-        <Column field="categoria" header="Categoria" sortable />
 
         <Column header="Nascimento" style="width: 130px">
           <template #body="{ data }">
@@ -620,9 +554,7 @@ onMounted(carregarLista);
       style="width: 920px; max-width: 96vw"
     >
       <div style="display: flex; flex-direction: column; gap: 16px">
-        <div
-          style="display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 12px"
-        >
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px">
           <div style="display: flex; flex-direction: column; gap: 6px">
             <label>Nome *</label>
             <InputText
@@ -633,17 +565,6 @@ onMounted(carregarLista);
               :texto="
                 firstFieldError(fieldErrors, 'Nome') ||
                 firstFieldError(fieldErrors, 'nome')
-              "
-            />
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>CPF</label>
-            <InputText v-model="formulario.cpf" placeholder="000.000.000-00" />
-            <FieldError
-              :texto="
-                firstFieldError(fieldErrors, 'CPF') ||
-                firstFieldError(fieldErrors, 'cpf')
               "
             />
           </div>
@@ -661,23 +582,6 @@ onMounted(carregarLista);
               :texto="
                 firstFieldError(fieldErrors, 'Situacao') ||
                 firstFieldError(fieldErrors, 'situacao')
-              "
-            />
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Categoria</label>
-            <Dropdown
-              v-model="formulario.categoria"
-              :options="opcoesCategoria"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Selecione a categoria"
-            />
-            <FieldError
-              :texto="
-                firstFieldError(fieldErrors, 'Categoria') ||
-                firstFieldError(fieldErrors, 'categoria')
               "
             />
           </div>
@@ -731,17 +635,7 @@ onMounted(carregarLista);
           </div>
         </div>
 
-        <div
-          style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px"
-        >
-          <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Telefone</label>
-            <InputText
-              v-model="formulario.telefone"
-              placeholder="Telefone fixo"
-            />
-          </div>
-
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
           <div style="display: flex; flex-direction: column; gap: 6px">
             <label>Celular</label>
             <InputText
@@ -798,45 +692,6 @@ onMounted(carregarLista);
               maxlength="2"
             />
           </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
-          <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Data de batismo</label>
-            <Calendar
-              v-model="formulario.dataBatismo"
-              dateFormat="dd/mm/yy"
-              showIcon
-              iconDisplay="input"
-              showButtonBar
-            />
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Data de membresia</label>
-            <Calendar
-              v-model="formulario.dataMembresia"
-              dateFormat="dd/mm/yy"
-              showIcon
-              iconDisplay="input"
-              showButtonBar
-            />
-          </div>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Foto URL</label>
-          <InputText v-model="formulario.fotoUrl" placeholder="https://..." />
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Observações</label>
-          <Textarea
-            v-model="formulario.observacoes"
-            rows="4"
-            autoResize
-            placeholder="Observações gerais sobre a pessoa"
-          />
         </div>
       </div>
 
