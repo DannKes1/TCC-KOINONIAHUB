@@ -443,3 +443,60 @@ com DTO completo e Usuario acessa só o próprio registro.
 
 Professor: Matrículas (lista de disponíveis e diálogo Responsáveis) ok;
 Usuario: painel próprio ok; Admin: Pessoas/Parentescos inalterados.
+
+---
+
+## Etapa 2.2 — Verificação de Origin nas escritas: RNF 2.6 (27/09/2026)
+
+Pré-condição atendida: Etapa 2.1 aprovada (28 verdes).
+
+### Arquivos aplicados
+
+4 arquivos, sem migration e sem front: middleware no `Program.cs` (entre
+`UseCors` e `UseAuthentication`: POST/PUT/PATCH/DELETE com `Origin` fora de
+`Cors:OrigensPermitidas` → 403 "Origem não autorizada."; sem `Origin` também
+403, conforme OWASP CSRF Prevention Cheat Sheet — fonte conferida em
+27/09/2026); `appsettings.Development.json` com as três origens locais (Vite
+e Swagger nos dois perfis); fábrica de testes enviando `Origin` autorizado em
+todo `HttpClient`; `RF2_OrigemTests`.
+
+### Build e testes (`api/`)
+
+```
+PS> dotnet test
+Resumo do teste: total: 36; falhou: 0; bem-sucedido: 36; ignorado: 0; duração: 4,6s
+```
+
+8 execuções novas em `RF2_OrigemTests` (5 Facts + Theory com 3 métodos de
+escrita): origem estranha → 403 com a mensagem; origem autorizada passa; GET
+sem Origin passa; POST sem Origin → 403; PUT/PATCH/DELETE de origem estranha →
+403 **antes** da autenticação; OPTIONS não é bloqueado. (O LEIA-ME estimou 35
+contando o Theory como 1 caso; são 3 execuções.)
+
+### Evidências por curl (API no ar; Swagger não serve — origem autorizada)
+
+| #   | Requisição                                                         | Resultado                                                                                                                    |
+| --- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| 1   | POST /api/auth/login com `Origin: https://sitio-malicioso.exemplo` | **403** `{"mensagem":"Origem não autorizada."}` → `RNF-2.6-403-origem-nao-autorizada.png`                                    |
+| 2   | POST /api/auth/login sem `Origin`                                  | **403** (recomendação OWASP)                                                                                                 |
+| 3   | POST /api/auth/login com `Origin: http://localhost:5173`           | **400** "Usuário ou senha inválidos." — atravessou o middleware e chegou à validação → `RNF-2.6-passa-origem-autorizada.png` |
+| 4   | GET /api/meus-dados sem `Origin`                                   | **401** — leitura não é bloqueada                                                                                            |
+
+Ocorrência registrada: na primeira execução dos curls, o escape de aspas do
+PowerShell corrompeu o corpo JSON (o 403 do caso 1 independe do corpo, mas o
+caso 3 devolveu 400 de model binding); refeitos com o operador `--%`, que
+repassa a linha crua ao curl.
+
+### Teste manual pelo front
+
+Gerar convite de primeiro acesso (POST sem corpo), importar CSV (multipart) e
+logout/login — os três fluxos de "requisição simples" que motivaram a RNF —
+funcionando normalmente com a origem do Vite autorizada.
+
+### Monografia
+
+Seção 4.8 (trecho de CSRF reescrito com as duas medidas), RNF 2.6 na tabela do
+RF2, referência OWASP [2026]a adicionada e a de senhas renomeada para [2026]b
+— textos do LEIA-ME 2.2, seção 4, aplicados; passagens "texto atual"
+conferidas contra o documento antes da substituição, e a fonte OWASP
+verificada na URL citada.
