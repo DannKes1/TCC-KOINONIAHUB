@@ -226,4 +226,3 @@ async function concluirCadastro(): Promise<void> {
     </div>
   </div>
 </template>
-a
