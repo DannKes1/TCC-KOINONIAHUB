@@ -93,10 +93,6 @@ export type UsuarioAtualizarDTO = {
   Ativo?: boolean | null;
 };
 
-export type UsuarioResetarSenhaDTO = {
-  NovaSenha: string;
-};
-
 // Retorno da criação de usuário (pode vir com o token do convite,
 // exibido uma única vez).
 export type UsuarioCriadoVM = UsuarioVM & {

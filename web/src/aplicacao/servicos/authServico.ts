@@ -1,9 +1,10 @@
 import { clienteHttp } from "./clienteHttp";
 
+// O JWT não vem no corpo: fica só no cookie httpOnly gravado pela API
+// (monografia, seção 4.8). O corpo traz apenas os dados de sessão.
 export async function loginApi(dto: { Email: string; Senha: string }) {
   const resposta = await clienteHttp.post("/api/auth/login", dto);
   return resposta.data as {
-    Token: string;
     ExpiraEm: string;
     UsuarioId: number;
     EmailUsuario: string;

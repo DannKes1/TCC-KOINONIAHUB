@@ -13,7 +13,6 @@ const autenticacao = usarAutenticacaoStore();
 
 const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
 
-
 const nomeIgreja = ref<string>("");
 const cidade = ref<string>("");
 const estado = ref<string>("");
@@ -55,7 +54,9 @@ async function concluirCadastro(): Promise<void> {
       NomeAdmin: nomeAdmin.value.trim(),
     });
 
-    if (resposta?.Token || resposta?.token) {
+    // O cookie de sessão já foi gravado pela API; o corpo traz os dados do
+    // usuário criado (sem o token, monografia 4.8).
+    if (resposta?.UsuarioId || resposta?.usuarioId) {
       autenticacao.entrar(resposta);
       await router.push("/");
       return;
@@ -78,7 +79,6 @@ async function concluirCadastro(): Promise<void> {
     <div
       style="margin-top: 16px; display: flex; flex-direction: column; gap: 14px"
     >
-  
       <div
         style="
           padding: 12px;
@@ -226,4 +226,4 @@ async function concluirCadastro(): Promise<void> {
     </div>
   </div>
 </template>
-a 
+a

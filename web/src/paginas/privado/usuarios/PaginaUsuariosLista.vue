@@ -22,7 +22,6 @@ import {
   listarUsuarios,
   criarUsuario,
   atualizarUsuario,
-  resetarSenhaUsuario,
   gerarConviteUsuario,
 } from "../../../aplicacao/servicos/usuariosServico";
 
@@ -50,11 +49,9 @@ const filtroAtivo = ref<string | null>(null);
 
 const dialogCriacaoAberto = ref(false);
 const dialogEdicaoAberto = ref(false);
-const dialogResetSenhaAberto = ref(false);
 const dialogConviteAberto = ref(false);
 
 const editandoUsuario = ref<UsuarioVM | null>(null);
-const resetandoUsuario = ref<UsuarioVM | null>(null);
 
 // Dados do convite exibidos após a criação/geração (o token só aparece agora).
 const conviteAtual = ref<{
@@ -92,22 +89,12 @@ const formularioEdicao = reactive({
   ativo: true,
 });
 
-const formularioResetSenha = reactive({
-  novaSenha: "",
-  confirmarSenha: "",
-});
-
 function limparCriacao() {
   formularioCriacao.pessoaId = null;
   formularioCriacao.email = "";
   formularioCriacao.senha = "";
   formularioCriacao.perfil = "Usuario";
   formularioCriacao.definirSenhaManual = false;
-}
-
-function limparResetSenha() {
-  formularioResetSenha.novaSenha = "";
-  formularioResetSenha.confirmarSenha = "";
 }
 
 function abrirNovo() {
@@ -122,13 +109,6 @@ function abrirEdicao(usuario: UsuarioVM) {
   formularioEdicao.perfil = usuario.perfil || "Usuario";
   formularioEdicao.ativo = Boolean(usuario.ativo);
   dialogEdicaoAberto.value = true;
-}
-
-function abrirResetSenha(usuario: UsuarioVM) {
-  clearErrors();
-  resetandoUsuario.value = usuario;
-  limparResetSenha();
-  dialogResetSenhaAberto.value = true;
 }
 
 async function carregarDados() {
@@ -216,25 +196,6 @@ function validarEdicao(): string {
   return "";
 }
 
-function validarResetSenha(): string {
-  if (!formularioResetSenha.novaSenha.trim()) {
-    return "Informe a nova senha.";
-  }
-
-  if (formularioResetSenha.novaSenha.trim().length < 6) {
-    return "A nova senha deve ter no mínimo 6 caracteres.";
-  }
-
-  if (
-    formularioResetSenha.novaSenha.trim() !==
-    formularioResetSenha.confirmarSenha.trim()
-  ) {
-    return "A confirmação da senha não confere.";
-  }
-
-  return "";
-}
-
 function textoOuNull(valor?: string | null) {
   const texto = String(valor ?? "").trim();
   return texto ? texto : null;
@@ -258,7 +219,7 @@ function severityPerfil(perfil: string) {
   return "secondary";
 }
 
-// ---------- Convite de primeiro acesso ----------
+// ---------- Convite de primeiro acesso / Redefinir acesso (RF39, RF15) ----------
 
 function montarLinkConvite(token: string) {
   return `${window.location.origin}/primeiro-acesso?token=${token}`;
@@ -325,6 +286,9 @@ function abrirWhatsAppConvite() {
   window.open(`https://wa.me/?text=${encodeURIComponent(mensagem)}`, "_blank");
 }
 
+// "Redefinir acesso" (CSU20): gera um novo convite de uso único, que invalida o
+// anterior; a senha atual continua válida até a pessoa definir a nova pelo link.
+// O administrador nunca digita a senha de outro usuário (RNF 15.3).
 async function gerarConvite(usuario: UsuarioVM) {
   await run(async () => {
     const convite = await gerarConviteUsuario(usuario.id);
@@ -402,27 +366,6 @@ async function salvarEdicao() {
   }, "Não foi possível atualizar o usuário.");
 }
 
-async function salvarResetSenha() {
-  const msg = validarResetSenha();
-  if (msg) {
-    toastWarn(msg);
-    return;
-  }
-
-  const usuario = resetandoUsuario.value;
-  if (!usuario) return;
-
-  await run(async () => {
-    await resetarSenhaUsuario(usuario.id, {
-      NovaSenha: formularioResetSenha.novaSenha.trim(),
-    });
-
-    toastSuccess("Senha redefinida com sucesso.", "Concluído");
-    dialogResetSenhaAberto.value = false;
-    limparResetSenha();
-  }, "Não foi possível resetar a senha do usuário.");
-}
-
 onMounted(carregarDados);
 </script>
 
@@ -447,7 +390,7 @@ onMounted(carregarDados);
     <InlineMessage :texto="erro" tipo="erro" />
 
     <InlineMessage
-      texto="A criação de usuário sempre exige vínculo com uma pessoa já cadastrada. Por padrão, o sistema gera um link de convite para a própria pessoa definir a senha. Este módulo é restrito a administradores."
+      texto="A criação de usuário sempre exige vínculo com uma pessoa já cadastrada. Por padrão, o sistema gera um link de convite para a própria pessoa definir a senha; para redefinir o acesso de uma conta, gere um novo convite — a senha nunca é digitada pelo administrador. Este módulo é restrito a administradores."
       tipo="info"
     />
 
@@ -531,7 +474,7 @@ onMounted(carregarDados);
           </template>
         </Column>
 
-        <Column header="Ações" style="width: 220px">
+        <Column header="Ações" style="width: 160px">
           <template #body="{ data }">
             <div style="display: flex; gap: 8px">
               <Button
@@ -546,17 +489,13 @@ onMounted(carregarDados);
                 icon="pi pi-send"
                 severity="info"
                 size="small"
-                v-tooltip.top="'Gerar link de convite (primeiro acesso)'"
+                v-tooltip.top="
+                  data.convitePendente
+                    ? 'Gerar novo link de convite (primeiro acesso)'
+                    : 'Redefinir acesso: gerar link para a pessoa definir uma nova senha'
+                "
                 :disabled="carregando || !data.ativo"
                 @click="gerarConvite(data)"
-              />
-              <Button
-                icon="pi pi-key"
-                severity="warning"
-                size="small"
-                v-tooltip.top="'Resetar Senha'"
-                :disabled="carregando"
-                @click="abrirResetSenha(data)"
               />
             </div>
           </template>
@@ -767,70 +706,6 @@ onMounted(carregarDados);
     </Dialog>
 
     <Dialog
-      v-model:visible="dialogResetSenhaAberto"
-      modal
-      header="Resetar senha"
-      :closable="!carregando"
-      :dismissableMask="!carregando"
-      style="width: 520px; max-width: 96vw"
-    >
-      <div class="page-container">
-        <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Usuário</label>
-          <InputText :modelValue="resetandoUsuario?.email ?? ''" disabled />
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Nova senha *</label>
-          <Password
-            v-model="formularioResetSenha.novaSenha"
-            toggleMask
-            :feedback="false"
-            :inputStyle="{ width: '100%' }"
-            style="width: 100%"
-          />
-          <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'NovaSenha') ||
-              firstFieldError(fieldErrors, 'novaSenha')
-            "
-          />
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Confirmar nova senha *</label>
-          <Password
-            v-model="formularioResetSenha.confirmarSenha"
-            toggleMask
-            :feedback="false"
-            :inputStyle="{ width: '100%' }"
-            style="width: 100%"
-          />
-        </div>
-
-        <InlineMessage
-          texto="Dica: em vez de digitar uma senha para a pessoa, você pode fechar esta janela e usar o botão 'Gerar link de convite' — assim ela mesma define a própria senha."
-          tipo="info"
-        />
-      </div>
-
-      <template #footer>
-        <Button
-          label="Cancelar"
-          severity="secondary"
-          :disabled="carregando"
-          @click="dialogResetSenhaAberto = false"
-        />
-        <Button
-          label="Salvar"
-          icon="pi pi-check"
-          :loading="carregando"
-          @click="salvarResetSenha"
-        />
-      </template>
-    </Dialog>
-
-    <Dialog
       v-model:visible="dialogConviteAberto"
       modal
       header="Convite de primeiro acesso"
@@ -842,7 +717,8 @@ onMounted(carregarDados);
           <strong>{{ conviteAtual.nomePessoa ?? conviteAtual.email }}</strong
           >. Ao abrir o link, a pessoa define a própria senha e já pode entrar
           com o e-mail <strong>{{ conviteAtual.email }}</strong
-          >.
+          >. Se a conta já tinha senha, ela continua válida até o link ser
+          usado.
         </p>
 
         <div style="display: flex; gap: 8px; align-items: center">

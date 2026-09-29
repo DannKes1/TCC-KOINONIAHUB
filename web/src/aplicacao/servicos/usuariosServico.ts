@@ -5,7 +5,6 @@ import type {
   ConviteVM,
   UsuarioCriarDTO,
   UsuarioAtualizarDTO,
-  UsuarioResetarSenhaDTO,
 } from "../modelos/dtos";
 
 function normalizarUsuario(bruto: any): UsuarioVM {
@@ -69,6 +68,8 @@ export async function criarUsuario(
 }
 
 // Gera (ou regenera) um convite de primeiro acesso para uma conta existente.
+// É também a ação "Redefinir acesso" (RF15/CSU20): a senha atual continua
+// válida até a pessoa definir a nova pelo link; o administrador nunca a digita.
 export async function gerarConviteUsuario(id: number): Promise<ConviteVM> {
   const resposta = await clienteHttp.post(`/api/usuarios/${id}/convite`);
   return normalizarConvite(resposta.data, id);
@@ -76,11 +77,4 @@ export async function gerarConviteUsuario(id: number): Promise<ConviteVM> {
 
 export async function atualizarUsuario(id: number, dto: UsuarioAtualizarDTO) {
   await clienteHttp.patch(`/api/usuarios/${id}`, dto);
-}
-
-export async function resetarSenhaUsuario(
-  id: number,
-  dto: UsuarioResetarSenhaDTO,
-) {
-  await clienteHttp.patch(`/api/usuarios/${id}/resetar-senha`, dto);
 }
