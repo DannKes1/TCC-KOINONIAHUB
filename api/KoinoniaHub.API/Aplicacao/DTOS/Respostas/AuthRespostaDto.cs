@@ -1,8 +1,15 @@
-﻿namespace KoinoniaHub.API.Aplicacao.DTOs.Respostas
+﻿using System.Text.Json.Serialization;
+
+namespace KoinoniaHub.API.Aplicacao.DTOs.Respostas
 {
     public class AuthRespostaDto
     {
+        // O JWT é entregue ao navegador somente no cookie httpOnly "kh_token"
+        // (monografia, seção 4.8): esta propriedade existe para o controller
+        // gravar o cookie e nunca é serializada no corpo da resposta.
+        [JsonIgnore]
         public string Token { get; set; } = string.Empty;
+
         public DateTime ExpiraEm { get; set; }
 
         public int IgrejaId { get; set; }

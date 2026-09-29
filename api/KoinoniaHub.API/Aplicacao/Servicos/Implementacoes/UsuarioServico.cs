@@ -109,10 +109,11 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
         }
 
         // Gera (ou regenera) um convite de primeiro acesso para uma conta já
-        // existente. Útil quando o link expirou, foi perdido, ou quando o admin
-        // prefere que a própria pessoa defina uma nova senha em vez de digitá-la.
-        // Observação: a senha atual do usuário continua válida até que o convite
-        // seja utilizado.
+        // existente. É o único caminho de redefinição de acesso (RF15/CSU20): o
+        // administrador nunca digita a senha de outro usuário; a própria pessoa
+        // a define pelo link (RNF 15.3). Um convite novo substitui o hash do
+        // anterior, que deixa de valer (RNF 15.2/39.4). A senha atual continua
+        // válida até que o convite seja utilizado (CSU20).
         public async Task<ConviteRespostaDto?> GerarConviteAsync(int igrejaId, int usuarioId)
         {
             var usuario = await _repositorio.ObterPorIdAsync(igrejaId, usuarioId);
@@ -186,22 +187,6 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 usuario.Ativo = dto.Ativo.Value;
 
             await _repositorio.AtualizarAsync(usuario);
-            return true;
-        }
-
-        public async Task<bool> ResetarSenhaAsync(int igrejaId, int usuarioId, UsuarioResetarSenhaRequisicaoDto dto)
-        {
-            var usuario = await _repositorio.ObterPorIdAsync(igrejaId, usuarioId);
-            if (usuario is null) return false;
-
-            usuario.SenhaHash = BCrypt.Net.BCrypt.HashPassword(dto.NovaSenha);
-
-            // Um reset manual do admin invalida qualquer convite pendente.
-            usuario.ConviteTokenHash = null;
-            usuario.ConviteExpiraEm = null;
-
-            await _repositorio.AtualizarAsync(usuario);
-
             return true;
         }
 

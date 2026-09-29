@@ -10,6 +10,5 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Interfaces
         Task<List<UsuarioRespostaDto>> ListarAsync(int igrejaId);
         Task<UsuarioRespostaDto?> ObterPorIdAsync(int igrejaId, int usuarioId);
         Task<bool> AtualizarAsync(int igrejaId, int usuarioId, int usuarioLogadoId, UsuarioAtualizarRequisicaoDto dto);
-        Task<bool> ResetarSenhaAsync(int igrejaId, int usuarioId, UsuarioResetarSenhaRequisicaoDto dto);
     }
 }

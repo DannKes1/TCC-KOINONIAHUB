@@ -34,7 +34,9 @@ namespace KoinoniaHub.API.Controllers
             }
         }
 
-        // Gera (ou regenera) um convite de primeiro acesso para a conta.
+        // Gera (ou regenera) um convite de primeiro acesso para a conta. É também
+        // o único caminho de redefinição de acesso (RF15/CSU20): o administrador
+        // nunca define a senha de outro usuário; a pessoa a define pelo link.
         // O token retorna em claro apenas nesta resposta; no banco fica só o hash.
         [HttpPost("{id:int}/convite")]
         public async Task<IActionResult> GerarConvite([FromRoute] int id)
@@ -86,17 +88,6 @@ namespace KoinoniaHub.API.Controllers
             {
                 return BadRequest(new { mensagem = ex.Message });
             }
-        }
-
-        [HttpPatch("{id:int}/resetar-senha")]
-        public async Task<IActionResult> ResetarSenha([FromRoute] int id, [FromBody] UsuarioResetarSenhaRequisicaoDto dto)
-        {
-            var igrejaId = UsuarioAutenticado.ObterIgrejaId(User);
-
-            var ok = await _servico.ResetarSenhaAsync(igrejaId, id, dto);
-            if (!ok) return NotFound();
-
-            return NoContent();
         }
     }
 }
