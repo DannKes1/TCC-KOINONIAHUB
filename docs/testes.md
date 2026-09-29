@@ -500,3 +500,45 @@ RF2, referência OWASP [2026]a adicionada e a de senhas renomeada para [2026]b
 — textos do LEIA-ME 2.2, seção 4, aplicados; passagens "texto atual"
 conferidas contra o documento antes da substituição, e a fonte OWASP
 verificada na URL citada.
+
+---
+
+## Etapa 2.3 — Guard do último administrador: RNF 14.3 (28/09/2026)
+
+Pré-condição atendida: Etapa 2.2 aprovada (36 verdes).
+
+### Arquivos aplicados
+
+4 arquivos, sem migration e sem front: `ContarAdminsAtivosAsync` em
+`IUsuarioRepositorio`/`UsuarioRepositorio` (Plano 6.7) e o guard em
+`UsuarioServico.AtualizarAsync` — se o alvo é Admin ativo e o pedido o inativa
+ou troca o perfil, e a contagem de Admins ativos da igreja é ≤ 1, a operação é
+recusada com "Não é possível inativar ou alterar o perfil do único
+administrador ativo da igreja." (400 pelo `catch` já existente no controller).
+Ordem das verificações: autoinativação → RNF 14.3 → validação do perfil.
+`<= 1` em vez de `== 1` bloqueia também contagem inconsistente (0).
+
+### Build e testes (`api/`)
+
+```
+PS> dotnet test
+Resumo do teste: total: 42; falhou: 0; bem-sucedido: 42; ignorado: 0; duração: 7,1s
+```
+
+Casos novos: `RF14_UltimoAdminTests` (6), com a semente `CenarioAdministradores`.
+Observação registrada (LEIA-ME 2.3, seção 3): pela API, o ramo "inativar" da
+14.3 para o próprio único Admin é precedido pela autoproteção ("Você não pode
+desativar o seu próprio usuário"); o ramo efetivamente alcançável é o
+rebaixamento de perfil — coberto pelos testes de integração — e o ramo
+"inativar por outro ator" é provado por teste unitário do serviço.
+
+### Evidência (Swagger, logado como o único Admin — Plano 7.5)
+
+`PATCH /api/usuarios/1` com `{ "perfil": "Professor" }` → **400**
+`{"mensagem":"Não é possível inativar ou alterar o perfil do único
+administrador ativo da igreja."}` → `docs/evidencias/RNF-14.3-400-ultimo-admin.png`.
+
+### Teste manual pelo front
+
+Tela Usuários, como único Admin: alterar o próprio perfil → toast com a
+mensagem da 14.3; perfil permanece Admin.
