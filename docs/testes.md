@@ -542,3 +542,68 @@ administrador ativo da igreja."}` → `docs/evidencias/RNF-14.3-400-ultimo-admin
 
 Tela Usuários, como único Admin: alterar o próprio perfil → toast com a
 mensagem da 14.3; perfil permanece Admin.
+
+---
+
+## Etapa 2.4 — Redefinição de acesso só por convite (RF15) e JWT só no cookie (28/09/2026) · fecha a Etapa 2
+
+Pré-condição atendida: Etapa 2.3 aprovada (42 verdes).
+
+### Arquivos aplicados
+
+15 arquivos (7 API, 5 front, 3 docs) e 1 apagado
+(`UsuarioResetarSenhaRequisicaoDto.cs`), sem migration: removidos a rota
+`PATCH /api/usuarios/{id}/resetar-senha`, `ResetarSenhaAsync` e, no front, o
+botão/diálogo "Resetar senha" — "Redefinir acesso" é o convite
+(`POST /api/usuarios/{id}/convite`, RF15/CSU20); `[JsonIgnore]` em `Token` nos
+DTOs de login e cadastro inicial (o controller segue gravando o cookie
+`kh_token`; o corpo não traz o JWT — fecha a divergência registrada na Etapa 0);
+tela de cadastro inicial passa a decidir por `UsuarioId`. Criados
+`docs/decisoes/etapa-0.md` a `etapa-2.md` (definição de pronto do Plano v1.2).
+Ocorrências da aplicação: um "a " solto após o `</template>` do
+`PaginaCadastroInicial.vue` recebido (inócuo; removido ao aplicar) e a lista de
+campos removidos no `etapa-1.md` citava 6 dos 7 (faltava `Observacoes`;
+corrigido).
+
+### Build e testes (`api/` e `web/`)
+
+```
+PS> dotnet test
+Resumo do teste: total: 51; falhou: 0; bem-sucedido: 51; ignorado: 0; duração: 12,1s
+
+PS> npx vue-tsc -b
+(sem saída — sem erros)
+```
+
+Casos novos: `RF39_RF40_ConviteTests` (7) — hash SHA-256 no banco e validade de
+7 dias (39.3/39.4); só Admin gera convite (39.1/15.1); expirado recusado sem
+consumir (40.2); uso único com senha em BCrypt (40.1/40.3); convite novo
+invalida o anterior (39.4/15.2); senha atual vale até o uso (CSU20); rota
+resetar-senha → 404 (15.3) — e `RF2_TokenSomenteNoCookieTests` (2) — cadastro
+inicial e login sem JWT no corpo, cookie httpOnly/secure sustenta a sessão.
+
+### Teste manual pelo front
+
+1. Redefinir acesso: convite gerado; senha antiga entrou **antes** do uso do
+   link (CSU20); link usado em janela anônima definiu a nova; antiga passou a
+   falhar e a nova entrou (15.3); reuso do link → "Convite inválido ou já
+   utilizado." ✔
+2. Coluna Ações só com Editar e convite — diálogo "Resetar senha" inexistente. ✔
+3. DevTools no login: corpo com `pessoaId, expiraEm, usuarioId, emailUsuario,
+perfil, igrejaId` e sem `token`; `Set-Cookie kh_token` httponly/secure. ✔
+4. Cadastro inicial entra direto no painel autenticado. ✔
+
+### Evidência (Plano 7.5)
+
+`PATCH /api/usuarios/1/resetar-senha` (curl com `Origin` autorizado) → **404**
+→ `docs/evidencias/RNF-15.3-404-resetar-senha.png`.
+
+### Fechamento da Etapa 2
+
+Definição de pronto atendida: RNFs 11.3/28.3/34.3, 2.6, 14.3 e 15.3
+implementadas com testes e evidências; 51 execuções verdes;
+`docs/decisoes/etapa-0.md` a `etapa-2.md` no repositório. Decisões da 2.4:
+5.1 aceita (Vitest instala na abertura da Etapa 3, com os specs de menu por
+perfil e `pendenteFechamento`); 5.2 aceita (linha na seção 9 do Plano sobre a
+Figura 14, a substituir na conversão para o TCC 2). **Etapa 2 (Segurança de
+leitura e escrita) concluída.**
