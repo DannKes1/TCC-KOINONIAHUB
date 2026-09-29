@@ -165,6 +165,14 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (dto.Ativo.HasValue && dto.Ativo.Value == false && usuarioId == usuarioLogadoId)
                 throw new InvalidOperationException("Você não pode desativar o seu próprio usuário.");
 
+            var perdeAdmin = usuario.Ativo && usuario.Perfil == Perfis.Admin &&
+                ((dto.Ativo.HasValue && !dto.Ativo.Value) ||
+                 (!string.IsNullOrWhiteSpace(dto.Perfil) && dto.Perfil.Trim() != Perfis.Admin));
+
+            if (perdeAdmin && await _repositorio.ContarAdminsAtivosAsync(igrejaId) <= 1)
+                throw new InvalidOperationException(
+                    "Não é possível inativar ou alterar o perfil do único administrador ativo da igreja.");
+
             if (!string.IsNullOrWhiteSpace(dto.Perfil))
             {
                 var perfil = dto.Perfil.Trim();

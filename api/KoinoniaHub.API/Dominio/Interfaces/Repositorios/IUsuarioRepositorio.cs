@@ -9,5 +9,6 @@ namespace KoinoniaHub.API.Dominio.Interfaces.Repositorios
         Task<Usuario?> ObterPorEmailAsync(string emailNormalizado);
         Task<List<Usuario>> ListarAsync(int igrejaId);
         Task AtualizarAsync(Usuario usuario);
+        Task<int> ContarAdminsAtivosAsync(int igrejaId);
     }
 }

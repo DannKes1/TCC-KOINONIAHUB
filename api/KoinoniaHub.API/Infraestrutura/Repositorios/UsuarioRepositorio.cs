@@ -49,5 +49,8 @@ namespace KoinoniaHub.API.Infraestrutura.Repositorios
             _db.Usuarios.Update(usuario);
             await _db.SaveChangesAsync();
         }
+
+        public async Task<int> ContarAdminsAtivosAsync(int igrejaId) =>
+            await _db.Usuarios.CountAsync(u => u.IgrejaId == igrejaId && u.Ativo && u.Perfil == "Admin");
     }
 }
