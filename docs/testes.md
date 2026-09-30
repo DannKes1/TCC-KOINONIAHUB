@@ -607,3 +607,43 @@ implementadas com testes e evidências; 51 execuções verdes;
 perfil e `pendenteFechamento`); 5.2 aceita (linha na seção 9 do Plano sobre a
 Figura 14, a substituir na conversão para o TCC 2). **Etapa 2 (Segurança de
 leitura e escrita) concluída.**
+
+## Etapa 3.1 — Regras de aula na API: consolidação, Não realizada e reabertura (RF32/RF33) (29/09/2026)
+
+**Escopo.** RF33 completo na API (RNFs 33.1 a 33.7, CSU11 com os três fluxos alternativos)
+e RF32 testado (RNFs 32.2, 32.3 e 32.6). `ConsolidarAsync` passou a exigir aula Em aberto e
+chamada completa — chamada incompleta devolve 400 com `mensagem` e `alunosSemRegistro[]`
+(`ChamadaIncompletaException`, primeira exceção própria do projeto, em `Aplicacao/Excecoes/`).
+Rotas novas: `PATCH /api/aulas/{id}/nao-realizada` (gestão ou atribuição ativa) e
+`PATCH /api/aulas/{id}/reabrir` (somente Admin; presenças preservadas). Sem migration e sem front.
+
+**Mudança de comportamento registrada.** Consolidar aula já Consolidada era idempotente
+(devolvia sucesso); pela RNF 33.2 agora é 400. O front já desabilitava o botão.
+
+**Correção durante a conferência.** O `CenarioAula.cs` recebido não adicionava a matéria ao
+contexto do EF (nada a referenciava no grafo, pois as aulas são criadas por teste), o que
+derrubaria os 19 testes com violação de chave estrangeira; corrigido com `db.Add(materia)`
+antes da aplicação.
+
+**Testes automatizados** — `dotnet test`: **70 aprovados, 0 falhas** (51 anteriores + 19 novos):
+`RF33_ConsolidarAulaTests` (5), `RF33_NaoRealizadaTests` (4), `RF33_ReabrirAulaTests` (5),
+`RF32_ChamadaTests` (5 execuções, Theory incluída). Cobrem chamada incompleta com lista
+correta (matrícula inativa fora), 403 de professor sem atribuição (33.1/33.5), preservação
+de presenças na reabertura (33.6), isolamento por igreja (404) e o índice único de presença
+no banco (32.3).
+
+**Testes manuais (Swagger, perfil https, usuária Professor "Paula" e Admin):**
+
+1. Aula 20: chamada de 1 de 2 alunos → consolidar → **400** com "A chamada deve ser concluída
+   antes da consolidação: 1 aluno..." e `alunosSemRegistro` apontando só o aluno sem registro;
+   chamada completa → **204**; GET mostra `situacao: Consolidada`, `pendenteFechamento: false`. ✔
+2. Aula 21 sem chamada → `nao-realizada` → **204**; tentativa de chamada → 400 (RNF 32.2);
+   tentativa de consolidar → 400 (RNF 33.2). ✔
+3. Professor → `reabrir` → **403** (RNF 33.5, evidência abaixo); Admin → **204** e a aula
+   voltou a aceitar chamada (RNF 33.6). ✔
+4. Reabertura de aula Não realizada pelo Admin → **204** (CSU11 FA3). ✔
+
+**Evidência:** `docs/evidencias/RNF-33.5-403-reabrir-professor.png`.
+
+**Pendência conhecida até a 3.2:** o front ainda deriva `consolidada` e não exibe a situação
+"Não realizada"; nenhuma aula deve ficar nesse estado nos dados de demonstração.
