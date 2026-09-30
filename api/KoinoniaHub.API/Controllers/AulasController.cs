@@ -1,4 +1,5 @@
 ﻿using KoinoniaHub.API.Aplicacao.DTOs.Requisicoes;
+using KoinoniaHub.API.Aplicacao.Excecoes;
 using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -95,6 +96,8 @@ namespace KoinoniaHub.API.Controllers
             }
         }
 
+        // RF33 / RNF 33.1: gestão ou atribuição ativa na turma. Chamada incompleta
+        // (32.6/33.3) devolve 400 com a lista dos alunos sem registro.
         [HttpPatch("{id:int}/consolidar")]
         public async Task<IActionResult> Consolidar([FromRoute] int id)
         {
@@ -114,6 +117,58 @@ namespace KoinoniaHub.API.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = ex.Message });
+            }
+            catch (ChamadaIncompletaException ex)
+            {
+                return BadRequest(new { mensagem = ex.Message, alunosSemRegistro = ex.AlunosSemRegistro });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { mensagem = ex.Message });
+            }
+        }
+
+        // RF33 / RNFs 33.1, 33.2, 33.7: gestão ou atribuição ativa na turma.
+        [HttpPatch("{id:int}/nao-realizada")]
+        public async Task<IActionResult> MarcarNaoRealizada([FromRoute] int id)
+        {
+            var igrejaId = UsuarioAutenticado.ObterIgrejaId(User);
+            var usuarioId = UsuarioAutenticado.ObterUsuarioId(User);
+            var perfil = UsuarioAutenticado.ObterPerfil(User);
+
+            try
+            {
+                await _autorizacao.GarantirAcessoAulaAsync(igrejaId, usuarioId, perfil, id);
+
+                var ok = await _servico.MarcarNaoRealizadaAsync(igrejaId, id);
+                if (!ok) return NotFound();
+
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { mensagem = ex.Message });
+            }
+        }
+
+        // RF33 / RNFs 33.5 e 33.6: reabertura restrita ao Administrador (o isolamento
+        // por igreja continua garantido pelo igrejaId do token dentro do serviço).
+        [HttpPatch("{id:int}/reabrir")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Reabrir([FromRoute] int id)
+        {
+            var igrejaId = UsuarioAutenticado.ObterIgrejaId(User);
+
+            try
+            {
+                var ok = await _servico.ReabrirAsync(igrejaId, id);
+                if (!ok) return NotFound();
+
+                return NoContent();
             }
             catch (InvalidOperationException ex)
             {

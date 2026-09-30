@@ -1,5 +1,6 @@
 ﻿using KoinoniaHub.API.Aplicacao.DTOs.Requisicoes;
 using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
+using KoinoniaHub.API.Aplicacao.Excecoes;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
 using KoinoniaHub.API.Dominio.Entidades;
 using KoinoniaHub.API.Dominio.Interfaces.Repositorios;
@@ -21,7 +22,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
         public async Task<AulaRespostaDto> CriarAsync(int igrejaId, AulaCriarRequisicaoDto dto)
         {
-          
+
             var materia = await _db.Materias
                 .Include(m => m.Departamento)
                 .FirstOrDefaultAsync(m =>
@@ -31,7 +32,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (materia is null)
                 throw new InvalidOperationException("Matéria não encontrada para esta igreja.");
 
-  
+
             var professor = await _db.Pessoas.AsNoTracking()
                 .Where(p => p.IgrejaId == igrejaId && p.Id == dto.ProfessorId)
                 .Where(p => p.Atribuicoes.Any(a =>
@@ -118,17 +119,36 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             };
         }
 
+        // RF33 / RNFs 32.6, 33.2 e 33.3: só aulas Em aberto são consolidadas, e apenas
+        // quando todos os alunos com matrícula ativa na turma (o mesmo conjunto que a
+        // tela de chamada lista) possuem registro explícito de presença ou ausência.
         public async Task<bool> ConsolidarAsync(int igrejaId, int aulaId)
         {
-            var aula = await _db.Aulas
-                .Include(a => a.Materia)
-                    .ThenInclude(m => m.Departamento)
-                .FirstOrDefaultAsync(a => a.Id == aulaId && a.Materia.Departamento.IgrejaId == igrejaId);
-
+            var aula = await _repositorio.ObterPorIdAsync(igrejaId, aulaId);
             if (aula is null) return false;
 
-    
-            if (aula.Situacao == SituacaoAula.Consolidada) return true;
+            if (aula.Situacao != SituacaoAula.EmAberto)
+                throw new InvalidOperationException("Somente aulas Em aberto podem ser consolidadas.");
+
+            var departamentoId = aula.Materia.DepartamentoId;
+
+            var alunosSemRegistro = await _db.AlunosDepartamentos
+                .AsNoTracking()
+                .Where(m =>
+                    m.Ativo &&
+                    m.DepartamentoId == departamentoId &&
+                    m.Departamento.IgrejaId == igrejaId &&
+                    !_db.Presencas.Any(p => p.AulaId == aulaId && p.AlunoDepartamentoId == m.Id))
+                .OrderBy(m => m.Pessoa.Nome)
+                .Select(m => new AlunoSemRegistroRespostaDto
+                {
+                    AlunoDepartamentoId = m.Id,
+                    NomeAluno = m.Pessoa.Nome
+                })
+                .ToListAsync();
+
+            if (alunosSemRegistro.Count > 0)
+                throw new ChamadaIncompletaException(alunosSemRegistro);
 
             aula.Situacao = SituacaoAula.Consolidada;
             await _db.SaveChangesAsync();
@@ -136,7 +156,45 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             return true;
         }
 
-        
+        // RF33 / RNFs 33.2, 33.4 e 33.7: só aulas Em aberto e sem nenhum registro de
+        // presença podem ser marcadas como Não realizadas. A aula é encerrada sem
+        // atribuir presença ou falta e fica fora dos cálculos de frequência (etapa 4).
+        public async Task<bool> MarcarNaoRealizadaAsync(int igrejaId, int aulaId)
+        {
+            var aula = await _repositorio.ObterPorIdAsync(igrejaId, aulaId);
+            if (aula is null) return false;
+
+            if (aula.Situacao != SituacaoAula.EmAberto)
+                throw new InvalidOperationException("Somente aulas Em aberto podem ser marcadas como Não realizadas.");
+
+            var possuiPresencas = await _db.Presencas.AnyAsync(p => p.AulaId == aulaId);
+            if (possuiPresencas)
+                throw new InvalidOperationException("Uma aula com registros de presença não pode ser marcada como Não realizada.");
+
+            aula.Situacao = SituacaoAula.NaoRealizada;
+            await _db.SaveChangesAsync();
+
+            return true;
+        }
+
+        // RF33 / RNFs 33.5 e 33.6 (CSU11, fluxo alternativo 3): o Administrador reabre
+        // uma aula Consolidada ou Não realizada, que volta para Em aberto. Nenhum
+        // registro de presença é tocado — os existentes ficam preservados para
+        // correção e nova consolidação. A restrição ao perfil Admin está na rota.
+        public async Task<bool> ReabrirAsync(int igrejaId, int aulaId)
+        {
+            var aula = await _repositorio.ObterPorIdAsync(igrejaId, aulaId);
+            if (aula is null) return false;
+
+            if (aula.Situacao == SituacaoAula.EmAberto)
+                throw new InvalidOperationException("A aula já está Em aberto.");
+
+            aula.Situacao = SituacaoAula.EmAberto;
+            await _db.SaveChangesAsync();
+
+            return true;
+        }
+
         private static bool CalcularPendenteFechamento(Aula aula) =>
             aula.Situacao == SituacaoAula.EmAberto && aula.Data.Date < DateTime.UtcNow.Date;
 

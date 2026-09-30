@@ -9,6 +9,11 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Interfaces
         Task<List<AulaRespostaDto>> ListarPorDepartamentoAsync(int igrejaId, int departamentoId);
         Task<AulaRespostaDto?> ObterPorIdAsync(int igrejaId, int aulaId);
 
+        // RF33. Os três devolvem false quando a aula não existe na igreja e lançam
+        // InvalidOperationException (ChamadaIncompletaException na consolidação)
+        // quando a situação atual não permite a operação.
         Task<bool> ConsolidarAsync(int igrejaId, int aulaId);
+        Task<bool> MarcarNaoRealizadaAsync(int igrejaId, int aulaId);
+        Task<bool> ReabrirAsync(int igrejaId, int aulaId);
     }
 }
