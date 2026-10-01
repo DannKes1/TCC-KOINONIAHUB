@@ -714,3 +714,39 @@ serviço, violação do índice único filtrado no banco e rematrícula após in
    a aula entrou em `aulasPendentes`; reconsolidada, os números voltaram. ✔
    (prints RNF-35.5-frequencia-antes-reabertura.png e
    RNF-35.5-33.6-frequencia-depois-reabertura.png)
+
+## Etapa 4.2 — Relatórios no front: pendentes, situação no resumo e exportação só para gestão (01/10/2026) · fecha a Etapa 4
+
+**Escopo.** Gate de exportação num componente único (`BotoesExportacao`: CSV e Imprimir só
+para Admin, Pastor e Superintendente — RNFs 35.4/36.4/37.4); `ListaAulasPendentes`
+reutilizado nas abas Frequência, Acompanhamento e Ranking, em Minha Frequência e no Resumo
+do dia (variante "Não realizadas"); Resumo do dia com tags de situação por turma, colunas
+por situação e rodapé "Totais (só aulas Consolidadas)" (RNF 38.4 / Plano 6.10); rótulos
+"Aulas consolidadas" nos cards. Conferência do RF3 encontrou o painel do usuário comum
+calculando frequência sobre todos os registros do histórico, inclusive de aulas Em aberto;
+correção: o histórico (RF34) passou a informar `situacaoAula` (campo aditivo na API, com
+asserção no teste existente) e o painel conta só Consolidadas, mantendo o histórico completo
+com a tag da aula. Sem migration, sem rota nova.
+
+**Testes automatizados** — `dotnet test`: **81** (o RF34 ganhou uma asserção) ·
+`npm run test`: **28 casos, 4 arquivos** (21 + `BotoesExportacao.spec` com 7) ·
+`vue-tsc -b` limpo · `vite build` ok.
+
+**Testes manuais:**
+1. Exportação por perfil: Admin vê Imprimir + CSV em todas as tabelas; Paula (Professor) vê
+   as mesmas abas sem nenhum botão de exportação e sem a aba Resumo do dia (RNF 38.1). ✔
+   (print RNF-35.4-professor-sem-exportacao.png)
+2. Bloco âmbar "Pendentes de fechamento (2)" nas abas de turma, com data/matéria/professor;
+   cards "Aulas consolidadas". ✔
+3. Resumo do dia 29/09: tags "1 não realizada(s)" e "1 pendente(s) de fechamento" na turma,
+   rodapé só de Consolidadas e as duas listas abaixo da tabela. ✔
+   (print RNF-38.4-resumo-dia-situacoes.png)
+4. Minha frequência do aluno: "Aulas consolidadas" e pendentes à parte (CSU07). ✔
+5. Painel do aluno: 4 cards contando só registros de aulas Consolidadas (5 presenças em 12)
+   e coluna "Aula" com a tag de situação; o registro da aula Em aberto de 29/09 aparece no
+   histórico e não entra no percentual. ✔ (print RF3-painel-aluno-consolidadas.png)
+
+**Observação registrada para a Etapa 6** (junto com o diálogo de Pessoas): o painel do aluno
+usa o histórico completo (sem recorte de período) enquanto Minha Frequência usa 90 dias —
+por isso percentuais podem diferir (42% × 30% nos dados de teste); o rótulo "3 Meses" da
+tabela do painel não corresponde ao filtro real. Alinhar período ou rótulo.
