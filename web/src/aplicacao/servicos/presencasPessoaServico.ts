@@ -1,5 +1,6 @@
 import { clienteHttp } from "./clienteHttp";
 import type { HistoricoPresencaPessoaVM } from "../modelos/dtos";
+import { normalizarSituacaoAula } from "../dominio/situacaoAula";
 
 function normalizarHistorico(bruto: any): HistoricoPresencaPessoaVM {
   return {
@@ -12,7 +13,12 @@ function normalizarHistorico(bruto: any): HistoricoPresencaPessoaVM {
     materiaId: Number(bruto?.MateriaId ?? bruto?.materiaId ?? 0),
     materiaNome: String(bruto?.MateriaNome ?? bruto?.materiaNome ?? ""),
     presente: Boolean(bruto?.Presente ?? bruto?.presente ?? false),
-    observacao: (bruto?.Observacao ?? bruto?.observacao ?? null) as string | null,
+    observacao: (bruto?.Observacao ?? bruto?.observacao ?? null) as
+      | string
+      | null,
+    situacaoAula: normalizarSituacaoAula(
+      bruto?.SituacaoAula ?? bruto?.situacaoAula,
+    ),
   };
 }
 

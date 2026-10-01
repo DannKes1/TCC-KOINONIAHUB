@@ -6,6 +6,7 @@ import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import CardIndicador from "../../../components/ui/CardIndicador.vue";
+import ListaAulasPendentes from "../../../components/ui/ListaAulasPendentes.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
@@ -110,11 +111,14 @@ onMounted(carregar);
             icone="pi pi-minus-circle"
           />
           <CardIndicador
-            rotulo="Aulas no período"
+            rotulo="Aulas consolidadas"
             :valor="dados.totalAulas"
             icone="pi pi-calendar"
           />
         </div>
+
+        <!-- CSU07: só aulas Consolidadas entram no cálculo; as em aberto já ocorridas ficam à parte. -->
+        <ListaAulasPendentes :aulas="dados.aulasPendentes" />
 
         <div v-if="aulasComChamada > 0" class="card-bloco">
           <h3 class="titulo-secao">Frequência na turma</h3>
@@ -128,7 +132,7 @@ onMounted(carregar);
           </div>
           <p class="legenda">
             {{ dados.presentes }} presença(s) em {{ aulasComChamada }} aula(s)
-            com chamada lançada.
+            consolidada(s).
             <template v-if="dados.naoRegistrado > 0">
               Outras {{ dados.naoRegistrado }} aula(s) ainda não tiveram a
               chamada registrada e não entram neste cálculo.
@@ -141,7 +145,7 @@ onMounted(carregar);
 
           <InlineMessage
             v-if="dados.aulas.length === 0"
-            texto="Nenhuma aula registrada neste período."
+            texto="Nenhuma aula consolidada neste período."
             tipo="info"
           />
 

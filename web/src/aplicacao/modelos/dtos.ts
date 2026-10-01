@@ -262,6 +262,17 @@ export type ChamadaRegistrarDTO = {
   }>;
 };
 
+// Aula listada à parte nos relatórios (Plano 6.9): pendente de fechamento ou
+// Não realizada. Não entra nos cálculos.
+export type AulaResumidaVM = {
+  id: number;
+  data: string;
+  materia: string;
+  professor: string;
+  departamentoId: number;
+  departamento: string;
+};
+
 export type FrequenciaTurmaVM = {
   departamentoId: number;
   nomeDepartamento: string;
@@ -275,6 +286,8 @@ export type FrequenciaTurmaVM = {
   percentualPresencaGeral: number;
   alunos: any[];
   aulas: any[];
+  // RNF 35.5: Em aberto com data já ocorrida no período.
+  aulasPendentes: AulaResumidaVM[];
 };
 
 export type RankingFaltasVM = {
@@ -283,6 +296,7 @@ export type RankingFaltasVM = {
   dataInicio: string;
   dataFim: string;
   itens: any[];
+  aulasPendentes: AulaResumidaVM[];
 };
 
 export type HistoricoPresencaPessoaVM = {
@@ -294,4 +308,6 @@ export type HistoricoPresencaPessoaVM = {
   materiaNome: string;
   presente: boolean;
   observacao: string | null;
+  // Situação da aula do registro (RF34/CSU14); só Consolidada conta como frequência.
+  situacaoAula: SituacaoAula;
 };

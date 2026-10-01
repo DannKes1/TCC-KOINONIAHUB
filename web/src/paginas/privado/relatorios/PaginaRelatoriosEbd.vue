@@ -6,6 +6,8 @@ import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import CardIndicador from "../../../components/ui/CardIndicador.vue";
+import BotoesExportacao from "../../../components/ui/BotoesExportacao.vue";
+import ListaAulasPendentes from "../../../components/ui/ListaAulasPendentes.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
@@ -20,6 +22,8 @@ import Calendar from "primevue/calendar";
 import InputNumber from "primevue/inputnumber";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
+import ColumnGroup from "primevue/columngroup";
+import Row from "primevue/row";
 import Tag from "primevue/tag";
 import Chart from "primevue/chart";
 import ProgressBar from "primevue/progressbar";
@@ -256,6 +260,11 @@ const opcoesGraficoRanking: any = {
   plugins: { legend: { display: false } },
 };
 
+// Soma das aulas Em aberto das turmas na data (inclui as de hoje, que ainda não são pendentes).
+const totalAulasEmAbertoResumo = computed(() =>
+  (resumo.value?.turmas ?? []).reduce((acc, t) => acc + t.aulasEmAberto, 0),
+);
+
 const alturaGraficoRanking = computed(() => {
   const quantidade = itensRankingOrdenados.value.length;
   return `${Math.max(180, quantidade * 34 + 60)}px`;
@@ -379,13 +388,11 @@ onMounted(async () => {
     >
       <template #acoes>
         <div class="acoes-cabecalho nao-imprimir">
-          <Button
-            label="Imprimir"
-            icon="pi pi-print"
-            outlined
-            severity="secondary"
-            :disabled="carregando"
-            @click="imprimir"
+          <BotoesExportacao
+            :csv="false"
+            imprimir
+            :desabilitado="carregando"
+            @imprimir="imprimir"
           />
           <Button
             label="Buscar"
@@ -482,7 +489,7 @@ onMounted(async () => {
             <div v-if="frequencia" class="conteudo-relatorio">
               <div class="linha-indicadores">
                 <CardIndicador
-                  rotulo="Aulas no período"
+                  rotulo="Aulas consolidadas"
                   :valor="frequencia.totalAulas"
                   icone="pi pi-calendar"
                 />
@@ -506,6 +513,8 @@ onMounted(async () => {
                 />
               </div>
 
+              <ListaAulasPendentes :aulas="frequencia.aulasPendentes" />
+
               <div v-if="frequencia.aulas.length" class="card-bloco">
                 <h3 class="titulo-secao">Evolução da presença por aula</h3>
                 <div class="grafico-area">
@@ -521,14 +530,7 @@ onMounted(async () => {
               <div class="card-bloco">
                 <div class="secao-cabecalho">
                   <h3 class="titulo-secao">Alunos</h3>
-                  <Button
-                    class="nao-imprimir"
-                    label="CSV"
-                    icon="pi pi-download"
-                    text
-                    size="small"
-                    @click="exportarCsv(tabelaAlunosRef)"
-                  />
+                  <BotoesExportacao @csv="exportarCsv(tabelaAlunosRef)" />
                 </div>
                 <DataTable
                   ref="tabelaAlunosRef"
@@ -584,14 +586,7 @@ onMounted(async () => {
               <div class="card-bloco">
                 <div class="secao-cabecalho">
                   <h3 class="titulo-secao">Aulas</h3>
-                  <Button
-                    class="nao-imprimir"
-                    label="CSV"
-                    icon="pi pi-download"
-                    text
-                    size="small"
-                    @click="exportarCsv(tabelaAulasRef)"
-                  />
+                  <BotoesExportacao @csv="exportarCsv(tabelaAulasRef)" />
                 </div>
                 <DataTable
                   ref="tabelaAulasRef"
@@ -674,11 +669,13 @@ onMounted(async () => {
                   icone="pi pi-users"
                 />
                 <CardIndicador
-                  rotulo="Aulas no período"
+                  rotulo="Aulas consolidadas"
                   :valor="acompanhamento.totalAulas"
                   icone="pi pi-calendar"
                 />
               </div>
+
+              <ListaAulasPendentes :aulas="acompanhamento.aulasPendentes" />
 
               <div
                 v-if="dadosGraficoSituacao && acompanhamento.totalAlunos > 0"
@@ -704,13 +701,8 @@ onMounted(async () => {
               <div v-else class="card-bloco">
                 <div class="secao-cabecalho">
                   <h3 class="titulo-secao">Alunos em atenção</h3>
-                  <Button
-                    class="nao-imprimir"
-                    label="CSV"
-                    icon="pi pi-download"
-                    text
-                    size="small"
-                    @click="exportarCsv(tabelaAcompanhamentoRef)"
+                  <BotoesExportacao
+                    @csv="exportarCsv(tabelaAcompanhamentoRef)"
                   />
                 </div>
                 <DataTable
@@ -802,55 +794,150 @@ onMounted(async () => {
                   :valor="resumo.totalPresentes + resumo.totalVisitantes"
                   icone="pi pi-users"
                 />
+                <CardIndicador
+                  rotulo="Aulas consolidadas"
+                  :valor="resumo.totalAulasConsolidadas"
+                  icone="pi pi-lock"
+                  tom="sucesso"
+                />
+                <CardIndicador
+                  rotulo="Não realizadas"
+                  :valor="resumo.totalAulasNaoRealizadas"
+                  icone="pi pi-ban"
+                />
+                <CardIndicador
+                  rotulo="Pendentes de fechamento"
+                  :valor="resumo.totalAulasPendentes"
+                  icone="pi pi-exclamation-triangle"
+                  :tom="resumo.totalAulasPendentes > 0 ? 'alerta' : 'padrao'"
+                />
               </div>
 
               <InlineMessage
-                v-if="!resumo.turmas.some((t) => t.temChamada)"
-                texto="Nenhuma chamada registrada nesta data."
+                texto="Os totais consideram apenas aulas Consolidadas (RNF 38.4). Aulas Não realizadas e aulas em aberto já ocorridas são listadas separadamente."
                 tipo="info"
+              />
+
+              <InlineMessage
+                v-if="!resumo.turmas.some((t) => t.temChamada)"
+                texto="Nenhuma aula consolidada com chamada nesta data."
+                tipo="aviso"
               />
 
               <div class="card-bloco">
                 <div class="secao-cabecalho">
                   <h3 class="titulo-secao">Resumo por turma</h3>
-                  <Button
-                    class="nao-imprimir"
-                    label="CSV"
-                    icon="pi pi-download"
-                    text
-                    size="small"
-                    @click="exportarCsv(tabelaResumoRef)"
-                  />
+                  <BotoesExportacao @csv="exportarCsv(tabelaResumoRef)" />
                 </div>
                 <DataTable
                   ref="tabelaResumoRef"
                   :value="resumo.turmas"
                   stripedRows
                   exportFilename="resumo-do-dia"
+                  responsiveLayout="scroll"
                 >
                   <Column field="nome" header="Turma" />
-                  <Column header="Chamada" style="width: 120px">
-                    <template #body="{ data }">{{
-                      data.temChamada ? "Sim" : "Não"
-                    }}</template>
+                  <Column
+                    header="Situação das aulas"
+                    style="min-width: 260px"
+                    :exportable="false"
+                  >
+                    <template #body="{ data }">
+                      <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                        <Tag
+                          v-if="data.aulasConsolidadas > 0"
+                          :value="`${data.aulasConsolidadas} consolidada(s)`"
+                          severity="success"
+                        />
+                        <Tag
+                          v-if="data.aulasNaoRealizadas > 0"
+                          :value="`${data.aulasNaoRealizadas} não realizada(s)`"
+                          severity="secondary"
+                        />
+                        <Tag
+                          v-if="data.aulasEmAberto > 0"
+                          :value="
+                            data.pendenteFechamento
+                              ? `${data.aulasEmAberto} pendente(s) de fechamento`
+                              : `${data.aulasEmAberto} em aberto`
+                          "
+                          :severity="
+                            data.pendenteFechamento ? 'warning' : 'info'
+                          "
+                        />
+                        <span
+                          v-if="
+                            data.aulasConsolidadas +
+                              data.aulasNaoRealizadas +
+                              data.aulasEmAberto ===
+                            0
+                          "
+                          style="opacity: 0.6"
+                          >Sem aula</span
+                        >
+                      </div>
+                    </template>
                   </Column>
+                  <Column
+                    field="aulasConsolidadas"
+                    header="Consolidadas"
+                    style="width: 120px"
+                  />
+                  <Column
+                    field="aulasNaoRealizadas"
+                    header="Não realizadas"
+                    style="width: 130px"
+                  />
+                  <Column
+                    field="aulasEmAberto"
+                    header="Em aberto"
+                    style="width: 110px"
+                  />
                   <Column
                     field="presentes"
                     header="Presentes"
-                    style="width: 120px"
+                    style="width: 110px"
                   />
                   <Column
                     field="ausentes"
                     header="Ausentes"
-                    style="width: 120px"
+                    style="width: 110px"
                   />
                   <Column
                     field="visitantes"
                     header="Visitantes"
-                    style="width: 120px"
+                    style="width: 110px"
                   />
+
+                  <ColumnGroup type="footer">
+                    <Row>
+                      <Column
+                        footer="Totais (só aulas Consolidadas)"
+                        :colspan="2"
+                        footerStyle="text-align: right"
+                      />
+                      <Column :footer="String(resumo.totalAulasConsolidadas)" />
+                      <Column
+                        :footer="String(resumo.totalAulasNaoRealizadas)"
+                      />
+                      <Column :footer="String(totalAulasEmAbertoResumo)" />
+                      <Column :footer="String(resumo.totalPresentes)" />
+                      <Column :footer="String(resumo.totalAusentes)" />
+                      <Column :footer="String(resumo.totalVisitantes)" />
+                    </Row>
+                  </ColumnGroup>
                 </DataTable>
               </div>
+
+              <ListaAulasPendentes
+                :aulas="resumo.aulasPendentes"
+                mostrarTurma
+              />
+              <ListaAulasPendentes
+                :aulas="resumo.aulasNaoRealizadas"
+                tipo="nao-realizadas"
+                mostrarTurma
+              />
             </div>
 
             <InlineMessage
@@ -862,9 +949,11 @@ onMounted(async () => {
 
           <TabPanel value="ranking">
             <div v-if="ranking" class="conteudo-relatorio">
+              <ListaAulasPendentes :aulas="ranking.aulasPendentes" />
+
               <InlineMessage
                 v-if="ranking.itens.length === 0"
-                texto="Nenhuma falta registrada no período para esta turma."
+                texto="Nenhuma falta registrada em aula consolidada no período para esta turma."
                 tipo="sucesso"
               />
 
@@ -889,14 +978,7 @@ onMounted(async () => {
                 <div class="card-bloco">
                   <div class="secao-cabecalho">
                     <h3 class="titulo-secao">Detalhamento</h3>
-                    <Button
-                      class="nao-imprimir"
-                      label="CSV"
-                      icon="pi pi-download"
-                      text
-                      size="small"
-                      @click="exportarCsv(tabelaRankingRef)"
-                    />
+                    <BotoesExportacao @csv="exportarCsv(tabelaRankingRef)" />
                   </div>
                   <DataTable
                     ref="tabelaRankingRef"

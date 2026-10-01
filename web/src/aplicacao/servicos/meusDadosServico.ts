@@ -1,4 +1,6 @@
 import { clienteHttp } from "./clienteHttp";
+import type { AulaResumidaVM } from "../modelos/dtos";
+import { normalizarListaAulasResumidas } from "./relatoriosServico";
 import type { PessoaVM } from "../modelos/dtos";
 
 export type MeusDadosAtualizarDTO = {
@@ -91,6 +93,8 @@ export type MinhaFrequenciaTurmaVM = {
   naoRegistrado: number;
   percentualPresenca: number;
   aulas: MinhaFrequenciaAulaVM[];
+  // CSU07: só aulas Consolidadas entram no cálculo; as Em aberto já ocorridas vêm à parte.
+  aulasPendentes: AulaResumidaVM[];
 };
 
 export async function obterMinhaFrequencia(
@@ -124,5 +128,8 @@ export async function obterMinhaFrequencia(
       tema: (a?.Tema ?? a?.tema ?? null) as string | null,
       situacao: String(a?.Situacao ?? a?.situacao ?? ""),
     })),
+    aulasPendentes: normalizarListaAulasResumidas(
+      b?.AulasPendentes ?? b?.aulasPendentes,
+    ),
   };
 }

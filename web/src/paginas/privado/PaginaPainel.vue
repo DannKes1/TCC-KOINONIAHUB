@@ -163,16 +163,26 @@ const presencasOrdenadas = computed(() =>
   ),
 );
 
+// RF3 (indicadores de frequência do usuário comum) segue a mesma regra do RF6/CSU07:
+// só registros de aulas Consolidadas contam. O histórico continua mostrando todos.
+const presencasConsolidadas = computed(() =>
+  historicoPresencas.value.filter((p) => p.situacaoAula === "Consolidada"),
+);
+
+const totalAulasConsolidadas = computed(
+  () => presencasConsolidadas.value.length,
+);
+
 const totalPresencas = computed(
-  () => historicoPresencas.value.filter((p) => p.presente).length,
+  () => presencasConsolidadas.value.filter((p) => p.presente).length,
 );
 
 const totalFaltas = computed(
-  () => historicoPresencas.value.filter((p) => !p.presente).length,
+  () => presencasConsolidadas.value.filter((p) => !p.presente).length,
 );
 
 const percentualPresenca = computed(() => {
-  const total = historicoPresencas.value.length;
+  const total = presencasConsolidadas.value.length;
   if (total === 0) return "-";
   const pct = (totalPresencas.value / total) * 100;
   return `${pct.toFixed(0)}%`;
@@ -573,8 +583,8 @@ onMounted(carregarPainel);
 
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-card-label">Total de aulas</div>
-            <div class="stat-card-valor">{{ historicoPresencas.length }}</div>
+            <div class="stat-card-label">Aulas consolidadas</div>
+            <div class="stat-card-valor">{{ totalAulasConsolidadas }}</div>
           </div>
           <div class="stat-card">
             <div class="stat-card-label">Presenças</div>
@@ -616,6 +626,11 @@ onMounted(carregarPainel);
                   :value="data.presente ? 'Presente' : 'Ausente'"
                   :severity="severityPresenca(data.presente)"
                 />
+              </template>
+            </Column>
+            <Column header="Aula" style="width: 170px">
+              <template #body="{ data }">
+                <TagSituacaoAula :situacao="data.situacaoAula" />
               </template>
             </Column>
             <Column field="observacao" header="Observação" />

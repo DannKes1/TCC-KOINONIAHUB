@@ -1,5 +1,23 @@
 import { clienteHttp } from "./clienteHttp";
-import type { FrequenciaTurmaVM } from "../modelos/dtos";
+import type { AulaResumidaVM, FrequenciaTurmaVM } from "../modelos/dtos";
+
+// Item de aulasPendentes[] / aulasNaoRealizadas[] (Plano 6.9).
+export function normalizarAulaResumida(bruto: any): AulaResumidaVM {
+  return {
+    id: Number(bruto?.Id ?? bruto?.id ?? 0),
+    data: String(bruto?.Data ?? bruto?.data ?? ""),
+    materia: String(bruto?.Materia ?? bruto?.materia ?? ""),
+    professor: String(bruto?.Professor ?? bruto?.professor ?? ""),
+    departamentoId: Number(bruto?.DepartamentoId ?? bruto?.departamentoId ?? 0),
+    departamento: String(bruto?.Departamento ?? bruto?.departamento ?? ""),
+  };
+}
+
+export function normalizarListaAulasResumidas(
+  lista: unknown,
+): AulaResumidaVM[] {
+  return Array.isArray(lista) ? lista.map(normalizarAulaResumida) : [];
+}
 
 function normalizarFrequenciaTurma(bruto: any): FrequenciaTurmaVM {
   return {
@@ -18,6 +36,9 @@ function normalizarFrequenciaTurma(bruto: any): FrequenciaTurmaVM {
       bruto?.PercentualPresencaGeral ?? bruto?.percentualPresencaGeral ?? 0,
     alunos: bruto?.Alunos ?? bruto?.alunos ?? [],
     aulas: bruto?.Aulas ?? bruto?.aulas ?? [],
+    aulasPendentes: normalizarListaAulasResumidas(
+      bruto?.AulasPendentes ?? bruto?.aulasPendentes,
+    ),
   };
 }
 
@@ -48,6 +69,9 @@ function normalizarAcompanhamento(bruto: any) {
     totalCritico: bruto?.TotalCritico ?? bruto?.totalCritico ?? 0,
     totalAtencao: bruto?.TotalAtencao ?? bruto?.totalAtencao ?? 0,
     alunos: bruto?.Alunos ?? bruto?.alunos ?? [],
+    aulasPendentes: normalizarListaAulasResumidas(
+      bruto?.AulasPendentes ?? bruto?.aulasPendentes,
+    ),
   };
 }
 
@@ -72,6 +96,9 @@ function normalizarRankingFaltas(bruto: any) {
     dataInicio: String(bruto?.DataInicio ?? bruto?.dataInicio ?? ""),
     dataFim: String(bruto?.DataFim ?? bruto?.dataFim ?? ""),
     itens: bruto?.Itens ?? bruto?.itens ?? [],
+    aulasPendentes: normalizarListaAulasResumidas(
+      bruto?.AulasPendentes ?? bruto?.aulasPendentes,
+    ),
   };
 }
 
@@ -87,6 +114,8 @@ export async function obterRankingFaltas(params: {
   return normalizarRankingFaltas(resposta.data);
 }
 
+// RF38 / RNF 38.4: totais só de aulas Consolidadas; as demais situações aparecem
+// separadamente (contagens por turma e listas).
 export type ResumoDiaTurmaVM = {
   departamentoId: number;
   nome: string;
@@ -94,6 +123,10 @@ export type ResumoDiaTurmaVM = {
   presentes: number;
   ausentes: number;
   visitantes: number;
+  aulasConsolidadas: number;
+  aulasNaoRealizadas: number;
+  aulasEmAberto: number;
+  pendenteFechamento: boolean;
 };
 
 export type ResumoDiaVM = {
@@ -102,6 +135,11 @@ export type ResumoDiaVM = {
   totalPresentes: number;
   totalAusentes: number;
   totalVisitantes: number;
+  totalAulasConsolidadas: number;
+  totalAulasNaoRealizadas: number;
+  totalAulasPendentes: number;
+  aulasPendentes: AulaResumidaVM[];
+  aulasNaoRealizadas: AulaResumidaVM[];
 };
 
 export async function obterResumoDia(dataIso: string): Promise<ResumoDiaVM> {
@@ -121,11 +159,36 @@ export async function obterResumoDia(dataIso: string): Promise<ResumoDiaVM> {
       presentes: Number(x?.Presentes ?? x?.presentes ?? 0),
       ausentes: Number(x?.Ausentes ?? x?.ausentes ?? 0),
       visitantes: Number(x?.Visitantes ?? x?.visitantes ?? 0),
+      aulasConsolidadas: Number(
+        x?.AulasConsolidadas ?? x?.aulasConsolidadas ?? 0,
+      ),
+      aulasNaoRealizadas: Number(
+        x?.AulasNaoRealizadas ?? x?.aulasNaoRealizadas ?? 0,
+      ),
+      aulasEmAberto: Number(x?.AulasEmAberto ?? x?.aulasEmAberto ?? 0),
+      pendenteFechamento: Boolean(
+        x?.PendenteFechamento ?? x?.pendenteFechamento ?? false,
+      ),
     })),
     totalPresentes: Number(bruto?.TotalPresentes ?? bruto?.totalPresentes ?? 0),
     totalAusentes: Number(bruto?.TotalAusentes ?? bruto?.totalAusentes ?? 0),
     totalVisitantes: Number(
       bruto?.TotalVisitantes ?? bruto?.totalVisitantes ?? 0,
+    ),
+    totalAulasConsolidadas: Number(
+      bruto?.TotalAulasConsolidadas ?? bruto?.totalAulasConsolidadas ?? 0,
+    ),
+    totalAulasNaoRealizadas: Number(
+      bruto?.TotalAulasNaoRealizadas ?? bruto?.totalAulasNaoRealizadas ?? 0,
+    ),
+    totalAulasPendentes: Number(
+      bruto?.TotalAulasPendentes ?? bruto?.totalAulasPendentes ?? 0,
+    ),
+    aulasPendentes: normalizarListaAulasResumidas(
+      bruto?.AulasPendentes ?? bruto?.aulasPendentes,
+    ),
+    aulasNaoRealizadas: normalizarListaAulasResumidas(
+      bruto?.AulasNaoRealizadas ?? bruto?.aulasNaoRealizadas,
     ),
   };
 }
