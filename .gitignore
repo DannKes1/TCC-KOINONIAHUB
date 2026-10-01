@@ -13,6 +13,7 @@ publish/
 *.pfx
 appsettings.*.Local.json
 
+
 # ===== Node / Vue =====
 node_modules/
 dist/
