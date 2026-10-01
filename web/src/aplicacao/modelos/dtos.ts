@@ -210,15 +210,19 @@ export type AulaVM = {
   situacao: SituacaoAula;
   // Em aberto com data já ocorrida (RNF 31.3), calculado pela API.
   pendenteFechamento: boolean;
-  // Derivado de situacao === "Consolidada". Mantido temporariamente para as
-  // telas atuais; será substituído pelas tags de situação na Etapa 3.
-  consolidada: boolean;
   quantidadeVisitantes: number;
   materiaId: number;
   nomeMateria: string;
   professorId: number;
   nomeProfessor: string;
   criadoEm: string;
+};
+
+// Aluno com matrícula ativa e sem registro de presença/ausência na aula, devolvido
+// no 400 da consolidação (RNFs 32.6/33.3).
+export type AlunoSemRegistroVM = {
+  alunoDepartamentoId: number;
+  nomeAluno: string;
 };
 
 export type AulaCriarDTO = {

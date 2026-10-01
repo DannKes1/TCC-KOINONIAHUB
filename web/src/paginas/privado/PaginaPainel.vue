@@ -14,6 +14,7 @@ import Button from "primevue/button";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Tag from "primevue/tag";
+import TagSituacaoAula from "../../components/ui/TagSituacaoAula.vue";
 
 import { listarDepartamentos } from "../../aplicacao/servicos/departamentosServico";
 import { listarPessoas } from "../../aplicacao/servicos/pessoasServico";
@@ -82,7 +83,6 @@ function abrirAulasDaTurma(departamentoId: number) {
   router.push(`/departamentos/${departamentoId}/aulas`);
 }
 
-
 function abrirTurma(turma: MinhaTurmaVM) {
   if ((turma.vinculo || "").toLowerCase() === "aluno") {
     router.push(`/departamentos/${turma.departamentoId}/minha-frequencia`);
@@ -95,16 +95,11 @@ function abrirChamada(aulaId: number) {
   router.push(`/aulas/${aulaId}/chamada`);
 }
 
-
 function formatarData(valor?: string | null) {
   if (!valor) return "-";
   const data = new Date(valor);
   if (Number.isNaN(data.getTime())) return "-";
   return data.toLocaleDateString("pt-BR");
-}
-
-function severityAula(consolidada: boolean) {
-  return consolidada ? "success" : "warning";
 }
 
 function severityPresenca(presente: boolean) {
@@ -152,14 +147,14 @@ const resumoTurmasOrdenado = computed(() =>
 
 const aulasAbertasDoProfessor = computed(() =>
   [...aulasRecentes.value]
-    .filter((a) => !a.consolidada)
+    .filter((a) => a.situacao === "EmAberto")
     .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()),
 );
 
 const totalMinhasTurmas = computed(() => departamentos.value.length);
 const totalMinhasAulas = computed(() => aulasRecentes.value.length);
 const totalMinhasAulasAbertas = computed(
-  () => aulasRecentes.value.filter((a) => !a.consolidada).length,
+  () => aulasRecentes.value.filter((a) => a.situacao === "EmAberto").length,
 );
 
 const presencasOrdenadas = computed(() =>
@@ -222,7 +217,7 @@ async function carregarDadosTurmas() {
       departamentoId: dep.id,
       nomeDepartamento: dep.nome,
       totalAulas: aulas.length,
-      aulasAbertas: aulas.filter((aula) => !aula.consolidada).length,
+      aulasAbertas: aulas.filter((aula) => aula.situacao === "EmAberto").length,
       ultimaAulaData: aulasOrdenadas[0]?.data ?? null,
     });
   }
@@ -364,11 +359,11 @@ onMounted(carregarPainel);
               <Column field="nomeDepartamento" header="Turma" />
               <Column field="nomeMateria" header="Matéria" />
               <Column field="nomeProfessor" header="Professor" />
-              <Column header="Status" style="width: 120px">
+              <Column header="Situação" style="width: 200px">
                 <template #body="{ data }">
-                  <Tag
-                    :value="data.consolidada ? 'Consolidada' : 'Aberta'"
-                    :severity="severityAula(data.consolidada)"
+                  <TagSituacaoAula
+                    :situacao="data.situacao"
+                    :pendenteFechamento="data.pendenteFechamento"
                   />
                 </template>
               </Column>
@@ -445,7 +440,6 @@ onMounted(carregarPainel);
             align-items: start;
           "
         >
-  
           <div class="card-tabela">
             <div class="card-tabela-titulo">
               Aulas em aberto (fazer chamada)
@@ -478,7 +472,6 @@ onMounted(carregarPainel);
               </Column>
             </DataTable>
           </div>
-
 
           <div class="card-tabela">
             <div class="card-tabela-titulo">Minhas turmas</div>
@@ -536,7 +529,6 @@ onMounted(carregarPainel);
         :loading="carregando"
         texto="Carregando suas informações..."
       >
-        
         <div class="card-tabela">
           <div class="card-tabela-titulo">Minhas turmas</div>
 
@@ -579,7 +571,6 @@ onMounted(carregarPainel);
           </DataTable>
         </div>
 
-     
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-card-label">Total de aulas</div>
@@ -599,7 +590,6 @@ onMounted(carregarPainel);
           </div>
         </div>
 
-       
         <div class="card-tabela">
           <div class="card-tabela-titulo">
             Meu histórico de presenças - 3 Meses

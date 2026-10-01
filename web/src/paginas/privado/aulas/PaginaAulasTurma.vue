@@ -6,6 +6,14 @@ import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
+import TagSituacaoAula from "../../../components/ui/TagSituacaoAula.vue";
+
+import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
+import {
+  OPCOES_FILTRO_SITUACAO,
+  aulaAtendeFiltro,
+  type FiltroSituacaoAula,
+} from "../../../aplicacao/dominio/situacaoAula";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
@@ -23,7 +31,6 @@ import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
 import InputText from "primevue/inputtext";
 import Calendar from "primevue/calendar";
-import Tag from "primevue/tag";
 
 import { useConfirm } from "primevue/useconfirm";
 
@@ -34,6 +41,9 @@ import {
   listarAulasPorDepartamento,
   criarAula,
   consolidarAula,
+  marcarAulaNaoRealizada,
+  reabrirAula,
+  extrairAlunosSemRegistro,
 } from "../../../aplicacao/servicos/aulasServico";
 
 import type {
@@ -45,6 +55,10 @@ import type {
 const route = useRoute();
 const router = useRouter();
 const confirm = useConfirm();
+const autenticacao = usarAutenticacaoStore();
+
+// RNF 33.5: só o Administrador reabre uma aula fechada.
+const podeReabrir = computed(() => autenticacao.isAdmin);
 
 const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
 
@@ -53,14 +67,21 @@ const departamentoId = computed(() => Number(route.params.departamentoId));
 const turma = ref<DepartamentoVM | null>(null);
 const aulas = ref<AulaVM[]>([]);
 const busca = ref("");
+const filtroSituacao = ref<FiltroSituacaoAula | null>(null);
 
-/** Busca local por tema, matéria, professor ou data (dd/mm/aaaa). */
+const totalPendentes = computed(
+  () => aulas.value.filter((a) => a.pendenteFechamento).length,
+);
+
+/** Busca local por tema, matéria, professor ou data (dd/mm/aaaa) e filtro por situação (RNF 31.2/31.3). */
 const aulasFiltradas = computed(() => {
   const termo = busca.value.trim().toLowerCase();
-  if (!termo) return aulas.value;
 
-  return aulas.value.filter(
-    (a) =>
+  return aulas.value.filter((a) => {
+    if (!aulaAtendeFiltro(a, filtroSituacao.value)) return false;
+    if (!termo) return true;
+
+    return (
       String(a.tema ?? "")
         .toLowerCase()
         .includes(termo) ||
@@ -70,8 +91,9 @@ const aulasFiltradas = computed(() => {
       String(a.nomeProfessor ?? "")
         .toLowerCase()
         .includes(termo) ||
-      formatarData(a.data).includes(termo),
-  );
+      formatarData(a.data).includes(termo)
+    );
+  });
 });
 const materias = ref<MateriaVM[]>([]);
 const professores = ref<{ id: number; nome: string }[]>([]);
@@ -161,8 +183,14 @@ async function salvar() {
   }, "Não foi possível criar a aula.");
 }
 
+async function recarregarAulas() {
+  aulas.value = await listarAulasPorDepartamento(departamentoId.value);
+}
+
+// RF33 / CSU11: consolidar exige aula Em aberto e chamada completa. Quando a API
+// devolve 400 com alunosSemRegistro[], a mensagem lista os alunos (FA1).
 function confirmarConsolidar(aula: AulaVM) {
-  if (aula.consolidada) return;
+  if (aula.situacao !== "EmAberto") return;
 
   confirm.require({
     header: "Consolidar aula",
@@ -173,13 +201,77 @@ function confirmarConsolidar(aula: AulaVM) {
     rejectLabel: "Cancelar",
     acceptClass: "p-button-danger",
     accept: async () => {
+      try {
+        await run(
+          async () => {
+            await consolidarAula(aula.id);
+            toastSuccess("Aula consolidada com sucesso.", "Consolidada");
+            await recarregarAulas();
+          },
+          "Não foi possível consolidar a aula.",
+          { throwOnError: true },
+        );
+      } catch (e) {
+        const semRegistro = extrairAlunosSemRegistro(e);
+        if (semRegistro.length > 0) {
+          toastWarn(
+            `Complete a chamada antes de consolidar. Sem registro: ${semRegistro
+              .map((a) => a.nomeAluno)
+              .join(", ")}.`,
+            "Chamada incompleta",
+          );
+        }
+      }
+    },
+  });
+}
+
+// RF33 / CSU11 FA2: só Em aberto e sem nenhum registro de presença.
+function confirmarNaoRealizada(aula: AulaVM) {
+  if (aula.situacao !== "EmAberto") return;
+
+  confirm.require({
+    header: "Marcar como Não realizada",
+    message:
+      "A aula será encerrada sem atribuir presença ou falta aos alunos e não entrará nos cálculos de frequência. Deseja continuar?",
+    icon: "pi pi-exclamation-triangle",
+    acceptLabel: "Marcar como Não realizada",
+    rejectLabel: "Cancelar",
+    acceptClass: "p-button-danger",
+    accept: async () => {
       await run(async () => {
-        await consolidarAula(aula.id);
+        await marcarAulaNaoRealizada(aula.id);
+        toastSuccess("Aula marcada como Não realizada.", "Não realizada");
+        await recarregarAulas();
+      }, "Não foi possível marcar a aula como Não realizada.");
+    },
+  });
+}
 
-        toastSuccess("Aula consolidada com sucesso.", "Consolidada");
+// RF33 / CSU11 FA3 (RNFs 33.5/33.6): só Admin; Consolidada ou Não realizada
+// volta para Em aberto, preservando os registros de presença.
+function confirmarReabrir(aula: AulaVM) {
+  if (aula.situacao === "EmAberto" || !podeReabrir.value) return;
 
-        aulas.value = await listarAulasPorDepartamento(departamentoId.value);
-      }, "Não foi possível consolidar a aula.");
+  confirm.require({
+    header: "Reabrir aula",
+    message:
+      aula.situacao === "Consolidada"
+        ? "A aula voltará para Em aberto e os registros de presença serão preservados para correção e nova consolidação. Deseja continuar?"
+        : "A aula voltará para Em aberto e poderá receber chamada. Deseja continuar?",
+    icon: "pi pi-exclamation-triangle",
+    acceptLabel: "Reabrir",
+    rejectLabel: "Cancelar",
+    acceptClass: "p-button-warning",
+    accept: async () => {
+      await run(async () => {
+        await reabrirAula(aula.id);
+        toastSuccess(
+          "Aula reaberta. A situação voltou para Em aberto.",
+          "Reaberta",
+        );
+        await recarregarAulas();
+      }, "Não foi possível reabrir a aula.");
     },
   });
 }
@@ -214,11 +306,26 @@ onMounted(carregarTudo);
 
     <InlineMessage :texto="erro" tipo="erro" />
 
+    <InlineMessage
+      v-if="totalPendentes > 0"
+      :texto="`${totalPendentes} aula(s) em aberto com data já ocorrida, pendente(s) de fechamento: lance a chamada e consolide, ou marque como Não realizada.`"
+      tipo="aviso"
+    />
+
     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
       <InputText
         v-model="busca"
         placeholder="Buscar por tema, matéria, professor ou data..."
         style="min-width: 320px"
+      />
+      <Dropdown
+        v-model="filtroSituacao"
+        :options="OPCOES_FILTRO_SITUACAO"
+        optionLabel="label"
+        optionValue="value"
+        showClear
+        placeholder="Todas as situações"
+        style="min-width: 220px"
       />
     </div>
 
@@ -243,22 +350,26 @@ onMounted(carregarTudo);
         <Column field="nomeProfessor" header="Professor" sortable />
         <Column field="tema" header="Tema" />
 
-        <Column header="Consolidada" style="width: 150px">
+        <Column header="Situação" style="width: 220px">
           <template #body="{ data }">
-            <Tag
-              :severity="data.consolidada ? 'success' : 'secondary'"
-              :value="data.consolidada ? 'Consolidada' : 'Em aberto'"
+            <TagSituacaoAula
+              :situacao="data.situacao"
+              :pendenteFechamento="data.pendenteFechamento"
             />
           </template>
         </Column>
 
-        <Column header="Ações" style="width: 320px">
+        <Column header="Ações" style="width: 260px">
           <template #body="{ data }">
             <div style="display: flex; gap: 8px">
               <Button
                 icon="pi pi-clipboard"
                 severity="info"
-                v-tooltip.top="'Fazer chamada'"
+                v-tooltip.top="
+                  data.situacao === 'EmAberto'
+                    ? 'Fazer chamada'
+                    : 'Ver chamada (somente leitura)'
+                "
                 :disabled="carregando"
                 @click="abrirChamada(data)"
               />
@@ -270,22 +381,37 @@ onMounted(carregarTudo);
                 @click="abrirPresencas(data)"
               />
               <Button
+                v-if="data.situacao === 'EmAberto'"
                 icon="pi pi-lock"
                 severity="danger"
-                v-tooltip.top="
-                  data.consolidada
-                    ? 'Aula já consolidada'
-                    : 'Consolidar chamada (impede alterações futuras)'
-                "
-                :disabled="carregando || data.consolidada"
+                v-tooltip.top="'Consolidar chamada (impede alterações futuras)'"
+                :disabled="carregando"
                 @click="confirmarConsolidar(data)"
+              />
+              <Button
+                v-if="data.situacao === 'EmAberto'"
+                icon="pi pi-ban"
+                severity="secondary"
+                v-tooltip.top="
+                  'Marcar como Não realizada (só sem registros de presença)'
+                "
+                :disabled="carregando"
+                @click="confirmarNaoRealizada(data)"
+              />
+              <Button
+                v-if="data.situacao !== 'EmAberto' && podeReabrir"
+                icon="pi pi-lock-open"
+                severity="warning"
+                v-tooltip.top="'Reabrir aula (somente Administrador)'"
+                :disabled="carregando"
+                @click="confirmarReabrir(data)"
               />
             </div>
           </template>
         </Column>
         <template #empty>
           <div style="padding: 14px; opacity: 0.7">
-            Nenhuma aula encontrada para a busca.
+            Nenhuma aula encontrada para a busca ou o filtro.
           </div>
         </template>
       </DataTable>

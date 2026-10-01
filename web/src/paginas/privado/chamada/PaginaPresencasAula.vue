@@ -2,11 +2,10 @@
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
-
+import TagSituacaoAula from "../../../components/ui/TagSituacaoAula.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
@@ -14,7 +13,6 @@ import { obterAula } from "../../../aplicacao/servicos/aulasServico";
 import { listarPresencasRegistradas } from "../../../aplicacao/servicos/chamadasServico";
 
 import type { AulaVM, PresencaVM } from "../../../aplicacao/modelos/dtos";
-
 
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -166,11 +164,11 @@ onMounted(carregarTela);
       <div><strong>Data:</strong> {{ formatarData(aula.data) }}</div>
       <div><strong>Matéria:</strong> {{ aula.nomeMateria }}</div>
       <div><strong>Professor:</strong> {{ aula.nomeProfessor }}</div>
-      <div>
-        <strong>Status:</strong>
-        <Tag
-          :value="aula.consolidada ? 'Consolidada' : 'Aberta'"
-          :severity="aula.consolidada ? 'success' : 'warning'"
+      <div style="display: flex; align-items: center; gap: 8px">
+        <strong>Situação:</strong>
+        <TagSituacaoAula
+          :situacao="aula.situacao"
+          :pendenteFechamento="aula.pendenteFechamento"
         />
       </div>
     </div>

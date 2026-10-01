@@ -1,30 +1,25 @@
 import { clienteHttp } from "./clienteHttp";
-import type { AulaVM, AulaCriarDTO, SituacaoAula } from "../modelos/dtos";
-
-const SITUACOES_AULA: SituacaoAula[] = [
-  "EmAberto",
-  "Consolidada",
-  "NaoRealizada",
-];
-
-function normalizarSituacao(valor: unknown): SituacaoAula {
-  const texto = String(valor ?? "");
-  return (SITUACOES_AULA as string[]).includes(texto)
-    ? (texto as SituacaoAula)
-    : "EmAberto";
-}
+import type { AlunoSemRegistroVM, AulaVM, AulaCriarDTO } from "../modelos/dtos";
+import {
+  ehPendenteFechamento,
+  normalizarSituacaoAula,
+} from "../dominio/situacaoAula";
 
 function normalizarAula(bruto: any): AulaVM {
-  const situacao = normalizarSituacao(bruto?.Situacao ?? bruto?.situacao);
+  const situacao = normalizarSituacaoAula(bruto?.Situacao ?? bruto?.situacao);
+  const data = String(bruto?.Data ?? bruto?.data ?? "");
+  const pendenteDaApi = bruto?.PendenteFechamento ?? bruto?.pendenteFechamento;
+
   return {
     id: bruto?.Id ?? bruto?.id ?? 0,
-    data: String(bruto?.Data ?? bruto?.data ?? ""),
+    data,
     tema: bruto?.Tema ?? bruto?.tema ?? null,
     situacao,
-    pendenteFechamento: Boolean(
-      bruto?.PendenteFechamento ?? bruto?.pendenteFechamento ?? false,
-    ),
-    consolidada: situacao === "Consolidada",
+    // A API calcula (Plano 6.2); a regra local só cobre resposta sem o campo.
+    pendenteFechamento:
+      typeof pendenteDaApi === "boolean"
+        ? pendenteDaApi
+        : ehPendenteFechamento(situacao, data),
     quantidadeVisitantes: Number(
       bruto?.QuantidadeVisitantes ?? bruto?.quantidadeVisitantes ?? 0,
     ),
@@ -54,6 +49,32 @@ export async function criarAula(dto: AulaCriarDTO) {
   return normalizarAula(resposta.data);
 }
 
+// RF33 — consolidar (só Em aberto e com chamada completa; 400 com
+// alunosSemRegistro[] quando faltar registro — ver extrairAlunosSemRegistro).
 export async function consolidarAula(id: number) {
   await clienteHttp.patch(`/api/aulas/${id}/consolidar`);
+}
+
+// RF33 — marcar como Não realizada (só Em aberto e sem registros de presença).
+export async function marcarAulaNaoRealizada(id: number) {
+  await clienteHttp.patch(`/api/aulas/${id}/nao-realizada`);
+}
+
+// RF33 — reabrir (somente Admin; Consolidada ou Não realizada volta a Em aberto).
+export async function reabrirAula(id: number) {
+  await clienteHttp.patch(`/api/aulas/${id}/reabrir`);
+}
+
+// Lê a lista de alunos sem registro do corpo do 400 da consolidação
+// (RNFs 32.6/33.3). Devolve [] para qualquer outro erro.
+export function extrairAlunosSemRegistro(erro: unknown): AlunoSemRegistroVM[] {
+  const lista = (erro as any)?.response?.data?.alunosSemRegistro;
+  if (!Array.isArray(lista)) return [];
+
+  return lista.map((item: any) => ({
+    alunoDepartamentoId: Number(
+      item?.alunoDepartamentoId ?? item?.AlunoDepartamentoId ?? 0,
+    ),
+    nomeAluno: String(item?.nomeAluno ?? item?.NomeAluno ?? ""),
+  }));
 }
