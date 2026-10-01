@@ -1,10 +1,15 @@
 ﻿using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
+using KoinoniaHub.API.Dominio.Entidades;
 using KoinoniaHub.API.Infraestrutura.Dados;
 using Microsoft.EntityFrameworkCore;
 
 namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 {
+    // Relatórios da EBD (RF6, RF35–RF38). Regra comum (RNFs 35.5, 37.5, 38.4; RF36;
+    // CSU07/CSU15/CSU21; Plano 6.9): só aulas Consolidadas entram nos cálculos;
+    // aulas Não realizadas ficam de fora e aulas Em aberto com data já ocorrida são
+    // devolvidas à parte como pendentes de fechamento (AulasPendentes).
     public class RelatorioEbdServico : IRelatorioEbdServico
     {
         private readonly KoinoniaHubDbContext _db;
@@ -19,27 +24,73 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             {
                 DateTimeKind.Utc => dt,
                 DateTimeKind.Local => dt.ToUniversalTime(),
-                _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc) 
+                _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc)
             };
 
+        // Início do dia de hoje em UTC: aula Em aberto com Data anterior a este
+        // instante já ocorreu (mesma regra de AulaServico.CalcularPendenteFechamento).
+        private static DateTime HojeUtc() => DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
+
+        // Aulas Em aberto de data já ocorrida no intervalo; departamentoId null = todas as turmas da igreja.
+        private async Task<List<AulaResumidaRespostaDto>> ListarAulasPendentesAsync(
+            int igrejaId, int? departamentoId, DateTime inicio, DateTime fim)
+        {
+            var hoje = HojeUtc();
+
+            return await _db.Aulas
+                .AsNoTracking()
+                .Where(a =>
+                    a.Materia.Departamento.IgrejaId == igrejaId &&
+                    (departamentoId == null || a.Materia.DepartamentoId == departamentoId) &&
+                    a.Situacao == SituacaoAula.EmAberto &&
+                    a.Data >= inicio && a.Data <= fim &&
+                    a.Data < hoje)
+                .OrderBy(a => a.Data)
+                .Select(a => new AulaResumidaRespostaDto
+                {
+                    Id = a.Id,
+                    Data = a.Data,
+                    Materia = a.Materia.Nome,
+                    Professor = a.Professor.Nome,
+                    DepartamentoId = a.Materia.DepartamentoId,
+                    Departamento = a.Materia.Departamento.Nome
+                })
+                .ToListAsync();
+        }
 
         public async Task<ResumoDiaRespostaDto> ObterResumoDoDiaAsync(int igrejaId, DateTime data)
         {
             var inicio = DateTime.SpecifyKind(ToUtc(data).Date, DateTimeKind.Utc);
             var fim = inicio.AddDays(1);
+            var hoje = HojeUtc();
 
-            
             var aulasDoDia = await (
                 from a in _db.Aulas.AsNoTracking()
                 join m in _db.Materias.AsNoTracking() on a.MateriaId equals m.Id
                 join d in _db.Departamentos.AsNoTracking() on m.DepartamentoId equals d.Id
+                join p in _db.Pessoas.AsNoTracking() on a.ProfessorId equals p.Id
                 where d.IgrejaId == igrejaId && a.Data >= inicio && a.Data < fim
-                select new { a.Id, a.QuantidadeVisitantes, DepartamentoId = d.Id }
+                select new
+                {
+                    a.Id,
+                    a.Data,
+                    a.Situacao,
+                    a.QuantidadeVisitantes,
+                    DepartamentoId = d.Id,
+                    NomeDepartamento = d.Nome,
+                    NomeMateria = m.Nome,
+                    NomeProfessor = p.Nome
+                }
             ).ToListAsync();
 
-            var aulaIds = aulasDoDia.Select(a => a.Id).ToList();
+            // RNF 38.4: só aulas Consolidadas compõem presentes, ausentes e visitantes.
+            var aulasConsolidadasIds = aulasDoDia
+                .Where(a => a.Situacao == SituacaoAula.Consolidada)
+                .Select(a => a.Id)
+                .ToList();
+
             var contagens = await _db.Presencas.AsNoTracking()
-                .Where(p => aulaIds.Contains(p.AulaId))
+                .Where(p => aulasConsolidadasIds.Contains(p.AulaId))
                 .GroupBy(p => p.AulaId)
                 .Select(g => new
                 {
@@ -57,12 +108,16 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 .ToListAsync();
 
             var resposta = new ResumoDiaRespostaDto { Data = inicio };
+
             foreach (var dep in departamentos)
             {
                 var aulasDep = aulasDoDia.Where(a => a.DepartamentoId == dep.Id).ToList();
-                var presentes = aulasDep.Sum(a => porAula.TryGetValue(a.Id, out var c) ? c.Presentes : 0);
-                var ausentes = aulasDep.Sum(a => porAula.TryGetValue(a.Id, out var c) ? c.Ausentes : 0);
-                var visitantes = aulasDep.Sum(a => a.QuantidadeVisitantes);
+                var consolidadas = aulasDep.Where(a => a.Situacao == SituacaoAula.Consolidada).ToList();
+                var emAberto = aulasDep.Count(a => a.Situacao == SituacaoAula.EmAberto);
+
+                var presentes = consolidadas.Sum(a => porAula.TryGetValue(a.Id, out var c) ? c.Presentes : 0);
+                var ausentes = consolidadas.Sum(a => porAula.TryGetValue(a.Id, out var c) ? c.Ausentes : 0);
+                var visitantes = consolidadas.Sum(a => a.QuantidadeVisitantes);
 
                 resposta.Turmas.Add(new ResumoDiaTurmaDto
                 {
@@ -71,20 +126,60 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                     TemChamada = presentes + ausentes > 0,
                     Presentes = presentes,
                     Ausentes = ausentes,
-                    Visitantes = visitantes
+                    Visitantes = visitantes,
+                    AulasConsolidadas = consolidadas.Count,
+                    AulasNaoRealizadas = aulasDep.Count(a => a.Situacao == SituacaoAula.NaoRealizada),
+                    AulasEmAberto = emAberto,
+                    PendenteFechamento = emAberto > 0 && inicio < hoje
                 });
             }
 
             resposta.TotalPresentes = resposta.Turmas.Sum(x => x.Presentes);
             resposta.TotalAusentes = resposta.Turmas.Sum(x => x.Ausentes);
             resposta.TotalVisitantes = resposta.Turmas.Sum(x => x.Visitantes);
+            resposta.TotalAulasConsolidadas = aulasDoDia.Count(a => a.Situacao == SituacaoAula.Consolidada);
+            resposta.TotalAulasNaoRealizadas = aulasDoDia.Count(a => a.Situacao == SituacaoAula.NaoRealizada);
+
+            // Listas à parte (RNF 38.4 / Plano 6.9): Não realizadas e Em aberto de data já ocorrida.
+            resposta.AulasNaoRealizadas = aulasDoDia
+                .Where(a => a.Situacao == SituacaoAula.NaoRealizada)
+                .OrderBy(a => a.NomeDepartamento)
+                .Select(a => new AulaResumidaRespostaDto
+                {
+                    Id = a.Id,
+                    Data = a.Data,
+                    Materia = a.NomeMateria,
+                    Professor = a.NomeProfessor,
+                    DepartamentoId = a.DepartamentoId,
+                    Departamento = a.NomeDepartamento
+                })
+                .ToList();
+
+            if (inicio < hoje)
+            {
+                resposta.AulasPendentes = aulasDoDia
+                    .Where(a => a.Situacao == SituacaoAula.EmAberto)
+                    .OrderBy(a => a.NomeDepartamento)
+                    .Select(a => new AulaResumidaRespostaDto
+                    {
+                        Id = a.Id,
+                        Data = a.Data,
+                        Materia = a.NomeMateria,
+                        Professor = a.NomeProfessor,
+                        DepartamentoId = a.DepartamentoId,
+                        Departamento = a.NomeDepartamento
+                    })
+                    .ToList();
+            }
+
+            resposta.TotalAulasPendentes = resposta.AulasPendentes.Count;
+
             return resposta;
         }
 
         public async Task<FrequenciaTurmaRespostaDto> ObterFrequenciaTurmaAsync(
             int igrejaId, int departamentoId, DateTime dataInicio, DateTime dataFim)
         {
-            
             var inicio = ToUtc(dataInicio.Date);
             var fim = ToUtc(dataFim.Date.AddDays(1).AddTicks(-1));
 
@@ -95,11 +190,15 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (departamento is null)
                 throw new InvalidOperationException("Departamento não encontrado para esta igreja.");
 
+            var aulasPendentes = await ListarAulasPendentesAsync(igrejaId, departamentoId, inicio, fim);
+
+            // RNF 35.5: só aulas Consolidadas contam.
             var totalAulas = await _db.Aulas
                 .AsNoTracking()
                 .CountAsync(a =>
                     a.Materia.DepartamentoId == departamentoId &&
                     a.Materia.Departamento.IgrejaId == igrejaId &&
+                    a.Situacao == SituacaoAula.Consolidada &&
                     a.Data >= inicio && a.Data <= fim);
 
             var alunosBase = await _db.AlunosDepartamentos
@@ -122,7 +221,6 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             var totalAlunos = alunosBase.Count;
 
-           
             if (totalAulas == 0 || totalAlunos == 0)
             {
                 return new FrequenciaTurmaRespostaDto
@@ -138,13 +236,13 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                     TotalNaoRegistrado = 0,
                     PercentualPresencaGeral = 0,
                     Alunos = new List<FrequenciaAlunoRespostaDto>(),
-                    Aulas = new List<FrequenciaAulaRespostaDto>()
+                    Aulas = new List<FrequenciaAulaRespostaDto>(),
+                    AulasPendentes = aulasPendentes
                 };
             }
 
             var matriculasIds = alunosBase.Select(x => x.MatriculaId).ToList();
 
-           
             var statsPorAluno = await _db.AlunosDepartamentos
                 .AsNoTracking()
                 .Where(m => matriculasIds.Contains(m.Id))
@@ -157,18 +255,21 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                     Presentes = m.Presencas.Count(p =>
                         p.Aula.Materia.DepartamentoId == departamentoId &&
                         p.Aula.Materia.Departamento.IgrejaId == igrejaId &&
+                        p.Aula.Situacao == SituacaoAula.Consolidada &&
                         p.Aula.Data >= inicio && p.Aula.Data <= fim &&
                         p.Presente),
 
                     AusentesMarcados = m.Presencas.Count(p =>
                         p.Aula.Materia.DepartamentoId == departamentoId &&
                         p.Aula.Materia.Departamento.IgrejaId == igrejaId &&
+                        p.Aula.Situacao == SituacaoAula.Consolidada &&
                         p.Aula.Data >= inicio && p.Aula.Data <= fim &&
                         !p.Presente),
 
                     Registros = m.Presencas.Count(p =>
                         p.Aula.Materia.DepartamentoId == departamentoId &&
                         p.Aula.Materia.Departamento.IgrejaId == igrejaId &&
+                        p.Aula.Situacao == SituacaoAula.Consolidada &&
                         p.Aula.Data >= inicio && p.Aula.Data <= fim)
                 })
                 .ToListAsync();
@@ -179,7 +280,6 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                     var naoRegistrado = totalAulas - s.Registros;
                     var presentes = s.Presentes;
 
-                    
                     var percentual = s.Registros == 0
                         ? 0
                         : Math.Round((decimal)presentes / s.Registros * 100m, 2);
@@ -199,12 +299,12 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 .OrderBy(a => a.NomeAluno)
                 .ToList();
 
-         
             var aulas = await _db.Aulas
                 .AsNoTracking()
                 .Where(a =>
                     a.Materia.DepartamentoId == departamentoId &&
                     a.Materia.Departamento.IgrejaId == igrejaId &&
+                    a.Situacao == SituacaoAula.Consolidada &&
                     a.Data >= inicio && a.Data <= fim)
                 .OrderByDescending(a => a.Data)
                 .Select(a => new { a.Id, a.Data, a.Tema })
@@ -215,6 +315,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 .Where(p =>
                     p.Aula.Materia.DepartamentoId == departamentoId &&
                     p.Aula.Materia.Departamento.IgrejaId == igrejaId &&
+                    p.Aula.Situacao == SituacaoAula.Consolidada &&
                     p.Aula.Data >= inicio && p.Aula.Data <= fim &&
                     p.AlunoDepartamento.Ativo)
                 .GroupBy(p => p.AulaId)
@@ -254,7 +355,6 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 };
             }).ToList();
 
-          
             var totalPresentes = alunos.Sum(x => x.Presentes);
             var totalAusentesMarcados = alunos.Sum(x => x.AusentesMarcados);
             var totalNaoRegistrado = alunos.Sum(x => x.NaoRegistrado);
@@ -277,22 +377,23 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 TotalNaoRegistrado = totalNaoRegistrado,
                 PercentualPresencaGeral = percentualGeral,
                 Alunos = alunos,
-                Aulas = aulasResposta
+                Aulas = aulasResposta,
+                AulasPendentes = aulasPendentes
             };
         }
 
-       
         public async Task<RankingFaltasRespostaDto> ObterRankingFaltasAsync(
             int igrejaId, int departamentoId, DateTime dataInicio, DateTime dataFim, int top)
         {
             if (top <= 0) top = 10;
 
+            // RNF 37.5: herda da frequência o recorte de aulas Consolidadas.
             var frequencia = await ObterFrequenciaTurmaAsync(igrejaId, departamentoId, dataInicio, dataFim);
 
             var itens = frequencia.Alunos
-                .OrderByDescending(a => a.FaltasTotais)   
-                .ThenBy(a => a.PercentualPresenca)        
-                .ThenBy(a => a.NomeAluno)                 
+                .OrderByDescending(a => a.FaltasTotais)
+                .ThenBy(a => a.PercentualPresenca)
+                .ThenBy(a => a.NomeAluno)
                 .Take(top)
                 .Select(a => new RankingFaltasItemRespostaDto
                 {
@@ -312,7 +413,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 NomeDepartamento = frequencia.NomeDepartamento,
                 DataInicio = frequencia.DataInicio,
                 DataFim = frequencia.DataFim,
-                Itens = itens
+                Itens = itens,
+                AulasPendentes = frequencia.AulasPendentes
             };
         }
 
@@ -325,15 +427,13 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             decimal limiarCritico,
             int faltasConsecutivasCritico)
         {
-            
             limiarAtencao = Math.Clamp(limiarAtencao, 0m, 100m);
             limiarCritico = Math.Clamp(limiarCritico, 0m, 100m);
-            if (limiarCritico > limiarAtencao) limiarCritico = limiarAtencao; 
+            if (limiarCritico > limiarAtencao) limiarCritico = limiarAtencao;
             faltasConsecutivasCritico = Math.Max(1, faltasConsecutivasCritico);
 
             const int faltasConsecutivasAtencao = 2; // 2 faltas seguidas já entram como atenção
 
-          
             var inicio = ToUtc(dataInicio.Date);
             var fim = ToUtc(dataFim.Date.AddDays(1).AddTicks(-1));
 
@@ -344,12 +444,15 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (departamento is null)
                 throw new InvalidOperationException("Departamento não encontrado para esta igreja.");
 
-            
+            var aulasPendentes = await ListarAulasPendentesAsync(igrejaId, departamentoId, inicio, fim);
+
+            // RF36: só aulas Consolidadas entram nos indicadores.
             var aulas = await _db.Aulas
                 .AsNoTracking()
                 .Where(a =>
                     a.Materia.DepartamentoId == departamentoId &&
                     a.Materia.Departamento.IgrejaId == igrejaId &&
+                    a.Situacao == SituacaoAula.Consolidada &&
                     a.Data >= inicio && a.Data <= fim)
                 .OrderBy(a => a.Data)
                 .Select(a => new { a.Id, a.Data })
@@ -357,7 +460,6 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             var totalAulas = aulas.Count;
 
-            
             var alunosBase = await _db.AlunosDepartamentos
                 .AsNoTracking()
                 .Where(m =>
@@ -387,34 +489,31 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 LimiarAtencao = limiarAtencao,
                 LimiarCritico = limiarCritico,
                 FaltasConsecutivasCritico = faltasConsecutivasCritico,
-                Alunos = new List<AlunoEmAtencaoRespostaDto>()
+                Alunos = new List<AlunoEmAtencaoRespostaDto>(),
+                AulasPendentes = aulasPendentes
             };
 
             if (totalAulas == 0 || totalAlunos == 0)
                 return painel;
 
-            
+            var idsAulasCronologico = aulas.Select(a => a.Id).ToList();
+
             var presencas = await _db.Presencas
                 .AsNoTracking()
                 .Where(p =>
-                    p.Aula.Materia.DepartamentoId == departamentoId &&
-                    p.Aula.Materia.Departamento.IgrejaId == igrejaId &&
-                    p.Aula.Data >= inicio && p.Aula.Data <= fim &&
+                    idsAulasCronologico.Contains(p.AulaId) &&
                     p.AlunoDepartamento.Ativo)
                 .Select(p => new { p.AlunoDepartamentoId, p.AulaId, p.Presente })
                 .ToListAsync();
 
-            
             var mapaPresenca = presencas
                 .GroupBy(p => (p.AlunoDepartamentoId, p.AulaId))
                 .ToDictionary(g => g.Key, g => g.First().Presente);
 
-            var idsAulasCronologico = aulas.Select(a => a.Id).ToList();
             var datasPorAula = aulas.ToDictionary(a => a.Id, a => a.Data);
 
             foreach (var aluno in alunosBase)
             {
-               
                 var presentes = 0;
                 var registros = 0;
                 DateTime? ultimaPresenca = null;
@@ -433,13 +532,11 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                     }
                 }
 
-               
                 if (registros == 0) continue;
 
                 var faltasTotais = registros - presentes; // ausências efetivamente marcadas
                 var percentual = Math.Round((decimal)presentes / registros * 100m, 2);
 
-               
                 var faltasConsecutivas = 0;
                 for (var i = idsAulasCronologico.Count - 1; i >= 0; i--)
                 {
@@ -497,7 +594,6 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 });
             }
 
-          
             painel.Alunos = painel.Alunos
                 .OrderByDescending(a => a.Classificacao == "Critico")
                 .ThenByDescending(a => a.FaltasConsecutivas)
@@ -521,7 +617,6 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             var inicio = ToUtc(dataInicio.Date);
             var fim = ToUtc(dataFim.Date.AddDays(1).AddTicks(-1));
 
-          
             var usuario = await _db.Usuarios
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Id == usuarioId && u.IgrejaId == igrejaId);
@@ -531,7 +626,6 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             var pessoaId = usuario.PessoaId.Value;
 
-            
             var matricula = await _db.AlunosDepartamentos
                 .AsNoTracking()
                 .Include(m => m.Departamento)
@@ -546,23 +640,25 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             var departamento = matricula.Departamento;
 
-           
+            // CSU07: só aulas Consolidadas entram no percentual e no histórico.
             var aulas = await _db.Aulas
                 .AsNoTracking()
                 .Where(a =>
                     a.Materia.DepartamentoId == departamentoId &&
                     a.Materia.Departamento.IgrejaId == igrejaId &&
+                    a.Situacao == SituacaoAula.Consolidada &&
                     a.Data >= inicio && a.Data <= fim)
                 .OrderByDescending(a => a.Data)
                 .Select(a => new { a.Id, a.Data, a.Tema })
                 .ToListAsync();
 
-            
+            var aulaIds = aulas.Select(a => a.Id).ToList();
+
             var presencas = await _db.Presencas
                 .AsNoTracking()
                 .Where(p =>
                     p.AlunoDepartamentoId == matricula.Id &&
-                    p.Aula.Data >= inicio && p.Aula.Data <= fim)
+                    aulaIds.Contains(p.AulaId))
                 .Select(p => new { p.AulaId, p.Presente })
                 .ToListAsync();
 
@@ -600,7 +696,6 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             var totalAulas = aulas.Count;
             var naoRegistrado = totalAulas - presentes - ausentes;
 
-          
             var registros = presentes + ausentes;
             var percentual = registros == 0
                 ? 0m
@@ -617,7 +712,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 AusentesMarcados = ausentes,
                 NaoRegistrado = naoRegistrado,
                 PercentualPresenca = percentual,
-                Aulas = itens
+                Aulas = itens,
+                AulasPendentes = await ListarAulasPendentesAsync(igrejaId, departamentoId, inicio, fim)
             };
         }
     }
