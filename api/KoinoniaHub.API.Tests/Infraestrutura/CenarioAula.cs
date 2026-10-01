@@ -91,17 +91,27 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
 
         // Cria uma aula de sete dias atrás na situação pedida, com um registro de
         // presença por par (matrícula, presente) informado.
-        public async Task<int> CriarAulaAsync(KoinoniaHubWebApplicationFactory fabrica, string situacao, params (int matriculaId, bool presente)[] presencas)
+        public Task<int> CriarAulaAsync(KoinoniaHubWebApplicationFactory fabrica, string situacao, params (int matriculaId, bool presente)[] presencas) =>
+            CriarAulaEmAsync(fabrica, DateTime.UtcNow.AddDays(-7), situacao, visitantes: 0, presencas);
+
+        // Variante para os relatórios (etapa 4): data, situação e visitantes explícitos.
+        public async Task<int> CriarAulaEmAsync(
+            KoinoniaHubWebApplicationFactory fabrica,
+            DateTime data,
+            string situacao,
+            int visitantes,
+            params (int matriculaId, bool presente)[] presencas)
         {
             using var escopo = fabrica.Services.CreateScope();
             var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
 
             var aula = new Aula
             {
-                Data = DateTime.UtcNow.AddDays(-7),
+                Data = data,
                 MateriaId = MateriaId,
                 ProfessorId = ProfessorPessoaId,
-                Situacao = situacao
+                Situacao = situacao,
+                QuantidadeVisitantes = visitantes
             };
             db.Add(aula);
 
@@ -110,6 +120,30 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
 
             await db.SaveChangesAsync();
             return aula.Id;
+        }
+
+        // Cria um usuário de perfil Usuario ligado à pessoa de uma matrícula (para RF6).
+        public static async Task<string> CriarUsuarioDaMatriculaAsync(KoinoniaHubWebApplicationFactory fabrica, int matriculaId, string sufixo)
+        {
+            using var escopo = fabrica.Services.CreateScope();
+            var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+
+            var matricula = await db.AlunosDepartamentos
+                .Include(m => m.Departamento)
+                .SingleAsync(m => m.Id == matriculaId);
+
+            var email = $"aluno.{sufixo}@teste.com";
+            db.Add(new Usuario
+            {
+                Email = email,
+                SenhaHash = BCrypt.Net.BCrypt.HashPassword(CenarioAcessoPessoa.Senha),
+                Perfil = "Usuario",
+                IgrejaId = matricula.Departamento.IgrejaId,
+                PessoaId = matricula.PessoaId
+            });
+            await db.SaveChangesAsync();
+
+            return email;
         }
 
         public static async Task<Aula> LerAulaAsync(KoinoniaHubWebApplicationFactory fabrica, int aulaId)
