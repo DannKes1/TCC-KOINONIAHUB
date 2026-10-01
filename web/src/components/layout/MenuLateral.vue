@@ -11,6 +11,11 @@ const isAdmin = computed(() => autenticacao.isAdmin);
 
 const isAdministrativo = computed(() => autenticacao.isAdministrativo);
 
+// Relatórios EBD (CSU15) e Turmas EBD (CSU17/CSU09) exigem perfil administrativo
+// ou atribuição na turma; o perfil Usuario vê só Painel, Minhas Turmas e Meus
+// Dados (Plano 7.2). A API continua negando o acesso independentemente do menu.
+const isGestor = computed(() => autenticacao.isGestor);
+
 function estaAtivo(caminho: string) {
   return route.path === caminho;
 }
@@ -64,6 +69,7 @@ function sair() {
     </RouterLink>
 
     <RouterLink
+      v-if="isGestor"
       to="/relatorios/ebd"
       class="sidebar-link"
       :class="{ ativo: estaAtivo('/relatorios/ebd') }"
@@ -82,9 +88,10 @@ function sair() {
       Usuários
     </RouterLink>
 
-    <div class="sidebar-secao">EBD</div>
+    <div v-if="isGestor" class="sidebar-secao">EBD</div>
 
     <RouterLink
+      v-if="isGestor"
       to="/departamentos"
       class="sidebar-link"
       :class="{ ativo: estaAtivo('/departamentos') }"
