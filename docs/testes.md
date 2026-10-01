@@ -647,3 +647,38 @@ no banco (32.3).
 
 **Pendência conhecida até a 3.2:** o front ainda deriva `consolidada` e não exibe a situação
 "Não realizada"; nenhuma aula deve ficar nesse estado nos dados de demonstração.
+
+## Etapa 3.2 — Front das regras de aula + Vitest (RF31/RF32/RF33) (30/09/2026) · fecha a Etapa 3
+
+**Escopo.** Vitest instalado (Plano 7.2: vitest 5.0.2, @vue/test-utils, jsdom) com specs ao lado
+do código; módulo puro `dominio/situacaoAula.ts` (pendente, rótulo, severidade, filtro);
+componente `TagSituacaoAula` substituindo as três tags derivadas do booleano `consolidada`,
+que foi removido de `AulaVM`; tela de aulas com coluna de situação, filtro (+ "Pendentes de
+fechamento"), aviso de pendentes e botões por situação e perfil (Reabrir só Admin), com
+confirmação nas três operações; chamada somente leitura para Consolidada e Não realizada e
+destaque "Sem registro" nas linhas apontadas pelo 400 da consolidação; menu lateral por perfil
+(Usuario vê só Painel, Minhas Turmas e Meus Dados). Sem alteração de API.
+
+**Ocorrência.** O pacote veio com 17 dos 18 arquivos — `TagSituacaoAula.spec.ts` faltou e foi
+entregue em seguida; com ele a contagem fechou nos 21 casos previstos.
+
+**Validação automatizada** (ambiente reproduzido com `npm ci` a partir do package-lock.json):
+`vue-tsc -b` limpo (specs incluídos) · `npm run test` = **3 arquivos, 21 casos verdes**
+(situacaoAula 12, TagSituacaoAula 5, MenuLateral 4) · `vite build` ok.
+
+**Testes manuais (front + API, Professor "Paula" e Admin):**
+
+1. Listagem com tags por situação, "Pendente" + aviso com contagem, filtro "Pendentes de
+   fechamento" funcionando (RF31/RNF 31.3). ✔
+2. Consolidar com chamada incompleta: toast "Chamada incompleta" e linhas destacadas com a tag
+   "Sem registro" na chamada; após completar e salvar, consolidação → somente leitura
+   (CSU11 FA1). ✔ (print CSU11-FA1-chamada-sem-registro.png)
+3. Não realizada: tag própria, botões de fechar somem, chamada somente leitura com mensagem
+   específica (CSU11 FA2). ✔
+4. Reabrir: Professor não vê o botão; Admin reabre com confirmação e os registros de presença
+   permanecem marcados na chamada (RNFs 33.5/33.6, CSU11 FA3). ✔
+5. Menu por perfil: Usuario só com Painel/Minhas Turmas/Meus Dados; Professor sem
+   Pessoas/Usuários (Plano 7.2). ✔
+
+**Prints (capítulo de Resultados):** `docs/evidencias/RF31-CSU09-listagem-tres-tags.png` e
+`docs/evidencias/CSU11-FA1-chamada-sem-registro.png`.
