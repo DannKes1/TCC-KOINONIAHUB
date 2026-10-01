@@ -682,3 +682,35 @@ entregue em seguida; com ele a contagem fechou nos 21 casos previstos.
 
 **Prints (capítulo de Resultados):** `docs/evidencias/RF31-CSU09-listagem-tres-tags.png` e
 `docs/evidencias/CSU11-FA1-chamada-sem-registro.png`.
+
+## Etapa 4.1 — Relatórios só com aulas Consolidadas (RNFs 35.5/37.5/38.4, RF36, CSU07) (30/09/2026)
+
+**Escopo.** Os cinco relatórios (frequência da turma, painel de acompanhamento, ranking de
+faltas, resumo do dia e minha frequência) passam a calcular exclusivamente sobre aulas
+Consolidadas — o serviço anterior não aplicava nenhum filtro de situação. Aulas Não
+realizadas ficam fora de tudo; aulas Em aberto com data já ocorrida (mesma regra de
+`CalcularPendenteFechamento`, UTC) são devolvidas à parte em `aulasPendentes[]`, respeitando
+o período consultado. O resumo do dia ganhou `totalAulasConsolidadas/NaoRealizadas/Pendentes`,
+as listas `aulasPendentes[]` e `aulasNaoRealizadas[]` e, por turma, as contagens por situação
+com `pendenteFechamento`. `IRelatorioEbdServico` e o controller não mudaram de assinatura —
+o front atual segue funcionando; as telas são a 4.2. Sem migration.
+
+**Testes automatizados** — `dotnet test`: **81 aprovados, 0 falhas** (70 + 11):
+`RF35_RelatorioTests` (8) — semente com 2 Consolidadas, 1 Não realizada, 1 Em aberto vencida
+com chamada lançada e 1 futura prova que a presença em aula não consolidada não conta, que
+só a vencida vira pendente, o caso "Em aberto de hoje não é pendente" e o 403 do resumo do
+dia para Professor (RNF 38.1); `RF27_MatriculaTests` (3) — movido da proposta da 3.1: 400 do
+serviço, violação do índice único filtrado no banco e rematrícula após inativação.
+
+**Testes manuais (Swagger, Admin, turma 4, período 01/08–30/09):**
+
+1. Frequência da turma: `totalAulas` contando só Consolidadas e `aulasPendentes` com matéria
+   e professor preenchidos. ✔
+2. Resumo do dia 29/09: a aula Não realizada (id 23) em `aulasNaoRealizadas`, fora dos
+   totais; contagens por situação na turma. ✔
+3. (coberto pelo teste automatizado `ResumoDia_EmAbertoDeHoje_NaoEhPendente`)
+4. Antes/depois da reabertura da aula 22 (06/09): totalAulas 8→7, percentual geral
+   56,25%→57,14%, Ana 75%→71,43% (estava presente), Pedro 37,5%→42,86% (estava ausente);
+   a aula entrou em `aulasPendentes`; reconsolidada, os números voltaram. ✔
+   (prints RNF-35.5-frequencia-antes-reabertura.png e
+   RNF-35.5-33.6-frequencia-depois-reabertura.png)
