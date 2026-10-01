@@ -13,5 +13,10 @@
 
         public bool Presente { get; set; }
         public string? Observacao { get; set; }
+
+        // Situação da aula do registro (EmAberto / Consolidada / NaoRealizada). O
+        // histórico lista todos os registros (CSU14); indicadores de frequência
+        // consideram só os de aulas Consolidadas (RF3, RF6 / CSU07).
+        public string SituacaoAula { get; set; } = string.Empty;
     }
 }

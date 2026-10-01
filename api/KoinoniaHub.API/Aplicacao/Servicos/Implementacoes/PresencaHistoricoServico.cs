@@ -41,7 +41,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                     MateriaId = p.Aula.MateriaId,
                     MateriaNome = p.Aula.Materia.Nome,
                     Presente = p.Presente,
-                    Observacao = p.Observacao
+                    Observacao = p.Observacao,
+                    SituacaoAula = p.Aula.Situacao
                 })
                 .OrderByDescending(x => x.DataAula)
                 .ToListAsync();

@@ -46,6 +46,10 @@ namespace KoinoniaHub.API.Tests
             Assert.Equal(2, itensAdmin.Count);
             Assert.Single(itensProfessor);
             Assert.Equal(cenario.TurmaComAtribuicaoId, itensProfessor[0].GetProperty("departamentoId").GetInt32());
+
+            // Etapa 4.2: cada registro informa a situação da aula (as aulas da semente estão Em aberto),
+            // para o painel do aluno contar frequência só sobre Consolidadas (RF3 / CSU07).
+            Assert.All(itensAdmin, item => Assert.Equal("EmAberto", item.GetProperty("situacaoAula").GetString()));
         }
 
         [Fact]
