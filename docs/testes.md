@@ -733,6 +733,7 @@ com a tag da aula. Sem migration, sem rota nova.
 `vue-tsc -b` limpo · `vite build` ok.
 
 **Testes manuais:**
+
 1. Exportação por perfil: Admin vê Imprimir + CSV em todas as tabelas; Paula (Professor) vê
    as mesmas abas sem nenhum botão de exportação e sem a aba Resumo do dia (RNF 38.1). ✔
    (print RNF-35.4-professor-sem-exportacao.png)
@@ -750,3 +751,45 @@ com a tag da aula. Sem migration, sem rota nova.
 usa o histórico completo (sem recorte de período) enquanto Minha Frequência usa 90 dias —
 por isso percentuais podem diferir (42% × 30% nos dados de teste); o rótulo "3 Meses" da
 tabela do painel não corresponde ao filtro real. Alinhar período ou rótulo.
+
+## Etapa 5.1 — Termo de Uso e Sigilo na API (RF42/RF43) (01/10/2026)
+
+**Escopo.** Texto do termo versionado em código (`Dominio/Termos`), v1.0 vigente desde
+01/10/2026, hash SHA-256 normalizado (independente de CRLF):
+`9833a0509a1ec51b421e9ddb53d0d05f0dd338bcf8533628ce1d025ddc61ab92`. O texto é de autoria do
+autor, com quatro ajustes estruturais do desenvolvimento (metadados e checkbox fora do texto
+hasheado; hash e IP citados no parágrafo do registro) e quatro adições incorporadas antes da
+aplicação: menção nominal à Lei nº 13.709/2018 (LGPD), compromisso 8 sobre dados de crianças
+e adolescentes, cláusula de descumprimento e direitos dos titulares via canal da igreja —
+esta última redigida genérica para o texto fixo seguir sem nada dinâmico (RNF 42.7; a
+identificação da igreja e os canais vêm do cadastro, exibidos à parte). Endpoints
+`GET /api/termo/vigente` (público; com sessão ou ?token= do convite devolve a igreja) e
+`POST /api/termo/aceitar` (Meio = Login, idempotente por versão); gates nas RNFs 1.5
+(registrar-admin, em transação explícita) e 40.5 (primeiro-acesso, sem consumir o convite
+no 400); `termoPendente` no login (2.5/13.4); `aceiteTermo` em meus-dados e usuários (RF43);
+registro imutável com versão, hash, meio, IP e data (42.2/42.3/42.5/42.8). Sem migration
+(a tabela AceitesTermo existe desde a Etapa 1).
+
+**Testes automatizados** — `dotnet test`: **98 aprovados, 0 falhas** (81 + 17 de
+`RF42_TermoTests`; `Etapa0_FumacaTests`, `RF2_TokenSomenteNoCookieTests` e
+`RF39_RF40_ConviteTests` passaram a enviar `AceiteTermoVersao` — o gate em ação).
+
+**Testes manuais (Swagger):**
+
+1. `termo/vigente` sem sessão: v1.0, hash conferido, igreja null; logado: igreja com
+   nome/e-mail/telefone (RNF 42.7). ✔
+2. `registrar-admin` sem aceite → 400 e nada criado; com `"1.0"` → 200,
+   `termoPendente: false` (RNF 1.5/42.1). ✔ (print RNF-42.1-400-cadastro-sem-aceite.png)
+3. Login de usuária antiga → `termoPendente: true`; aceitar "0.9" → 400; "1.0" → 200
+   `meio: Login`; novo login → false; meus-dados e usuários com `aceiteTermo` (2.5/13.4/RF43). ✔
+4. `primeiro-acesso` sem aceite válido → 400 e o convite continuou utilizável; com "1.0" →
+   200 e senha definida (RNF 40.5). ✔
+5. Banco: registros em AceitesTermo com os três meios (CadastroInicial, Login,
+   PrimeiroAcesso), hash da v1.0 e IP (42.2/42.5/42.8). ✔
+   (print RF42-registro-aceite-hash-meio-ip.png)
+
+**Decisão registrada:** aprovado o filtro global que bloqueia as demais rotas autenticadas
+(403) enquanto não houver aceite vigente — entra na 5.2 com teste.
+
+**Aviso até a 5.2:** cadastro inicial e primeiro acesso pelas telas atuais recebem o 400 do
+gate (o front ainda não envia o aceite); não demonstrar esses fluxos pelo front.
