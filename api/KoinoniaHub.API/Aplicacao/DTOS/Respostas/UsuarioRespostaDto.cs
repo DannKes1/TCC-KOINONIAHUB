@@ -18,5 +18,8 @@
 
         public string? ConviteToken { get; set; }
         public DateTime? ConviteExpiraEm { get; set; }
+
+        // RF43: aceite mais recente do Termo de Uso e Sigilo, ou null.
+        public AceiteTermoRespostaDto? AceiteTermo { get; set; }
     }
 }

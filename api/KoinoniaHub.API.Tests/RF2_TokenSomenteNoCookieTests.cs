@@ -1,7 +1,8 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using KoinoniaHub.API.Tests.Infraestrutura;
+using KoinoniaHub.API.Dominio.Termos;
 
 namespace KoinoniaHub.API.Tests
 {
@@ -29,7 +30,8 @@ namespace KoinoniaHub.API.Tests
                 Igreja = new { Nome = "Igreja Cookie" },
                 EmailAdmin = "admin.cookie@teste.com",
                 SenhaAdmin = CenarioAcessoPessoa.Senha,
-                NomeAdmin = "Admin Cookie"
+                NomeAdmin = "Admin Cookie",
+                AceiteTermoVersao = TermosDeUso.Vigente.Versao
             });
 
             Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);

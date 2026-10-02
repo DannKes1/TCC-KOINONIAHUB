@@ -18,5 +18,9 @@ namespace KoinoniaHub.API.Aplicacao.DTOs.Respostas
         public int UsuarioId { get; set; }
         public string EmailUsuario { get; set; } = string.Empty;
         public string Perfil { get; set; } = "Admin";
+
+        // Sempre false após o cadastro inicial (o aceite é gravado na mesma transação);
+        // existe para o front tratar login e cadastro com o mesmo contrato.
+        public bool TermoPendente { get; set; }
     }
 }

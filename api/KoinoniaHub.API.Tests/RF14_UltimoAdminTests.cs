@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using KoinoniaHub.API.Aplicacao.DTOs.Requisicoes;
@@ -99,7 +99,7 @@ namespace KoinoniaHub.API.Tests
             ctx.Db.AddRange(admin, pastor);
             await ctx.Db.SaveChangesAsync();
 
-            var servico = new UsuarioServico(new UsuarioRepositorio(ctx.Db), ctx.Db);
+            var servico = new UsuarioServico(new UsuarioRepositorio(ctx.Db), ctx.Db, new AceiteTermoServico(ctx.Db));
 
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 servico.AtualizarAsync(igreja.Id, admin.Id, usuarioLogadoId: pastor.Id, new UsuarioAtualizarRequisicaoDto { Ativo = false }));

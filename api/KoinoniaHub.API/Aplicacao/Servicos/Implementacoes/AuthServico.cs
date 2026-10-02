@@ -4,6 +4,7 @@ using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
 using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
 using KoinoniaHub.API.Dominio.Entidades;
+using KoinoniaHub.API.Dominio.Termos;
 using KoinoniaHub.API.Infraestrutura.Dados;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,26 +15,40 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
         private readonly KoinoniaHubDbContext _db;
         private readonly IIgrejaServico _igrejaServico;
         private readonly ITokenServico _tokenServico;
+        private readonly IAceiteTermoServico _aceiteTermoServico;
 
-        public AuthServico(KoinoniaHubDbContext db, IIgrejaServico igrejaServico, ITokenServico tokenServico)
+        public AuthServico(
+            KoinoniaHubDbContext db,
+            IIgrejaServico igrejaServico,
+            ITokenServico tokenServico,
+            IAceiteTermoServico aceiteTermoServico)
         {
             _db = db;
             _igrejaServico = igrejaServico;
             _tokenServico = tokenServico;
+            _aceiteTermoServico = aceiteTermoServico;
         }
 
-        public async Task<AuthRespostaDto> RegistrarAdminAsync(RegistrarAdminRequisicaoDto dto)
+        public async Task<AuthRespostaDto> RegistrarAdminAsync(RegistrarAdminRequisicaoDto dto, string? ipOrigem)
         {
+            // RNF 1.5 / 42.1: sem o aceite da versão vigente, nada é criado.
+            if (!TermosDeUso.EhVigente(dto.AceiteTermoVersao))
+                throw new InvalidOperationException(AceiteTermoServico.MensagemAceiteObrigatorio);
+
             // Verifica se já existe usuário com esse email
             var email = dto.EmailAdmin.Trim().ToLowerInvariant();
             var existe = await _db.Usuarios.AnyAsync(u => u.Email.ToLower() == email);
             if (existe)
                 throw new InvalidOperationException("Já existe um usuário com este e-mail.");
 
+            // Igreja, pessoa, usuário e aceite do termo na mesma transação (Plano 6.3):
+            // ou o cadastro inicial nasce completo, ou nada é gravado.
+            await using var transacao = await _db.Database.BeginTransactionAsync();
+
             //  Cria igreja
             var igrejaCriada = await _igrejaServico.CriarAsync(dto.Igreja);
 
-            //  Cria pessoa admin 
+            //  Cria pessoa admin
             var pessoaAdmin = new Pessoa
             {
                 Nome = dto.NomeAdmin,
@@ -56,7 +71,13 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             };
 
             _db.Usuarios.Add(usuario);
+
+            // RNF 42.5: Meio = CadastroInicial.
+            _db.AceitesTermo.Add(_aceiteTermoServico.Montar(
+                igrejaCriada.Id, dto.AceiteTermoVersao, MeioAceiteTermo.CadastroInicial, ipOrigem, usuario: usuario));
+
             await _db.SaveChangesAsync();
+            await transacao.CommitAsync();
 
             // Gera token
             var (token, expiraEm) = _tokenServico.GerarToken(usuario);
@@ -69,7 +90,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 NomeIgreja = igrejaCriada.Nome,
                 UsuarioId = usuario.Id,
                 EmailUsuario = usuario.Email,
-                Perfil = usuario.Perfil
+                Perfil = usuario.Perfil,
+                TermoPendente = false
             };
         }
 
@@ -88,6 +110,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             var (token, expiraEm) = _tokenServico.GerarToken(usuario);
 
+            // RNF 2.5 / 13.4: contas sem aceite da versão vigente fazem o aceite logo após o login.
+            var termoPendente = !await _aceiteTermoServico.PossuiAceiteVigenteAsync(usuario.Id);
+
             return new LoginRespostaDto
             {
                 Token = token,
@@ -96,7 +121,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 EmailUsuario = usuario.Email,
                 Perfil = usuario.Perfil,
                 IgrejaId = usuario.IgrejaId,
-                PessoaId = usuario.PessoaId
+                PessoaId = usuario.PessoaId,
+                TermoPendente = termoPendente
             };
         }
 
@@ -118,8 +144,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
         }
 
         // Consome o convite: a própria pessoa define a senha, o hash BCrypt é
-        // gravado e o token é invalidado (uso único).
-        public async Task<PrimeiroAcessoValidarRespostaDto> AtivarPrimeiroAcessoAsync(PrimeiroAcessoAtivarRequisicaoDto dto)
+        // gravado, o aceite do termo é registrado e o token é invalidado (uso único).
+        public async Task<PrimeiroAcessoValidarRespostaDto> AtivarPrimeiroAcessoAsync(PrimeiroAcessoAtivarRequisicaoDto dto, string? ipOrigem)
         {
             var usuario = await BuscarPorTokenAsync(dto.Token);
 
@@ -128,10 +154,18 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             GarantirConviteUtilizavel(usuario);
 
+            // RNF 40.5 / 42.1: sem o aceite da versão vigente, o convite não é consumido.
+            // Montar valida a versão antes de qualquer alteração; Meio = PrimeiroAcesso (42.5).
+            var aceite = _aceiteTermoServico.Montar(
+                usuario.IgrejaId, dto.AceiteTermoVersao, MeioAceiteTermo.PrimeiroAcesso, ipOrigem, usuarioId: usuario.Id);
+
             usuario.SenhaHash = BCrypt.Net.BCrypt.HashPassword(dto.NovaSenha.Trim());
             usuario.ConviteTokenHash = null;
             usuario.ConviteExpiraEm = null;
 
+            _db.AceitesTermo.Add(aceite);
+
+            // Senha, descarte do convite e aceite no mesmo SaveChanges (mesma transação).
             await _db.SaveChangesAsync();
 
             return new PrimeiroAcessoValidarRespostaDto

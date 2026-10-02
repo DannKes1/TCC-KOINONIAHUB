@@ -19,5 +19,9 @@ namespace KoinoniaHub.API.Aplicacao.DTOs.Respostas
         public string Perfil { get; set; } = string.Empty;
 
         public int IgrejaId { get; set; }
+
+        // RNF 2.5 / 13.4: não há aceite da versão vigente do termo para a conta; o
+        // front exige o aceite antes de liberar qualquer outra tela.
+        public bool TermoPendente { get; set; }
     }
 }

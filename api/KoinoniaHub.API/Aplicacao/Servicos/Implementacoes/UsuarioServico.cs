@@ -16,16 +16,18 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
         private readonly IUsuarioRepositorio _repositorio;
         private readonly KoinoniaHubDbContext _db;
+        private readonly IAceiteTermoServico _aceiteTermoServico;
 
         private static readonly string[] PerfisValidos = new[]
         {
             "Admin", "Pastor", "Superintendente", "Professor", "Usuario"
         };
 
-        public UsuarioServico(IUsuarioRepositorio repositorio, KoinoniaHubDbContext db)
+        public UsuarioServico(IUsuarioRepositorio repositorio, KoinoniaHubDbContext db, IAceiteTermoServico aceiteTermoServico)
         {
             _repositorio = repositorio;
             _db = db;
+            _aceiteTermoServico = aceiteTermoServico;
         }
 
         public async Task<UsuarioRespostaDto> CriarParaPessoaAsync(int igrejaId, UsuarioCriarRequisicaoDto dto)
@@ -144,8 +146,16 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
         {
             var usuarios = await _repositorio.ListarAsync(igrejaId);
 
+            // RF43: aceite mais recente de cada conta, em uma consulta só.
+            var aceites = await _aceiteTermoServico.ObterUltimosAceitesAsync(igrejaId);
+
             return usuarios
-                .Select(u => MapearParaResposta(u, u.Pessoa?.Nome))
+                .Select(u =>
+                {
+                    var resposta = MapearParaResposta(u, u.Pessoa?.Nome);
+                    resposta.AceiteTermo = aceites.GetValueOrDefault(u.Id);
+                    return resposta;
+                })
                 .ToList();
         }
 
@@ -154,7 +164,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             var u = await _repositorio.ObterPorIdAsync(igrejaId, usuarioId);
             if (u is null) return null;
 
-            return MapearParaResposta(u, u.Pessoa?.Nome);
+            var resposta = MapearParaResposta(u, u.Pessoa?.Nome);
+            resposta.AceiteTermo = await _aceiteTermoServico.ObterUltimoAceiteAsync(u.Id);
+            return resposta;
         }
 
         public async Task<bool> AtualizarAsync(int igrejaId, int usuarioId, int usuarioLogadoId, UsuarioAtualizarRequisicaoDto dto)

@@ -1,4 +1,5 @@
 ﻿using KoinoniaHub.API.Aplicacao.DTOs.Requisicoes;
+using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
 using KoinoniaHub.API.Aplicacao.DTOS.Requisicoes;
 using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
@@ -13,10 +14,12 @@ namespace KoinoniaHub.API.Controllers
     public class MeusDadosController : ControllerBase
     {
         private readonly IPessoaServico _pessoaServico;
+        private readonly IAceiteTermoServico _aceiteTermoServico;
 
-        public MeusDadosController(IPessoaServico pessoaServico)
+        public MeusDadosController(IPessoaServico pessoaServico, IAceiteTermoServico aceiteTermoServico)
         {
             _pessoaServico = pessoaServico;
+            _aceiteTermoServico = aceiteTermoServico;
         }
 
         [HttpGet]
@@ -25,11 +28,13 @@ namespace KoinoniaHub.API.Controllers
             var igrejaId = UsuarioAutenticado.ObterIgrejaId(User);
             var usuarioId = UsuarioAutenticado.ObterUsuarioId(User);
 
-            var resposta = await _pessoaServico.ObterMeusDadosAsync(igrejaId, usuarioId);
-            if (resposta is null)
+            var pessoa = await _pessoaServico.ObterMeusDadosAsync(igrejaId, usuarioId);
+            if (pessoa is null)
                 return NotFound(new { mensagem = "Seu usuário não está vinculado a uma pessoa. Procure o administrador." });
 
-            return Ok(resposta);
+            // RF43: versão e data do Termo de Uso e Sigilo aceito.
+            var aceite = await _aceiteTermoServico.ObterUltimoAceiteAsync(usuarioId);
+            return Ok(MeusDadosRespostaDto.Montar(pessoa, aceite));
         }
 
         [HttpPut]

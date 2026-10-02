@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using KoinoniaHub.API.Aplicacao.Seguranca;
@@ -7,6 +7,7 @@ using KoinoniaHub.API.Infraestrutura.Dados;
 using KoinoniaHub.API.Tests.Infraestrutura;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using KoinoniaHub.API.Dominio.Termos;
 
 namespace KoinoniaHub.API.Tests
 {
@@ -76,7 +77,7 @@ namespace KoinoniaHub.API.Tests
 
             var publico = _fabrica.CreateClient();
             var validar = await publico.GetAsync($"/api/auth/primeiro-acesso/{token}");
-            var ativar = await publico.PostAsJsonAsync("/api/auth/primeiro-acesso", new { Token = token, NovaSenha = SenhaNova });
+            var ativar = await publico.PostAsJsonAsync("/api/auth/primeiro-acesso", new { Token = token, NovaSenha = SenhaNova, AceiteTermoVersao = TermosDeUso.Vigente.Versao });
 
             // RNF 40.2: convite expirado é recusado com mensagem clara, na validação e na ativação.
             Assert.Equal(HttpStatusCode.BadRequest, validar.StatusCode);
@@ -97,7 +98,7 @@ namespace KoinoniaHub.API.Tests
             var (_, token) = await GerarConviteAsync(admin, cenario.AlvoId);
 
             var publico = _fabrica.CreateClient();
-            var primeira = await publico.PostAsJsonAsync("/api/auth/primeiro-acesso", new { Token = token, NovaSenha = SenhaNova });
+            var primeira = await publico.PostAsJsonAsync("/api/auth/primeiro-acesso", new { Token = token, NovaSenha = SenhaNova, AceiteTermoVersao = TermosDeUso.Vigente.Versao });
             Assert.Equal(HttpStatusCode.OK, primeira.StatusCode);
 
             // RNF 40.1: após a definição da senha o token é descartado...
@@ -111,7 +112,7 @@ namespace KoinoniaHub.API.Tests
             Assert.True(BCrypt.Net.BCrypt.Verify(SenhaNova, usuario.SenhaHash));
 
             // Segundo uso do mesmo link: recusado (40.1/40.2), sem alterar a senha definida.
-            var segunda = await publico.PostAsJsonAsync("/api/auth/primeiro-acesso", new { Token = token, NovaSenha = "Outra@789" });
+            var segunda = await publico.PostAsJsonAsync("/api/auth/primeiro-acesso", new { Token = token, NovaSenha = "Outra@789", AceiteTermoVersao = TermosDeUso.Vigente.Versao });
             var validar = await publico.GetAsync($"/api/auth/primeiro-acesso/{token}");
 
             Assert.Equal(HttpStatusCode.BadRequest, segunda.StatusCode);
@@ -136,8 +137,8 @@ namespace KoinoniaHub.API.Tests
 
             var publico = _fabrica.CreateClient();
             var validarA = await publico.GetAsync($"/api/auth/primeiro-acesso/{tokenA}");
-            var ativarA = await publico.PostAsJsonAsync("/api/auth/primeiro-acesso", new { Token = tokenA, NovaSenha = SenhaNova });
-            var ativarB = await publico.PostAsJsonAsync("/api/auth/primeiro-acesso", new { Token = tokenB, NovaSenha = SenhaNova });
+            var ativarA = await publico.PostAsJsonAsync("/api/auth/primeiro-acesso", new { Token = tokenA, NovaSenha = SenhaNova, AceiteTermoVersao = TermosDeUso.Vigente.Versao });
+            var ativarB = await publico.PostAsJsonAsync("/api/auth/primeiro-acesso", new { Token = tokenB, NovaSenha = SenhaNova, AceiteTermoVersao = TermosDeUso.Vigente.Versao });
 
             Assert.Equal(HttpStatusCode.NotFound, validarA.StatusCode);
             Assert.Equal(HttpStatusCode.BadRequest, ativarA.StatusCode);
@@ -156,7 +157,7 @@ namespace KoinoniaHub.API.Tests
             Assert.Equal(HttpStatusCode.OK, await LoginAsync(cenario.EmailAlvo, CenarioAcessoPessoa.Senha));
             Assert.True(await LerConvitePendenteAsync(admin, cenario.AlvoId));
 
-            var ativar = await _fabrica.CreateClient().PostAsJsonAsync("/api/auth/primeiro-acesso", new { Token = token, NovaSenha = SenhaNova });
+            var ativar = await _fabrica.CreateClient().PostAsJsonAsync("/api/auth/primeiro-acesso", new { Token = token, NovaSenha = SenhaNova, AceiteTermoVersao = TermosDeUso.Vigente.Versao });
             Assert.Equal(HttpStatusCode.OK, ativar.StatusCode);
 
             // Depois do uso: só a senha definida pela própria pessoa vale (RNF 15.3).

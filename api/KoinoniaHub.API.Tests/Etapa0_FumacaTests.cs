@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using KoinoniaHub.API.Tests.Infraestrutura;
+using KoinoniaHub.API.Dominio.Termos;
 
 namespace KoinoniaHub.API.Tests
 {
@@ -37,7 +38,8 @@ namespace KoinoniaHub.API.Tests
                 Igreja = new { Nome = "Igreja de Teste" },
                 EmailAdmin = "admin.fumaca@teste.com",
                 SenhaAdmin = "Senha@123",
-                NomeAdmin = "Administrador de Teste"
+                NomeAdmin = "Administrador de Teste",
+                AceiteTermoVersao = TermosDeUso.Vigente.Versao
             });
 
             Assert.Equal(HttpStatusCode.OK, cadastro.StatusCode);

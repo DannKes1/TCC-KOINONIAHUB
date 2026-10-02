@@ -22,7 +22,7 @@ namespace KoinoniaHub.API.Controllers
         {
             try
             {
-                var resposta = await _authServico.RegistrarAdminAsync(dto);
+                var resposta = await _authServico.RegistrarAdminAsync(dto, ObterIpOrigem());
                 GravarCookieToken(resposta.Token, resposta.ExpiraEm);
                 return Ok(resposta);
             }
@@ -72,7 +72,7 @@ namespace KoinoniaHub.API.Controllers
         {
             try
             {
-                var resposta = await _authServico.AtivarPrimeiroAcessoAsync(dto);
+                var resposta = await _authServico.AtivarPrimeiroAcessoAsync(dto, ObterIpOrigem());
                 return Ok(new
                 {
                     mensagem = "Senha definida com sucesso. Você já pode entrar no sistema.",
@@ -94,6 +94,9 @@ namespace KoinoniaHub.API.Controllers
             return NoContent();
         }
 
+
+        // RNF 42.8: endereço de origem, usado apenas no registro de aceite do termo.
+        private string? ObterIpOrigem() => HttpContext.Connection.RemoteIpAddress?.ToString();
 
         private void GravarCookieToken(string token, DateTime expiraEm)
         {

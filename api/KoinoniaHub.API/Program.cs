@@ -129,6 +129,9 @@ builder.Services.AddScoped<IUsuarioRepositorio, UsuarioRepositorio>();
 builder.Services.AddScoped<IUsuarioServico, UsuarioServico>();
 builder.Services.AddScoped<IPessoaImportacaoServico, PessoaImportacaoServico>();
 
+// Termo de Uso e Sigilo (RF42/RF43)
+builder.Services.AddScoped<IAceiteTermoServico, AceiteTermoServico>();
+
 // Segurança por atribuição
 builder.Services.AddScoped<IAutorizacaoEbdServico, AutorizacaoEbdServico>();
 
