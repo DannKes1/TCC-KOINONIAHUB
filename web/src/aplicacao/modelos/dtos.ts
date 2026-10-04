@@ -78,6 +78,8 @@ export type UsuarioVM = {
   pessoaId: number | null;
   nomePessoa: string | null;
   convitePendente: boolean;
+  // RF43: último aceite do Termo de Uso e Sigilo (null = nunca aceitou).
+  aceiteTermo: AceiteTermoVM | null;
 };
 
 export type UsuarioCriarDTO = {
@@ -310,4 +312,30 @@ export type HistoricoPresencaPessoaVM = {
   observacao: string | null;
   // Situação da aula do registro (RF34/CSU14); só Consolidada conta como frequência.
   situacaoAula: SituacaoAula;
+};
+
+// ---- Termo de Uso e Sigilo (RF42 / RF43) ----
+
+export type TermoIgrejaVM = {
+  nome: string;
+  email: string | null;
+  telefone: string | null;
+};
+
+export type TermoVigenteVM = {
+  versao: string;
+  vigenteDesde: string;
+  texto: string;
+  hash: string;
+  // Identificação da igreja para o cabeçalho dinâmico (RNF 42.7): vem da sessão
+  // ou do token de convite; no cadastro inicial não existe ainda (null).
+  igreja: TermoIgrejaVM | null;
+};
+
+export type AceiteTermoVM = {
+  versao: string;
+  aceitoEm: string;
+  meio: string;
+  // false quando o aceite é de uma versão anterior à vigente.
+  vigente: boolean;
 };

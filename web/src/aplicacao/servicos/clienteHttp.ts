@@ -50,6 +50,20 @@ clienteHttp.interceptors.response.use(
     if (status === 403) {
       const data = erro?.response?.data;
 
+      // RNF 2.5 / 13.4: a API bloqueia (filtro global) a conta que ainda não
+      // aceitou a versão vigente do termo. Não é falta de permissão: leva para
+      // a tela do termo, preservando o destino para voltar depois do aceite.
+      if (data?.termoPendente === true) {
+        usarAutenticacaoStore().marcarTermoPendente(true);
+
+        if (!window.location.pathname.startsWith("/termo")) {
+          const destino = encodeURIComponent(urlAtual);
+          window.location.href = `/termo?redirecionar=${destino}`;
+        }
+
+        return Promise.reject(erro);
+      }
+
       const msg =
         data?.mensagem ?? "Você não tem permissão para acessar este recurso.";
 

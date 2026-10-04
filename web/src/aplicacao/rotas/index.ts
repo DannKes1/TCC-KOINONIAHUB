@@ -5,6 +5,7 @@ import PaginaMeusDados from "../../paginas/privado/meus-dados/PaginaMeusDados.vu
 import PaginaLogin from "../../paginas/publico/PaginaLogin.vue";
 import PaginaCadastroInicial from "../../paginas/publico/PaginaCadastroInicial.vue";
 import PaginaPrimeiroAcesso from "../../paginas/publico/PaginaPrimeiroAcesso.vue";
+import PaginaTermo from "../../paginas/privado/PaginaTermo.vue";
 
 import LayoutPrincipal from "../../components/layout/LayoutPrincipal.vue";
 import PaginaPainel from "../../paginas/privado/PaginaPainel.vue";
@@ -35,6 +36,14 @@ const rotas: RouteRecordRaw[] = [
     path: "/primeiro-acesso",
     component: PaginaPrimeiroAcesso,
     meta: { requerVisitante: true },
+  },
+  {
+    // RNF 2.5 / 13.4: aceite do Termo de Uso e Sigilo após o login. Fica fora do
+    // LayoutPrincipal (sem menu) porque é a única tela permitida enquanto o
+    // aceite estiver pendente; `telaTermo` libera a rota na guarda.
+    path: "/termo",
+    component: PaginaTermo,
+    meta: { requerAutenticacao: true, telaTermo: true },
   },
   {
     path: "/",

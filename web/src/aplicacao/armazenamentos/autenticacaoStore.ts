@@ -10,6 +10,9 @@ type EstadoAutenticacao = {
   perfil: string;
   igrejaId: number | null;
   pessoaId: number | null;
+  // RNF 2.5 / 13.4: a conta ainda não aceitou a versão vigente do Termo de Uso
+  // e Sigilo. Enquanto true, a guarda de rotas só deixa abrir /termo.
+  termoPendente: boolean;
 };
 
 const CHAVE_STORAGE = "koinoniahub_sessao";
@@ -29,6 +32,7 @@ export const usarAutenticacaoStore = defineStore("autenticacao", {
     perfil: "",
     igrejaId: null,
     pessoaId: null as number | null,
+    termoPendente: false,
   }),
 
   getters: {
@@ -94,7 +98,7 @@ export const usarAutenticacaoStore = defineStore("autenticacao", {
     },
 
     entrar(dados: any) {
-      
+
       this.sessaoAtiva = true;
       this.expiraEm = String(dados?.ExpiraEm ?? dados?.expiraEm ?? "");
       this.usuarioId =
@@ -105,9 +109,19 @@ export const usarAutenticacaoStore = defineStore("autenticacao", {
       this.perfil = String(dados?.Perfil ?? dados?.perfil ?? "");
       this.igrejaId = Number(dados?.IgrejaId ?? dados?.igrejaId ?? 0) || null;
       this.pessoaId = Number(dados?.PessoaId ?? dados?.pessoaId ?? 0) || null;
+      this.termoPendente = Boolean(
+        dados?.TermoPendente ?? dados?.termoPendente ?? false,
+      );
       this.salvarNoStorage();
     },
-    
+
+    // Chamado quando a API responde 403 com termoPendente (filtro global da API)
+    // ou quando a conta aceita o termo em /termo.
+    marcarTermoPendente(pendente: boolean) {
+      this.termoPendente = pendente;
+      if (this.sessaoAtiva) this.salvarNoStorage();
+    },
+
     async sair() {
       this.$reset();
       localStorage.removeItem(CHAVE_STORAGE);
