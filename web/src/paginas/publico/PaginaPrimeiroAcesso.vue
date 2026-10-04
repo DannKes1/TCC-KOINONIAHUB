@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import {
   ativarPrimeiroAcessoApi,
   validarPrimeiroAcessoApi,
 } from "../../aplicacao/servicos/authServico";
+import { obterTermoVigente } from "../../aplicacao/servicos/termoServico";
+import type { TermoVigenteVM } from "../../aplicacao/modelos/dtos";
+
+import TermoUsoSigilo from "../../components/termo/TermoUsoSigilo.vue";
 
 import logoIPB2 from "../../assets/LOGOIPB2.png";
 
@@ -31,8 +35,34 @@ const nomePessoa = ref<string | null>(null);
 const novaSenha = ref<string>("");
 const confirmarSenha = ref<string>("");
 
+// RNF 42.1: o aceite do Termo de Uso e Sigilo faz parte da ativação. O token do
+// convite identifica a igreja para o cabeçalho do termo (RNF 42.7).
+const termo = ref<TermoVigenteVM | null>(null);
+const termoCarregando = ref(false);
+const termoErro = ref("");
+const aceiteTermo = ref(false);
+
+const podeConcluir = computed(
+  () => Boolean(termo.value) && aceiteTermo.value && !salvando.value,
+);
+
 function extrairMensagem(e: any, padrao: string): string {
   return e?.response?.data?.mensagem ?? padrao;
+}
+
+async function carregarTermo() {
+  termoCarregando.value = true;
+  termoErro.value = "";
+  try {
+    termo.value = await obterTermoVigente(token.value);
+  } catch (e: any) {
+    termoErro.value = extrairMensagem(
+      e,
+      "Não foi possível carregar o Termo de Uso e Sigilo. Recarregue a página.",
+    );
+  } finally {
+    termoCarregando.value = false;
+  }
 }
 
 onMounted(async () => {
@@ -51,6 +81,7 @@ onMounted(async () => {
     email.value = dados.email;
     nomePessoa.value = dados.nomePessoa;
     conviteValido.value = true;
+    await carregarTermo();
   } catch (e: any) {
     erro.value = extrairMensagem(
       e,
@@ -67,6 +98,8 @@ function validarFormulario(): string {
     return "A senha deve ter no mínimo 6 caracteres.";
   if (novaSenha.value.trim() !== confirmarSenha.value.trim())
     return "A confirmação da senha não confere.";
+  if (!termo.value || !aceiteTermo.value)
+    return "É necessário aceitar o Termo de Uso e Sigilo para concluir.";
   return "";
 }
 
@@ -84,6 +117,7 @@ async function definirSenha() {
     await ativarPrimeiroAcessoApi({
       Token: token.value,
       NovaSenha: novaSenha.value.trim(),
+      AceiteTermoVersao: termo.value!.versao,
     });
     concluido.value = true;
   } catch (e: any) {
@@ -199,6 +233,14 @@ function irParaLogin() {
             />
           </div>
 
+          <TermoUsoSigilo
+            v-model="aceiteTermo"
+            :termo="termo"
+            :carregando="termoCarregando"
+            :erro="termoErro"
+            :mostrar-botao="false"
+          />
+
           <small v-if="erro" class="login-erro">{{ erro }}</small>
 
           <Button
@@ -206,6 +248,7 @@ function irParaLogin() {
             icon="pi pi-check"
             class="login-botao"
             :loading="salvando"
+            :disabled="!podeConcluir"
             @click="definirSenha"
           />
 
@@ -320,7 +363,7 @@ function irParaLogin() {
 
 .login-formulario-card {
   width: 100%;
-  max-width: 400px;
+  max-width: 520px;
   background: var(--ipb-branco, #fff);
   border-radius: var(--radius-md, 10px);
   padding: 40px 36px;

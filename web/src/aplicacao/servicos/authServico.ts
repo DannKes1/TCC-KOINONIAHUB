@@ -10,6 +10,10 @@ export async function loginApi(dto: { Email: string; Senha: string }) {
     EmailUsuario: string;
     Perfil: string;
     IgrejaId: number;
+    PessoaId?: number | null;
+    // RNF 2.5 / 13.4: true quando a conta ainda não aceitou a versão vigente
+    // do Termo de Uso e Sigilo; o front leva para /termo antes de qualquer tela.
+    TermoPendente?: boolean;
   };
 }
 
@@ -23,6 +27,8 @@ export async function registrarAdminApi(dto: {
   EmailAdmin: string;
   SenhaAdmin: string;
   NomeAdmin: string;
+  // RNF 42.1: versão do termo aceita na própria tela de cadastro inicial.
+  AceiteTermoVersao: string;
 }) {
   const resposta = await clienteHttp.post("/api/auth/registrar-admin", dto);
   return resposta.data;
@@ -45,6 +51,8 @@ export async function validarPrimeiroAcessoApi(token: string) {
 export async function ativarPrimeiroAcessoApi(dto: {
   Token: string;
   NovaSenha: string;
+  // RNF 42.1: aceite do termo faz parte da ativação do primeiro acesso.
+  AceiteTermoVersao: string;
 }) {
   const resposta = await clienteHttp.post("/api/auth/primeiro-acesso", dto);
   return resposta.data as { mensagem?: string; email?: string };

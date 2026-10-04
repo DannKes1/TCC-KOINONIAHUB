@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { usarAutenticacaoStore } from "../../aplicacao/armazenamentos/autenticacaoStore";
 import { registrarAdminApi } from "../../aplicacao/servicos/authServico";
+import { obterTermoVigente } from "../../aplicacao/servicos/termoServico";
+import type {
+  TermoIgrejaVM,
+  TermoVigenteVM,
+} from "../../aplicacao/modelos/dtos";
 
 import FieldError from "../../components/ui/FieldError.vue";
+import TermoUsoSigilo from "../../components/termo/TermoUsoSigilo.vue";
 import { firstFieldError } from "../../aplicacao/servicos/apiError";
 import { useAsync } from "../../aplicacao/composables/useAsync";
 
@@ -22,6 +28,36 @@ const nomeAdmin = ref<string>("");
 const emailAdmin = ref<string>("");
 const senhaAdmin = ref<string>("");
 
+// RNF 42.1: o Termo de Uso e Sigilo é aceito aqui mesmo, antes de criar a igreja
+// e o Admin. A igreja ainda não existe, então o cabeçalho do termo (RNF 42.7)
+// usa o que está sendo digitado no formulário.
+const termo = ref<TermoVigenteVM | null>(null);
+const termoCarregando = ref(true);
+const termoErro = ref("");
+const aceiteTermo = ref(false);
+
+const igrejaDoFormulario = computed<TermoIgrejaVM>(() => ({
+  nome: nomeIgreja.value.trim(),
+  email: emailIgreja.value.trim() || null,
+  telefone: null,
+}));
+
+const podeConcluir = computed(
+  () => Boolean(termo.value) && aceiteTermo.value && !carregando.value,
+);
+
+onMounted(async () => {
+  try {
+    termo.value = await obterTermoVigente();
+  } catch (e: any) {
+    termoErro.value =
+      e?.response?.data?.mensagem ??
+      "Não foi possível carregar o Termo de Uso e Sigilo. Recarregue a página.";
+  } finally {
+    termoCarregando.value = false;
+  }
+});
+
 function validarRapido(): string {
   if (!nomeIgreja.value.trim()) return "Informe o nome da igreja.";
   if (!nomeAdmin.value.trim()) return "Informe o nome do administrador.";
@@ -29,6 +65,8 @@ function validarRapido(): string {
   if (!senhaAdmin.value) return "Informe a senha do administrador.";
   if (senhaAdmin.value.length < 6)
     return "A senha deve ter pelo menos 6 caracteres.";
+  if (!termo.value || !aceiteTermo.value)
+    return "É necessário aceitar o Termo de Uso e Sigilo para concluir.";
   return "";
 }
 
@@ -52,6 +90,7 @@ async function concluirCadastro(): Promise<void> {
       EmailAdmin: emailAdmin.value.trim(),
       SenhaAdmin: senhaAdmin.value,
       NomeAdmin: nomeAdmin.value.trim(),
+      AceiteTermoVersao: termo.value!.versao,
     });
 
     // O cookie de sessão já foi gravado pela API; o corpo traz os dados do
@@ -210,6 +249,23 @@ async function concluirCadastro(): Promise<void> {
         </div>
       </div>
 
+      <div
+        style="
+          padding: 12px;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: 12px;
+        "
+      >
+        <TermoUsoSigilo
+          v-model="aceiteTermo"
+          :termo="termo"
+          :igreja="igrejaDoFormulario"
+          :carregando="termoCarregando"
+          :erro="termoErro"
+          :mostrar-botao="false"
+        />
+      </div>
+
       <div style="display: flex; gap: 10px; justify-content: flex-end">
         <RouterLink to="/login" style="align-self: center; opacity: 0.8">
           Já tenho login
@@ -217,7 +273,7 @@ async function concluirCadastro(): Promise<void> {
 
         <button
           @click="concluirCadastro"
-          :disabled="carregando"
+          :disabled="!podeConcluir"
           style="padding: 10px 14px"
         >
           {{ carregando ? "Concluindo..." : "Concluir Cadastro" }}
