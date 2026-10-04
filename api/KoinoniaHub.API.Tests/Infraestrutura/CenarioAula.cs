@@ -47,10 +47,14 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
             var emailProfessor = $"professor.{sufixo}@teste.com";
             var emailProfessorFora = $"professor.fora.{sufixo}@teste.com";
 
-            db.AddRange(
+            var usuarios = new[]
+            {
                 new Usuario { Email = emailAdmin, SenhaHash = senhaHash, Perfil = "Admin", Igreja = igreja, Pessoa = adminPessoa },
                 new Usuario { Email = emailProfessor, SenhaHash = senhaHash, Perfil = "Professor", Igreja = igreja, Pessoa = professorPessoa },
-                new Usuario { Email = emailProfessorFora, SenhaHash = senhaHash, Perfil = "Professor", Igreja = igreja, Pessoa = professorForaPessoa });
+                new Usuario { Email = emailProfessorFora, SenhaHash = senhaHash, Perfil = "Professor", Igreja = igreja, Pessoa = professorForaPessoa }
+            };
+            db.AddRange(usuarios);
+            foreach (var u in usuarios) db.Add(SementeTermo.AceiteDe(u));
 
             db.Add(new Atribuicao { Funcao = "Professor", Pessoa = professorPessoa, Departamento = turma });
 
@@ -130,17 +134,20 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
 
             var matricula = await db.AlunosDepartamentos
                 .Include(m => m.Departamento)
+                    .ThenInclude(d => d.Igreja)
                 .SingleAsync(m => m.Id == matriculaId);
 
             var email = $"aluno.{sufixo}@teste.com";
-            db.Add(new Usuario
+            var aluno = new Usuario
             {
                 Email = email,
                 SenhaHash = BCrypt.Net.BCrypt.HashPassword(CenarioAcessoPessoa.Senha),
                 Perfil = "Usuario",
-                IgrejaId = matricula.Departamento.IgrejaId,
+                Igreja = matricula.Departamento.Igreja,
                 PessoaId = matricula.PessoaId
-            });
+            };
+            db.Add(aluno);
+            db.Add(SementeTermo.AceiteDe(aluno));
             await db.SaveChangesAsync();
 
             return email;

@@ -88,7 +88,8 @@ namespace KoinoniaHub.API.Tests
         [Fact]
         public async Task Vigente_Autenticado_RetornaIgrejaDoUsuario()
         {
-            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf42vig");
+            // Conta pendente: o endpoint do termo é alcançável mesmo sem aceite (PermitirSemAceiteTermo).
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf42vig", aceitarTermo: false);
             var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
 
             var resposta = await professor.GetAsync("/api/termo/vigente");
@@ -120,7 +121,7 @@ namespace KoinoniaHub.API.Tests
         [Fact]
         public async Task Login_SemAceiteVigente_RetornaTermoPendente()
         {
-            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf42a");
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf42a", aceitarTermo: false);
             var cliente = _fabrica.CreateClient();
 
             var login = await cliente.PostAsJsonAsync("/api/auth/login", new { Email = cenario.EmailProfessor, Senha = CenarioAcessoPessoa.Senha });
@@ -137,7 +138,7 @@ namespace KoinoniaHub.API.Tests
         [Fact]
         public async Task Aceitar_VersaoDiferenteDaVigente_Retorna400()
         {
-            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf42b");
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf42b", aceitarTermo: false);
             var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
 
             var resposta = await professor.PostAsJsonAsync("/api/termo/aceitar", new { Versao = "0.9" });
@@ -151,7 +152,7 @@ namespace KoinoniaHub.API.Tests
         [Fact]
         public async Task Aceitar_GravaHashDaVersaoEMeio()
         {
-            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf42c");
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf42c", aceitarTermo: false);
             var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
             var antes = DateTime.UtcNow.AddSeconds(-1);
 
@@ -179,7 +180,7 @@ namespace KoinoniaHub.API.Tests
         [Fact]
         public async Task Aceitar_SegundaVezDaMesmaVersao_NaoDuplicaRegistro()
         {
-            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf42d");
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf42d", aceitarTermo: false);
             var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
 
             var primeira = await professor.PostAsJsonAsync("/api/termo/aceitar", new { Versao = TermosDeUso.Vigente.Versao });
@@ -301,12 +302,11 @@ namespace KoinoniaHub.API.Tests
         [Fact]
         public async Task MeusDados_EUsuarios_IncluemAceite()
         {
-            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf43a");
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf43a", aceitarTermo: false);
             var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
 
-            // Antes do aceite: null nos dois lugares.
-            using (var json = JsonDocument.Parse(await (await admin.GetAsync("/api/meus-dados")).Content.ReadAsStringAsync()))
-                Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("aceiteTermo").ValueKind);
+            // Pendente: o filtro global ainda bloqueia Meus Dados (RF2_GateTermoTests cobre o detalhe).
+            Assert.Equal(HttpStatusCode.Forbidden, (await admin.GetAsync("/api/meus-dados")).StatusCode);
 
             var aceitar = await admin.PostAsJsonAsync("/api/termo/aceitar", new { Versao = TermosDeUso.Vigente.Versao });
             Assert.Equal(HttpStatusCode.OK, aceitar.StatusCode);

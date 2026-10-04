@@ -1,4 +1,5 @@
 ﻿using KoinoniaHub.API.Aplicacao.DTOs.Requisicoes;
+using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,6 +18,11 @@ namespace KoinoniaHub.API.Controllers
             _authServico = authServico;
         }
 
+        // [AllowAnonymous] explícito nos endpoints públicos: além de documentar a
+        // intenção, é o metadado que o ExigeAceiteTermoFiltro usa para dispensá-los —
+        // um navegador que ainda carrega o cookie de uma conta pendente precisa
+        // conseguir fazer login de novo e abrir um convite de primeiro acesso.
+        [AllowAnonymous]
         [HttpPost("registrar-admin")]
         public async Task<IActionResult> RegistrarAdmin([FromBody] RegistrarAdminRequisicaoDto dto)
         {
@@ -32,6 +38,7 @@ namespace KoinoniaHub.API.Controllers
             }
         }
 
+        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequisicaoDto dto)
         {
@@ -49,6 +56,7 @@ namespace KoinoniaHub.API.Controllers
 
         // Valida um convite de primeiro acesso (tela pública).
         // Retorna o e-mail/nome apenas para a página cumprimentar a pessoa.
+        [AllowAnonymous]
         [HttpGet("primeiro-acesso/{token}")]
         public async Task<IActionResult> ValidarPrimeiroAcesso([FromRoute] string token)
         {
@@ -67,6 +75,7 @@ namespace KoinoniaHub.API.Controllers
         }
 
         // Consome o convite: a própria pessoa define a senha (uso único).
+        [AllowAnonymous]
         [HttpPost("primeiro-acesso")]
         public async Task<IActionResult> AtivarPrimeiroAcesso([FromBody] PrimeiroAcessoAtivarRequisicaoDto dto)
         {
@@ -85,8 +94,10 @@ namespace KoinoniaHub.API.Controllers
             }
         }
 
-        // Encerra a sessão removendo o cookie httpOnly do navegador.
+        // Encerra a sessão removendo o cookie httpOnly do navegador. Liberado mesmo
+        // sem aceite do termo: quem não quer aceitar precisa conseguir sair.
         [Authorize]
+        [PermitirSemAceiteTermo]
         [HttpPost("logout")]
         public IActionResult Logout()
         {

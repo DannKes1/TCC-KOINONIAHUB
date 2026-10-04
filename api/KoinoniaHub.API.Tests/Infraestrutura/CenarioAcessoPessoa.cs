@@ -21,7 +21,9 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
         public string EmailProfessor { get; init; } = string.Empty;
         public string EmailUsuarioComum { get; init; } = string.Empty;
 
-        public static async Task<CenarioAcessoPessoa> CriarAsync(KoinoniaHubWebApplicationFactory fabrica, string sufixo)
+        // aceitarTermo = false deixa as três contas sem aceite do termo (pendentes), para os
+        // testes do RF42; o padrão cria o aceite, pois o filtro global bloqueia o restante.
+        public static async Task<CenarioAcessoPessoa> CriarAsync(KoinoniaHubWebApplicationFactory fabrica, string sufixo, bool aceitarTermo = true)
         {
             using var escopo = fabrica.Services.CreateScope();
             var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
@@ -52,10 +54,16 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
             var emailProfessor = $"professor.{sufixo}@teste.com";
             var emailUsuarioComum = $"usuario.{sufixo}@teste.com";
 
-            db.AddRange(
+            var usuarios = new[]
+            {
                 new Usuario { Email = emailAdmin, SenhaHash = senhaHash, Perfil = "Admin", Igreja = igreja, Pessoa = adminPessoa },
                 new Usuario { Email = emailProfessor, SenhaHash = senhaHash, Perfil = "Professor", Igreja = igreja, Pessoa = professorPessoa },
-                new Usuario { Email = emailUsuarioComum, SenhaHash = senhaHash, Perfil = "Usuario", Igreja = igreja, Pessoa = usuarioComumPessoa });
+                new Usuario { Email = emailUsuarioComum, SenhaHash = senhaHash, Perfil = "Usuario", Igreja = igreja, Pessoa = usuarioComumPessoa }
+            };
+            db.AddRange(usuarios);
+
+            if (aceitarTermo)
+                foreach (var u in usuarios) db.Add(SementeTermo.AceiteDe(u));
 
             db.Add(new Atribuicao { Funcao = "Professor", Pessoa = professorPessoa, Departamento = turmaA });
 

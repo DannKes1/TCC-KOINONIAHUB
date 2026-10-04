@@ -13,8 +13,13 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Controllers + JSON
-builder.Services.AddControllers()
+// Controllers + JSON. O filtro global exige o aceite da versão vigente do Termo de
+// Uso e Sigilo em toda rota autenticada não marcada com [PermitirSemAceiteTermo]
+// (RNF 2.5 / 42.1; decisão registrada na etapa 5.1).
+builder.Services.AddControllers(opcoes =>
+{
+    opcoes.Filters.Add<ExigeAceiteTermoFiltro>();
+})
     .AddJsonOptions(x =>
     {
         x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;

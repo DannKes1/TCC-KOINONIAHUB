@@ -256,11 +256,13 @@ namespace KoinoniaHub.API.Tests
 
             var alvoPessoa = new Pessoa { Nome = $"Pessoa Alvo {sufixo}", Igreja = igreja, Email = emailAlvo };
             var alvo = new Usuario { Email = emailAlvo, SenhaHash = senhaHash, Perfil = "Usuario", Igreja = igreja, Pessoa = alvoPessoa };
+            var admin = new Usuario { Email = emailAdmin, SenhaHash = senhaHash, Perfil = "Admin", Igreja = igreja };
+            var professor = new Usuario { Email = emailProfessor, SenhaHash = senhaHash, Perfil = "Professor", Igreja = igreja };
 
-            db.AddRange(
-                new Usuario { Email = emailAdmin, SenhaHash = senhaHash, Perfil = "Admin", Igreja = igreja },
-                new Usuario { Email = emailProfessor, SenhaHash = senhaHash, Perfil = "Professor", Igreja = igreja },
-                alvo);
+            // Admin e Professor com aceite (operam rotas autenticadas); o alvo é uma conta
+            // nova aguardando ativação, sem aceite — o primeiro acesso é que o registra.
+            db.AddRange(admin, professor, alvo);
+            db.AddRange(SementeTermo.AceiteDe(admin), SementeTermo.AceiteDe(professor));
 
             await db.SaveChangesAsync();
 

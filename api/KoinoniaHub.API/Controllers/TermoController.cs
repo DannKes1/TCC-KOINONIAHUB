@@ -9,6 +9,7 @@ namespace KoinoniaHub.API.Controllers
     // Termo de Uso e Sigilo (RF42 / RF43; Plano 6.3).
     [ApiController]
     [Route("api/termo")]
+    [PermitirSemAceiteTermo] // consultar e aceitar o termo é justamente o que a conta pendente precisa fazer
     public class TermoController : ControllerBase
     {
         private readonly IAceiteTermoServico _servico;

@@ -145,12 +145,14 @@ namespace KoinoniaHub.API.Tests
 
             var adminA = new Usuario { Email = emailAdminA, SenhaHash = senhaHash, Perfil = "Admin", Igreja = igreja };
             db.Add(adminA);
+            db.Add(SementeTermo.AceiteDe(adminA));
 
             Usuario? adminB = null;
             if (segundoAdmin)
             {
                 adminB = new Usuario { Email = $"admin.b.{sufixo}@teste.com", SenhaHash = senhaHash, Perfil = "Admin", Igreja = igreja };
                 db.Add(adminB);
+                db.Add(SementeTermo.AceiteDe(adminB));
             }
 
             await db.SaveChangesAsync();
