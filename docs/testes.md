@@ -793,3 +793,47 @@ registro imutável com versão, hash, meio, IP e data (42.2/42.3/42.5/42.8). Sem
 
 **Aviso até a 5.2:** cadastro inicial e primeiro acesso pelas telas atuais recebem o 400 do
 gate (o front ainda não envia o aceite); não demonstrar esses fluxos pelo front.
+
+## Etapa 5.2 — Tela do Termo de Uso e gate global de aceite (RF42, RF43, RNF 2.5, RNF 42.1) — 03/10/2026
+
+**Escopo.** Exigência de aceite da versão vigente do Termo de Uso e Sigilo em todo o sistema:
+filtro global na API (`ExigeAceiteTermoFiltro`) devolvendo 403 `{ mensagem, termoPendente: true }`
+para contas autenticadas sem aceite, dispensando apenas endpoints públicos (`[AllowAnonymous]`)
+e os marcados com `[PermitirSemAceiteTermo]` (termo e logout); no front, tela `/termo` com guarda
+global de rotas (`?redirecionar=`), termo embutido no cadastro inicial e no primeiro acesso
+(botão desabilitado até o aceite — RNF 42.1), situação do aceite em Meus Dados e coluna Termo
+na lista de Usuários (RF43).
+
+**Correção durante a conferência.** O teste `Login_ComCookieDeContaPendente_NaoEhBloqueado`
+falhou na primeira execução (Expected: OK / Actual: Forbidden): os endpoints públicos do
+`AuthController` eram públicos por omissão (sem `[Authorize]`) e não tinham `[AllowAnonymous]`,
+metadado que o filtro usa para dispensá-los. Adicionado `[AllowAnonymous]` às quatro actions
+públicas (registrar-admin, login e primeiro-acesso GET/POST); os 108 testes passaram.
+
+**Testes automatizados.**
+
+- API (xUnit): `dotnet test` → **108 aprovados** (98 anteriores + 10 do novo `RF2_GateTermoTests`:
+  403 com termoPendente em rotas autenticadas; escrita bloqueada antes de executar; termo e logout
+  liberados; liberação imediata após o aceite na mesma sessão; conta com aceite não afetada;
+  rotas públicas não exigem aceite; re-login com cookie de conta pendente não é bloqueado).
+- Front (Vitest): `npm run test` → **45 aprovados em 7 arquivos** (17 novos: `autenticacaoStore.spec`
+  com termoPendente persistido, `guardas.spec` com redirecionamento para /termo, `TermoUsoSigilo.spec`
+  com cabeçalho dinâmico e checkbox controlando o botão). `vue-tsc -b` sem erros; `npm run build` ok.
+
+**Testes manuais.**
+
+1. Login de conta sem aceite → levado a `/termo?redirecionar=...`, sem menu; tentativa de navegar
+   para `/pessoas` pela barra de endereço volta para `/termo`; sair e entrar de novo mantém a
+   pendência. Evidências: `RF42-tela-termo.png`, `RNF-2.5-redirecionamento-termo.png`.
+2. Com conta pendente, chamada direta à API pelo console (`GET /api/meus-dados`) → 403 com
+   `{ mensagem, termoPendente: true }`. Evidência: `RNF-2.5-403-termo-pendente.png`.
+3. Aceite na tela `/termo` → painel liberado na mesma sessão; Meus Dados exibe
+   "Versão 1.0, aceito em 03/10/2026 (após o login)". Evidência: `RF43-meus-dados-termo.png`.
+4. Cadastro inicial com termo embutido: cabeçalho acompanha o nome da igreja digitado; botão
+   "Concluir Cadastro" desabilitado até marcar o aceite; ao concluir, entra direto no painel
+   (aceite registrado no cadastro). Evidência: `RNF-42.1-concluir-desabilitado.png`.
+5. Convite de primeiro acesso em janela anônima: termo exibido com a igreja do convite (via token,
+   sem login); aceite obrigatório para definir a senha; login seguinte entra direto no painel.
+   Evidência: `RF42-primeiro-acesso-termo.png`.
+6. Lista de Usuários com coluna Termo: "Aceito v1.0" (com data no tooltip) e "Pendente" por conta.
+   Evidência: `RF43-usuarios-coluna-termo.png`.
