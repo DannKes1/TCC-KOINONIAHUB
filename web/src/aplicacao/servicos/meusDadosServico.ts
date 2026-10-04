@@ -2,6 +2,8 @@ import { clienteHttp } from "./clienteHttp";
 import type { AulaResumidaVM } from "../modelos/dtos";
 import { normalizarListaAulasResumidas } from "./relatoriosServico";
 import type { PessoaVM } from "../modelos/dtos";
+import type { AceiteTermoVM } from "../modelos/dtos";
+import { normalizarAceiteTermo } from "./termoServico";
 
 export type MeusDadosAtualizarDTO = {
   Celular?: string | null;
@@ -13,7 +15,10 @@ export type MeusDadosAtualizarDTO = {
   CEP?: string | null;
 };
 
-export type MeusDadosVM = PessoaVM;
+// RF43: o próprio usuário consulta a versão do termo que aceitou e quando.
+export type MeusDadosVM = PessoaVM & {
+  aceiteTermo: AceiteTermoVM | null;
+};
 
 function normalizarMeusDados(bruto: any): MeusDadosVM {
   return {
@@ -41,6 +46,7 @@ function normalizarMeusDados(bruto: any): MeusDadosVM {
     atualizadoEm: (bruto?.AtualizadoEm ?? bruto?.atualizadoEm ?? null) as
       | string
       | null,
+    aceiteTermo: normalizarAceiteTermo(bruto?.AceiteTermo ?? bruto?.aceiteTermo),
   };
 }
 

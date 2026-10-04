@@ -23,6 +23,7 @@ import {
 } from "../../../aplicacao/servicos/meusDadosServico";
 
 import type { MeusDadosVM } from "../../../aplicacao/servicos/meusDadosServico";
+import { rotuloMeioAceite } from "../../../aplicacao/servicos/termoServico";
 
 const autenticacao = usarAutenticacaoStore();
 
@@ -117,6 +118,28 @@ function descartarAlteracoes() {
   }
 }
 
+// RF43: "Termo de Uso e Sigilo — versão X, aceito em DD/MM/AAAA (meio)".
+const resumoAceiteTermo = computed(() => {
+  const aceite = dadosOriginais.value?.aceiteTermo;
+  if (!aceite) return null;
+  const data = new Date(aceite.aceitoEm);
+  const quando = Number.isNaN(data.getTime())
+    ? ""
+    : data.toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+  const meio = rotuloMeioAceite(aceite.meio);
+  return {
+    versao: aceite.versao,
+    vigente: aceite.vigente,
+    texto: `Versão ${aceite.versao}, aceito em ${quando}${meio ? ` (${meio})` : ""}`,
+  };
+});
+
 onMounted(carregar);
 </script>
 
@@ -173,6 +196,23 @@ onMounted(carregar);
             Situação
           </div>
           <div>{{ dadosOriginais.situacao || "—" }}</div>
+        </div>
+        <div data-testid="meus-dados-termo">
+          <div
+            style="font-size: 11px; opacity: 0.75; text-transform: uppercase"
+          >
+            Termo de Uso e Sigilo
+          </div>
+          <div v-if="resumoAceiteTermo">
+            {{ resumoAceiteTermo.texto }}
+            <span v-if="!resumoAceiteTermo.vigente" style="color: #8a5b00">
+              — há uma nova versão a aceitar
+            </span>
+          </div>
+          <div v-else style="color: #8a5b00">Aceite pendente</div>
+          <RouterLink to="/termo" style="font-size: 12px">
+            Ver o termo
+          </RouterLink>
         </div>
       </div>
 

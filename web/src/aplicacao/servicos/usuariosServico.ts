@@ -6,6 +6,7 @@ import type {
   UsuarioCriarDTO,
   UsuarioAtualizarDTO,
 } from "../modelos/dtos";
+import { normalizarAceiteTermo } from "./termoServico";
 
 function normalizarUsuario(bruto: any): UsuarioVM {
   return {
@@ -24,6 +25,7 @@ function normalizarUsuario(bruto: any): UsuarioVM {
     convitePendente: Boolean(
       bruto?.ConvitePendente ?? bruto?.convitePendente ?? false,
     ),
+    aceiteTermo: normalizarAceiteTermo(bruto?.AceiteTermo ?? bruto?.aceiteTermo),
   };
 }
 

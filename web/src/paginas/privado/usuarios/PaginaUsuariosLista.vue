@@ -209,6 +209,37 @@ function severityStatus(ativo: boolean) {
   return ativo ? "success" : "danger";
 }
 
+// RF43: situação do aceite do Termo de Uso e Sigilo de cada conta.
+function rotuloTermo(usuario: UsuarioVM) {
+  const aceite = usuario.aceiteTermo;
+  if (!aceite) return "Pendente";
+  return aceite.vigente ? `Aceito v${aceite.versao}` : `Versão anterior (v${aceite.versao})`;
+}
+
+function severityTermo(usuario: UsuarioVM) {
+  const aceite = usuario.aceiteTermo;
+  if (!aceite) return "warning";
+  return aceite.vigente ? "success" : "warning";
+}
+
+function tooltipTermo(usuario: UsuarioVM) {
+  const aceite = usuario.aceiteTermo;
+  if (!aceite) return "A pessoa ainda não aceitou o Termo de Uso e Sigilo.";
+  const data = new Date(aceite.aceitoEm);
+  const quando = Number.isNaN(data.getTime())
+    ? ""
+    : data.toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+  return aceite.vigente
+    ? `Aceito em ${quando}.`
+    : `Aceitou a versão ${aceite.versao} em ${quando}; a versão vigente ainda está pendente.`;
+}
+
 function severityPerfil(perfil: string) {
   const valor = String(perfil || "").toLowerCase();
 
@@ -471,6 +502,16 @@ onMounted(carregarDados);
                 "
               />
             </div>
+          </template>
+        </Column>
+
+        <Column header="Termo" style="width: 170px">
+          <template #body="{ data }">
+            <Tag
+              :value="rotuloTermo(data)"
+              :severity="severityTermo(data)"
+              v-tooltip.top="tooltipTermo(data)"
+            />
           </template>
         </Column>
 
