@@ -1,0 +1,28 @@
+# PostgreSQL de teste para os fluxos E2E (Plano de Desenvolvimento, 7.3).
+# Sobe na porta 5433 para não conflitar com um PostgreSQL local na 5432.
+#
+#   docker compose -f docker-compose.e2e.yml up -d
+#   cd api/KoinoniaHub.API && $env:ASPNETCORE_ENVIRONMENT="E2E"; dotnet ef database update
+#   dotnet run --launch-profile e2e        # API em https://localhost:7054 no ambiente E2E
+#
+# Os dados ficam no volume koinoniahub_e2e_dados; `docker compose -f docker-compose.e2e.yml down -v` apaga tudo.
+services:
+  postgres-e2e:
+    image: postgres:16
+    container_name: koinoniahub-postgres-e2e
+    environment:
+      POSTGRES_DB: koinoniahub_e2e
+      POSTGRES_USER: koinoniahub
+      POSTGRES_PASSWORD: koinoniahub_e2e
+    ports:
+      - "5433:5432"
+    volumes:
+      - koinoniahub_e2e_dados:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U koinoniahub -d koinoniahub_e2e"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  koinoniahub_e2e_dados:
