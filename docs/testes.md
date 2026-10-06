@@ -837,3 +837,32 @@ públicas (registrar-admin, login e primeiro-acesso GET/POST); os 108 testes pas
    Evidência: `RF42-primeiro-acesso-termo.png`.
 6. Lista de Usuários com coluna Termo: "Aceito v1.0" (com data no tooltip) e "Pendente" por conta.
    Evidência: `RF43-usuarios-coluna-termo.png`.
+
+## Etapa 5.3 — Fluxos E2E com Playwright (E2E-01 a E2E-03) — 06/10/2026
+
+**Escopo.** Os três fluxos ponta a ponta do Plano de Desenvolvimento (7.3), num Chromium real
+contra a API no ambiente E2E e o front servido pelo Vite: E2E-01 cadastro inicial com termo,
+E2E-02 login com termo pendente e E2E-03 ativação por convite. Semente pela própria API
+(igreja nova a cada execução — sem SQL e sem limpeza de banco), `storageState` de Admin e
+Professor gravados para os fluxos das próximas etapas, seletores por `data-testid`.
+
+**Ambiente.** Banco dedicado `koinoniahub_e2e` (PostgreSQL local; o repositório traz
+`docker-compose.e2e.yml` como alternativa na porta 5433), ambiente `E2E` da API
+(`appsettings.E2E.json`, perfil `e2e`). Divergências com o esboço do Plano registradas em
+`docs/decisoes/etapa-5.md`: `baseURL` http (Vite sem certificado, proxy para a API https) e
+ambiente `E2E` em vez de `Testing` (nome já usado pela fábrica dos testes xUnit).
+
+**Execução (06/10/2026).**
+
+- `npm run test:e2e` → **3 passed** (chromium, 1 worker): E2E-01 (1,4s), E2E-02 (1,5s),
+  E2E-03 (2,6s). Repetido com `--headed`: 3 passed.
+- Suítes existentes inalteradas: `dotnet test` 108; Vitest 45; `vue-tsc -b` e build limpos.
+- O que cada fluxo provou: E2E-01 — botão de conclusão desabilitado até o aceite (RNF 42.1),
+  cabeçalho do termo acompanhando a igreja digitada (RNF 42.7), entrada direta no painel e
+  Meus Dados com "no cadastro inicial"; E2E-02 — conta pendente presa em /termo sem menu,
+  403 `{termoPendente:true}` em chamada direta à API (RNF 2.5), aceite liberando a mesma
+  sessão e "após o login" em Meus Dados; E2E-03 — termo com a igreja do convite antes de
+  qualquer login (via token), aceite obrigatório para definir a senha (RNF 40.5), link de uso
+  único (RNF 40.1) e login final sem pendência, com "no primeiro acesso" em Meus Dados.
+
+**Evidência.** `E2E-termo-3-fluxos-verdes.png` (relatório HTML do Playwright).
