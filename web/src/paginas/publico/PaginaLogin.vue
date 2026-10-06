@@ -75,6 +75,7 @@ async function entrar() {
               v-model="email"
               placeholder="seu@email.com"
               class="login-input"
+              data-testid="login-email"
               @keyup.enter="entrar"
             />
             <FieldError
@@ -89,6 +90,7 @@ async function entrar() {
             <label class="login-label">Senha</label>
             <Password
               v-model="senha"
+              inputId="login-senha"
               placeholder="Sua senha"
               toggleMask
               :feedback="false"
@@ -108,6 +110,7 @@ async function entrar() {
             label="Entrar"
             icon="pi pi-sign-in"
             class="login-botao"
+            data-testid="login-entrar"
             :loading="carregando"
             @click="entrar"
           />

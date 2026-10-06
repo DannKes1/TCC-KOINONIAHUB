@@ -133,6 +133,7 @@ async function concluirCadastro(): Promise<void> {
               v-model="nomeIgreja"
               placeholder="Nome da Igreja"
               style="width: 100%"
+              data-testid="cadastro-nome-igreja"
             />
             <FieldError
               :texto="
@@ -149,6 +150,7 @@ async function concluirCadastro(): Promise<void> {
               v-model="cidade"
               placeholder="Cidade (opcional)"
               style="width: 100%"
+              data-testid="cadastro-cidade"
             />
             <FieldError
               :texto="
@@ -165,6 +167,7 @@ async function concluirCadastro(): Promise<void> {
               v-model="estado"
               placeholder="Estado (opcional)"
               style="width: 100%"
+              data-testid="cadastro-estado"
             />
             <FieldError
               :texto="
@@ -181,6 +184,7 @@ async function concluirCadastro(): Promise<void> {
               v-model="emailIgreja"
               placeholder="E-mail da igreja (opcional)"
               style="width: 100%"
+              data-testid="cadastro-email-igreja"
             />
             <FieldError
               :texto="
@@ -209,6 +213,7 @@ async function concluirCadastro(): Promise<void> {
               v-model="nomeAdmin"
               placeholder="Nome do Administrador"
               style="width: 100%"
+              data-testid="cadastro-nome-admin"
             />
             <FieldError
               :texto="
@@ -223,6 +228,7 @@ async function concluirCadastro(): Promise<void> {
               v-model="emailAdmin"
               placeholder="E-mail do Administrador"
               style="width: 100%"
+              data-testid="cadastro-email-admin"
             />
             <FieldError
               :texto="
@@ -238,6 +244,7 @@ async function concluirCadastro(): Promise<void> {
               type="password"
               placeholder="Senha"
               style="width: 100%"
+              data-testid="cadastro-senha-admin"
             />
             <FieldError
               :texto="
@@ -275,6 +282,7 @@ async function concluirCadastro(): Promise<void> {
           @click="concluirCadastro"
           :disabled="!podeConcluir"
           style="padding: 10px 14px"
+          data-testid="cadastro-concluir"
         >
           {{ carregando ? "Concluindo..." : "Concluir Cadastro" }}
         </button>

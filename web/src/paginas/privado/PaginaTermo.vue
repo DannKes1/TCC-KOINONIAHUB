@@ -127,6 +127,7 @@ function voltar() {
           icon="pi pi-sign-out"
           severity="secondary"
           text
+          data-testid="termo-sair"
           :disabled="salvando"
           @click="sair"
         />

@@ -181,7 +181,9 @@ function irParaLogin() {
         <!-- Senha definida com sucesso -->
         <div v-else-if="concluido" class="estado-central">
           <i class="pi pi-check-circle estado-icone estado-icone-sucesso"></i>
-          <p class="estado-titulo">Senha definida com sucesso!</p>
+          <p class="estado-titulo" data-testid="primeiro-acesso-sucesso">
+            Senha definida com sucesso!
+          </p>
           <p class="estado-texto">
             Use o e-mail <strong>{{ email }}</strong> e a senha que você acabou
             de criar para entrar.
@@ -190,6 +192,7 @@ function irParaLogin() {
             label="Ir para o login"
             icon="pi pi-sign-in"
             class="login-botao"
+            data-testid="primeiro-acesso-ir-login"
             @click="irParaLogin"
           />
         </div>
@@ -211,6 +214,7 @@ function irParaLogin() {
             <label class="login-label">Nova senha *</label>
             <Password
               v-model="novaSenha"
+              inputId="primeiro-acesso-senha"
               placeholder="Mínimo de 6 caracteres"
               toggleMask
               :feedback="false"
@@ -224,6 +228,7 @@ function irParaLogin() {
             <label class="login-label">Confirmar nova senha *</label>
             <Password
               v-model="confirmarSenha"
+              inputId="primeiro-acesso-confirmar"
               placeholder="Repita a senha"
               toggleMask
               :feedback="false"
@@ -247,6 +252,7 @@ function irParaLogin() {
             label="Definir senha e concluir"
             icon="pi pi-check"
             class="login-botao"
+            data-testid="primeiro-acesso-concluir"
             :loading="salvando"
             :disabled="!podeConcluir"
             @click="definirSenha"
