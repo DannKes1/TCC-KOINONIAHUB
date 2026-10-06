@@ -1,0 +1,19 @@
+{
+  // Só para conferência de tipos dos fluxos E2E (npx tsc -p e2e/tsconfig.json --noEmit).
+  // O Playwright compila os arquivos sozinho ao rodar; o build do app (vue-tsc -b)
+  // não inclui esta pasta.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "esModuleInterop": true
+  },
+  "include": ["./**/*.ts", "../playwright.config.ts"]
+}
