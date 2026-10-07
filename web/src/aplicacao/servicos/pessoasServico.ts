@@ -3,6 +3,7 @@ import type {
   PessoaVM,
   PessoaCriarDTO,
   PessoaAtualizarDTO,
+  ImportacaoPessoasItemVM,
   ImportacaoPessoasResultadoVM,
 } from "../modelos/dtos";
 
@@ -49,6 +50,41 @@ export async function atualizarPessoa(id: number, dto: PessoaAtualizarDTO) {
   await clienteHttp.put(`/api/pessoas/${id}`, dto); // 204
 }
 
+// Resultado da importação (RF41 / RNF 41.3). Função pura para o Plano 7.2 poder
+// testá-la: totais de criadas/ignoradas/erros e a marcação das linhas sinalizadas
+// para conferência. Se a API não mandar os totais, eles são recontados dos itens.
+export function normalizarResultadoImportacao(
+  bruto: any,
+): ImportacaoPessoasResultadoVM {
+  const listaBruta = bruto?.Itens ?? bruto?.itens;
+  const itens: ImportacaoPessoasItemVM[] = (
+    Array.isArray(listaBruta) ? listaBruta : []
+  ).map((i: any) => ({
+    linha: Number(i?.Linha ?? i?.linha ?? 0),
+    nome: String(i?.Nome ?? i?.nome ?? ""),
+    email: (i?.Email ?? i?.email ?? null) as string | null,
+    status: String(i?.Status ?? i?.status ?? "Erro"),
+    mensagem: (i?.Mensagem ?? i?.mensagem ?? null) as string | null,
+    paraConferencia: Boolean(i?.ParaConferencia ?? i?.paraConferencia ?? false),
+  }));
+
+  const contar = (status: string) =>
+    itens.filter((i) => i.status === status).length;
+
+  return {
+    totalLinhas: Number(bruto?.TotalLinhas ?? bruto?.totalLinhas ?? itens.length),
+    criados: Number(bruto?.Criados ?? bruto?.criados ?? contar("Criado")),
+    ignorados: Number(bruto?.Ignorados ?? bruto?.ignorados ?? contar("Ignorado")),
+    erros: Number(bruto?.Erros ?? bruto?.erros ?? contar("Erro")),
+    paraConferencia: Number(
+      bruto?.ParaConferencia ??
+        bruto?.paraConferencia ??
+        itens.filter((i) => i.paraConferencia).length,
+    ),
+    itens,
+  };
+}
+
 // Importa pessoas em lote a partir de um arquivo CSV.
 export async function importarPessoas(
   arquivo: File,
@@ -57,23 +93,5 @@ export async function importarPessoas(
   form.append("arquivo", arquivo);
 
   const resposta = await clienteHttp.post("/api/pessoas/importar", form);
-  const bruto = resposta.data ?? {};
-
-  const itens = Array.isArray(bruto.Itens ?? bruto.itens)
-    ? (bruto.Itens ?? bruto.itens)
-    : [];
-
-  return {
-    totalLinhas: Number(bruto.TotalLinhas ?? bruto.totalLinhas ?? 0),
-    criados: Number(bruto.Criados ?? bruto.criados ?? 0),
-    ignorados: Number(bruto.Ignorados ?? bruto.ignorados ?? 0),
-    erros: Number(bruto.Erros ?? bruto.erros ?? 0),
-    itens: itens.map((i: any) => ({
-      linha: Number(i.Linha ?? i.linha ?? 0),
-      nome: String(i.Nome ?? i.nome ?? ""),
-      email: (i.Email ?? i.email ?? null) as string | null,
-      status: String(i.Status ?? i.status ?? "Erro"),
-      mensagem: (i.Mensagem ?? i.mensagem ?? null) as string | null,
-    })),
-  };
+  return normalizarResultadoImportacao(resposta.data ?? {});
 }

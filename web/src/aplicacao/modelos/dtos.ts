@@ -118,6 +118,8 @@ export type ImportacaoPessoasItemVM = {
   email: string | null;
   status: string; // "Criado" | "Ignorado" | "Erro"
   mensagem: string | null;
+  // RNF 41.3: ignorada por nome repetido sem e-mail — sinalizada para conferência.
+  paraConferencia: boolean;
 };
 
 export type ImportacaoPessoasResultadoVM = {
@@ -125,6 +127,7 @@ export type ImportacaoPessoasResultadoVM = {
   criados: number;
   ignorados: number;
   erros: number;
+  paraConferencia: number;
   itens: ImportacaoPessoasItemVM[];
 };
 

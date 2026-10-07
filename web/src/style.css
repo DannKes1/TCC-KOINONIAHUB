@@ -159,6 +159,14 @@ body {
   margin-bottom: 14px;
 }
 
+/* Nota curta logo abaixo do título de um card (regra de cálculo, período). */
+.card-tabela-nota {
+  margin: -8px 0 14px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ipb-cinza-claro, #7a7a7a);
+}
+
 .acoes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
