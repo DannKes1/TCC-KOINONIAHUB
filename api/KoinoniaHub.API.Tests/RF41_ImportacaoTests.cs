@@ -79,7 +79,9 @@ namespace KoinoniaHub.API.Tests
 
             Assert.Equal(0, resposta.Criados);
             Assert.Equal(1, resposta.Ignorados);
+            Assert.Equal(0, resposta.ParaConferencia); // e-mail repetido é ignorado sem sinalização (41.3)
             Assert.Equal("Ignorado", resposta.Itens.Single().Status);
+            Assert.False(resposta.Itens.Single().ParaConferencia);
             Assert.Equal(1, await ContarPessoasAsync(ctx, igrejaId));
         }
 
@@ -100,7 +102,9 @@ namespace KoinoniaHub.API.Tests
 
             var item = resposta.Itens.Single();
             Assert.Equal(1, resposta.Ignorados);
+            Assert.Equal(1, resposta.ParaConferencia);
             Assert.Equal("Ignorado", item.Status);
+            Assert.True(item.ParaConferencia); // RNF 41.3: sinalizada, além de ignorada
             Assert.Equal(
                 "Já existe uma pessoa com este nome; linha ignorada para conferência. Se for outra pessoa, cadastre manualmente.",
                 item.Mensagem);

@@ -145,6 +145,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 else if (nomesConhecidos.Contains(nome.ToLowerInvariant()))
                 {
                     item.Status = "Ignorado";
+                    item.ParaConferencia = true; // RNF 41.3
                     item.Mensagem = "Já existe uma pessoa com este nome; linha ignorada para conferência. Se for outra pessoa, cadastre manualmente.";
                     continue;
                 }
@@ -198,6 +199,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             resposta.Criados = resposta.Itens.Count(x => x.Status == "Criado");
             resposta.Ignorados = resposta.Itens.Count(x => x.Status == "Ignorado");
             resposta.Erros = resposta.Itens.Count(x => x.Status == "Erro");
+            resposta.ParaConferencia = resposta.Itens.Count(x => x.ParaConferencia);
 
             return resposta;
         }
