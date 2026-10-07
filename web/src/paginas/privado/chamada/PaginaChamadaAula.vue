@@ -305,6 +305,21 @@ onMounted(carregarTudo);
         />
       </div>
 
+      <!-- RNF 32.5 (Plano 6.10): orientação sobre o campo de observação. Como o campo
+           se repete por aluno na tabela, a dica aparece uma vez, acima dela. -->
+      <div
+        v-if="!somenteLeitura"
+        class="dica-observacao"
+        data-testid="dica-observacao"
+      >
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+        <span>
+          <strong>Observação:</strong> use este campo apenas para justificativas
+          administrativas (atraso, dispensa, saída antecipada). Não registre
+          informações de saúde ou outros dados sensíveis.
+        </span>
+      </div>
+
       <DataTable
         :value="linhas"
         paginator
@@ -343,8 +358,9 @@ onMounted(carregarTudo);
           <template #body="{ data }">
             <InputText
               v-model="data.observacao"
-              placeholder="Opcional"
+              placeholder="Justificativa administrativa (opcional)"
               :disabled="somenteLeitura || carregando"
+              maxlength="500"
               style="width: 100%"
             />
           </template>
@@ -357,5 +373,24 @@ onMounted(carregarTudo);
 <style scoped>
 :deep(tr.linha-sem-registro > td) {
   background: #fff4e5;
+}
+
+.dica-observacao {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border-left: 3px solid var(--ipb-verde, #234f32);
+  background: var(--ipb-verde-bg, #edf5f0);
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ipb-cinza, #4d4d4d);
+}
+
+.dica-observacao .pi {
+  margin-top: 2px;
+  color: var(--ipb-verde, #234f32);
 }
 </style>

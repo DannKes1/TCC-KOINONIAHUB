@@ -9,7 +9,10 @@ import {
 } from "../../../aplicacao/servicos/notificacoes";
 
 import { importarPessoas } from "../../../aplicacao/servicos/pessoasServico";
-import type { ImportacaoPessoasResultadoVM } from "../../../aplicacao/modelos/dtos";
+import type {
+  ImportacaoPessoasItemVM,
+  ImportacaoPessoasResultadoVM,
+} from "../../../aplicacao/modelos/dtos";
 
 import Dialog from "primevue/dialog";
 import Button from "primevue/button";
@@ -90,6 +93,14 @@ async function enviar() {
     } else {
       toastWarn("Nenhuma pessoa nova foi criada. Confira o relatório abaixo.");
     }
+
+    // RNF 41.3: linhas ignoradas por nome repetido sem e-mail pedem conferência.
+    if (dados.paraConferencia > 0) {
+      toastWarn(
+        `${dados.paraConferencia} linha(s) ignorada(s) por nome já cadastrado, sem e-mail para confirmar. Confira na lista: se for outra pessoa, cadastre manualmente.`,
+        "Linhas para conferência",
+      );
+    }
   } catch (e: any) {
     erro.value =
       e?.response?.data?.mensagem ??
@@ -104,6 +115,19 @@ function severityItem(status: string) {
   if (status === "Ignorado") return "warning";
   return "danger";
 }
+
+// Linhas sinalizadas (41.3) ficam destacadas na tabela e ordenadas primeiro.
+function classeLinha(item: ImportacaoPessoasItemVM) {
+  return item.paraConferencia ? "linha-conferencia" : "";
+}
+
+const itensOrdenados = computed(() => {
+  const itens = resultado.value?.itens ?? [];
+  return [...itens].sort((a, b) => {
+    if (a.paraConferencia !== b.paraConferencia) return a.paraConferencia ? -1 : 1;
+    return a.linha - b.linha;
+  });
+});
 </script>
 
 <template>
@@ -156,20 +180,45 @@ function severityItem(status: string) {
             :value="`Ignoradas: ${resultado.ignorados}`"
           />
           <Tag severity="danger" :value="`Erros: ${resultado.erros}`" />
+          <Tag
+            v-if="resultado.paraConferencia > 0"
+            severity="warning"
+            icon="pi pi-exclamation-triangle"
+            :value="`Para conferência: ${resultado.paraConferencia}`"
+            data-testid="importacao-para-conferencia"
+          />
         </div>
 
+        <InlineMessage
+          v-if="resultado.paraConferencia > 0"
+          texto="Linhas destacadas: já existe uma pessoa com o mesmo nome e a linha não trazia e-mail para confirmar. Confira se é a mesma pessoa; se for outra, cadastre manualmente."
+          tipo="aviso"
+        />
+
         <DataTable
-          :value="resultado.itens"
+          :value="itensOrdenados"
           paginator
           :rows="8"
           dataKey="linha"
           responsiveLayout="scroll"
+          :rowClass="classeLinha"
         >
           <Column field="linha" header="Linha" style="width: 80px" sortable />
           <Column field="nome" header="Nome" sortable />
-          <Column header="Status" style="width: 120px">
+          <Column header="Status" style="width: 170px">
             <template #body="{ data }">
-              <Tag :value="data.status" :severity="severityItem(data.status)" />
+              <span style="display: inline-flex; gap: 6px; flex-wrap: wrap">
+                <Tag :value="data.status" :severity="severityItem(data.status)" />
+                <Tag
+                  v-if="data.paraConferencia"
+                  value="Conferir"
+                  severity="warning"
+                  icon="pi pi-exclamation-triangle"
+                  v-tooltip.top="
+                    'Nome já cadastrado e linha sem e-mail: confira se é a mesma pessoa.'
+                  "
+                />
+              </span>
             </template>
           </Column>
           <Column field="mensagem" header="Observação" />
@@ -194,3 +243,9 @@ function severityItem(status: string) {
     </template>
   </Dialog>
 </template>
+
+<style scoped>
+:deep(tr.linha-conferencia > td) {
+  background: #fff4e5;
+}
+</style>
