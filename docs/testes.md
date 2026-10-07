@@ -866,3 +866,38 @@ ambiente `E2E` em vez de `Testing` (nome já usado pela fábrica dos testes xUni
   único (RNF 40.1) e login final sem pendência, com "no primeiro acesso" em Meus Dados.
 
 **Evidência.** `E2E-termo-3-fluxos-verdes.png` (relatório HTML do Playwright).
+
+## Etapa 6.1 — Acabamento de UI (RNF 32.5, RNF 41.3, RF3/RF6, RF34) — 07/10/2026
+
+**Escopo.** Itens de acabamento já previstos no Plano (seção 5, Etapa 6): dica da RNF 32.5 na
+chamada; sinalização das linhas de importação ignoradas por nome repetido sem e-mail (RNF 41.3,
+`paraConferencia` na API e tag "Conferir" na tela); painel do usuário comum com a mesma janela
+(90 dias) e a mesma regra (só Consolidadas) de Minha Frequência, com rótulo "3 Meses" corrigido;
+período visível em Minha Frequência; diálogo de histórico de Pessoas com totais só de aulas
+Consolidadas e situação da aula por linha. Cálculo dos indicadores centralizado em
+`dominio/indicadoresPresenca.ts`. Tela do termo (RNF 42.7) revisada sem alteração.
+
+**Testes automatizados.**
+
+- API (xUnit): `dotnet test` → **108 aprovados** (sem teste novo; `RF41_ImportacaoTests` ganhou
+  asserções sobre `ParaConferencia`: nome repetido sem e-mail sinalizado, e-mail repetido não).
+- Front (Vitest): `npm run test` → **54 aprovados em 9 arquivos** (45 + `pessoasServico.spec` com
+  4 casos do parser do resultado de importação, Plano 7.2 + `indicadoresPresenca.spec` com 5 casos:
+  só Consolidadas, percentual nulo sem aula, janela de 90 dias e limites). `vue-tsc -b` e build limpos.
+
+**Testes manuais.**
+
+1. Chamada de aula Em aberto: dica da RNF 32.5 exibida uma vez acima da tabela, com o texto do
+   Plano 6.10, e placeholder "Justificativa administrativa (opcional)"; em aula Consolidada a dica
+   não aparece. Evidência: `RNF-32.5-dica-observacao.png`.
+2. Importação de CSV com três linhas (nome existente sem e-mail; e-mail já cadastrado; pessoa nova):
+   resumo "Linhas lidas 3 · Criadas 1 · Ignoradas 2 · Erros 0 · Para conferência 1", toast "Linhas
+   para conferência", linha sinalizada destacada no topo com "Ignorado" + "Conferir"; e-mail repetido
+   só "Ignorado". Evidência: `RNF-41.3-importacao-conferir.png`.
+3. Painel do usuário comum × Minha Frequência: cards rotulados "(últimos 90 dias)", mesmo período
+   nas duas telas (08/07/2026 a 07/10/2026) e os mesmos números após a consolidação da aula
+   (1 consolidada, 1 presença, 0 faltas, 100%); antes da consolidação a aula aparecia no histórico
+   como "Em aberto" sem entrar nos totais. Evidência: `RF3-painel-aluno-90-dias.png`.
+4. Pessoas → histórico: registro de aula Em aberto aparece com a tag "Em aberto", conta em
+   "Registros no histórico" e não em Presenças/Faltas/Frequência. Evidência:
+   `RF34-historico-pessoas-consolidadas.png`.
