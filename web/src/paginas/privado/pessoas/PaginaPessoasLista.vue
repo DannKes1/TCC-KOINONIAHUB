@@ -29,6 +29,11 @@ import {
   removerParentesco,
 } from "../../../aplicacao/servicos/parentescosServico";
 import { listarHistoricoPresencasDaPessoa } from "../../../aplicacao/servicos/presencasPessoaServico";
+import {
+  formatarPercentual,
+  resumirPresencas,
+} from "../../../aplicacao/dominio/indicadoresPresenca";
+import TagSituacaoAula from "../../../components/ui/TagSituacaoAula.vue";
 
 import type {
   PessoaVM,
@@ -299,14 +304,18 @@ const pessoasDisponiveisParaParentesco = computed(() => {
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 });
 
+// Etapa 6: os totais do diálogo seguem o CSU07 — só aulas Consolidadas contam. A
+// tabela continua listando todos os registros, com a situação da aula em cada um.
+const resumoHistorico = computed(() => resumirPresencas(historicoPresencas.value));
+
 const totalHistorico = computed(() => historicoPresencas.value.length);
-
-const totalHistoricoPresentes = computed(
-  () => historicoPresencas.value.filter((item) => item.presente).length,
+const totalHistoricoConsolidadas = computed(
+  () => resumoHistorico.value.aulasConsolidadas,
 );
-
-const totalHistoricoAusentes = computed(
-  () => historicoPresencas.value.filter((item) => !item.presente).length,
+const totalHistoricoPresentes = computed(() => resumoHistorico.value.presencas);
+const totalHistoricoAusentes = computed(() => resumoHistorico.value.faltas);
+const percentualHistorico = computed(() =>
+  formatarPercentual(resumoHistorico.value.percentual),
 );
 
 async function carregarLista() {
@@ -827,9 +836,10 @@ onMounted(carregarLista);
         <InlineMessage :texto="erro" tipo="erro" />
 
         <div
+          data-testid="historico-indicadores"
           style="
             display: grid;
-            grid-template-columns: repeat(3, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 12px;
           "
         >
@@ -840,9 +850,9 @@ onMounted(carregarLista);
               padding: 12px;
             "
           >
-            <div style="font-size: 12px; opacity: 0.7">Total de registros</div>
+            <div style="font-size: 12px; opacity: 0.7">Aulas consolidadas</div>
             <div style="font-size: 24px; font-weight: 700">
-              {{ totalHistorico }}
+              {{ totalHistoricoConsolidadas }}
             </div>
           </div>
 
@@ -853,7 +863,7 @@ onMounted(carregarLista);
               padding: 12px;
             "
           >
-            <div style="font-size: 12px; opacity: 0.7">Presentes</div>
+            <div style="font-size: 12px; opacity: 0.7">Presenças</div>
             <div style="font-size: 24px; font-weight: 700">
               {{ totalHistoricoPresentes }}
             </div>
@@ -866,12 +876,43 @@ onMounted(carregarLista);
               padding: 12px;
             "
           >
-            <div style="font-size: 12px; opacity: 0.7">Ausentes</div>
+            <div style="font-size: 12px; opacity: 0.7">Faltas</div>
             <div style="font-size: 24px; font-weight: 700">
               {{ totalHistoricoAusentes }}
             </div>
           </div>
+
+          <div
+            style="
+              border: 1px solid rgba(0, 0, 0, 0.08);
+              border-radius: 12px;
+              padding: 12px;
+            "
+          >
+            <div style="font-size: 12px; opacity: 0.7">Frequência</div>
+            <div style="font-size: 24px; font-weight: 700">
+              {{ percentualHistorico }}
+            </div>
+          </div>
+
+          <div
+            style="
+              border: 1px solid rgba(0, 0, 0, 0.08);
+              border-radius: 12px;
+              padding: 12px;
+            "
+          >
+            <div style="font-size: 12px; opacity: 0.7">Registros no histórico</div>
+            <div style="font-size: 24px; font-weight: 700">
+              {{ totalHistorico }}
+            </div>
+          </div>
         </div>
+
+        <InlineMessage
+          texto="Os totais consideram somente aulas Consolidadas (CSU07). Registros de aulas Em aberto ou Não realizadas aparecem na lista, mas não entram na frequência."
+          tipo="info"
+        />
 
         <LoadingOverlay
           :loading="carregando"
@@ -903,6 +944,12 @@ onMounted(carregarLista);
                   :value="data.presente ? 'Presente' : 'Ausente'"
                   :severity="severityPresenca(data.presente)"
                 />
+              </template>
+            </Column>
+
+            <Column header="Aula" style="width: 170px">
+              <template #body="{ data }">
+                <TagSituacaoAula :situacao="data.situacaoAula" />
               </template>
             </Column>
 

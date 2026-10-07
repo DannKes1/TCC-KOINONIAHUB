@@ -59,6 +59,15 @@ const tomFaltas = computed<"padrao" | "perigo">(() =>
   Number(dados.value?.ausentesMarcados ?? 0) > 0 ? "perigo" : "padrao",
 );
 
+// Período que a API usou (janela padrão do RF6: últimos 90 dias). Exibido para o
+// aluno saber a que intervalo os números se referem — a mesma janela do painel (RF3).
+const periodoFormatado = computed(() => {
+  if (!dados.value) return "";
+  const inicio = formatarData(dados.value.dataInicio);
+  const fim = formatarData(dados.value.dataFim);
+  return inicio !== "-" && fim !== "-" ? `${inicio} a ${fim}` : "";
+});
+
 async function carregar() {
   if (!departamentoId.value) {
     erro.value = "Turma inválida.";
@@ -86,6 +95,11 @@ onMounted(carregar);
 
     <LoadingOverlay :loading="carregando" texto="Carregando sua frequência...">
       <div v-if="dados" class="conteudo">
+        <p v-if="periodoFormatado" class="periodo" data-testid="minha-frequencia-periodo">
+          <i class="pi pi-calendar" aria-hidden="true"></i>
+          Período: <strong>{{ periodoFormatado }}</strong> (últimos 90 dias) — só
+          aulas Consolidadas entram no cálculo.
+        </p>
         <div class="grade-indicadores">
           <CardIndicador
             rotulo="% Presença"
@@ -184,6 +198,19 @@ onMounted(carregar);
 </template>
 
 <style scoped>
+.periodo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ipb-cinza-claro, #7a7a7a);
+}
+
+.periodo .pi {
+  color: var(--ipb-verde, #234f32);
+}
+
 .conteudo {
   display: flex;
   flex-direction: column;

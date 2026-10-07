@@ -31,6 +31,12 @@ import type {
   AulaVM,
   HistoricoPresencaPessoaVM,
 } from "../../aplicacao/modelos/dtos";
+import {
+  JANELA_PADRAO_DIAS,
+  filtrarJanela,
+  formatarPercentual,
+  resumirPresencas,
+} from "../../aplicacao/dominio/indicadoresPresenca";
 
 type AulaComTurmaVM = AulaVM & {
   departamentoId: number;
@@ -157,36 +163,32 @@ const totalMinhasAulasAbertas = computed(
   () => aulasRecentes.value.filter((a) => a.situacao === "EmAberto").length,
 );
 
+// RF3: "indicadores de frequência e o histórico recente de presenças". A janela é a
+// mesma de Minha Frequência (RF6: últimos 90 dias) para os números baterem, e só
+// registros de aulas Consolidadas contam (CSU07); o histórico mostra todos os
+// registros da janela, com a situação da aula em cada linha.
+const presencasRecentes = computed(() =>
+  filtrarJanela(historicoPresencas.value, JANELA_PADRAO_DIAS),
+);
+
 const presencasOrdenadas = computed(() =>
-  [...historicoPresencas.value].sort(
+  [...presencasRecentes.value].sort(
     (a, b) => new Date(b.dataAula).getTime() - new Date(a.dataAula).getTime(),
   ),
 );
 
-// RF3 (indicadores de frequência do usuário comum) segue a mesma regra do RF6/CSU07:
-// só registros de aulas Consolidadas contam. O histórico continua mostrando todos.
-const presencasConsolidadas = computed(() =>
-  historicoPresencas.value.filter((p) => p.situacaoAula === "Consolidada"),
-);
+const resumoPresencas = computed(() => resumirPresencas(presencasRecentes.value));
 
 const totalAulasConsolidadas = computed(
-  () => presencasConsolidadas.value.length,
+  () => resumoPresencas.value.aulasConsolidadas,
+);
+const totalPresencas = computed(() => resumoPresencas.value.presencas);
+const totalFaltas = computed(() => resumoPresencas.value.faltas);
+const percentualPresenca = computed(() =>
+  formatarPercentual(resumoPresencas.value.percentual),
 );
 
-const totalPresencas = computed(
-  () => presencasConsolidadas.value.filter((p) => p.presente).length,
-);
-
-const totalFaltas = computed(
-  () => presencasConsolidadas.value.filter((p) => !p.presente).length,
-);
-
-const percentualPresenca = computed(() => {
-  const total = presencasConsolidadas.value.length;
-  if (total === 0) return "-";
-  const pct = (totalPresencas.value / total) * 100;
-  return `${pct.toFixed(0)}%`;
-});
+const rotuloJanela = `últimos ${JANELA_PADRAO_DIAS} dias`;
 
 async function carregarDadosTurmas() {
   const listaDepartamentos = await listarDepartamentos();
@@ -581,29 +583,34 @@ onMounted(carregarPainel);
           </DataTable>
         </div>
 
-        <div class="stats-grid">
+        <div class="stats-grid" data-testid="painel-aluno-indicadores">
           <div class="stat-card">
-            <div class="stat-card-label">Aulas consolidadas</div>
+            <div class="stat-card-label">Aulas consolidadas ({{ rotuloJanela }})</div>
             <div class="stat-card-valor">{{ totalAulasConsolidadas }}</div>
           </div>
           <div class="stat-card">
-            <div class="stat-card-label">Presenças</div>
+            <div class="stat-card-label">Presenças ({{ rotuloJanela }})</div>
             <div class="stat-card-valor">{{ totalPresencas }}</div>
           </div>
           <div class="stat-card">
-            <div class="stat-card-label">Faltas</div>
+            <div class="stat-card-label">Faltas ({{ rotuloJanela }})</div>
             <div class="stat-card-valor">{{ totalFaltas }}</div>
           </div>
           <div class="stat-card">
-            <div class="stat-card-label">Frequência</div>
+            <div class="stat-card-label">Frequência ({{ rotuloJanela }})</div>
             <div class="stat-card-valor">{{ percentualPresenca }}</div>
           </div>
         </div>
 
         <div class="card-tabela">
           <div class="card-tabela-titulo">
-            Meu histórico de presenças - 3 Meses
+            Meu histórico de presenças — {{ rotuloJanela }}
           </div>
+          <p class="card-tabela-nota">
+            Mesma janela e mesma regra de Minha Frequência, somando todas as suas
+            turmas: só aulas Consolidadas entram nos números acima; aulas Em aberto
+            ou Não realizadas aparecem na lista, mas não contam.
+          </p>
 
           <DataTable
             :value="presencasOrdenadas"
@@ -611,7 +618,7 @@ onMounted(carregarPainel);
             :rows="10"
             dataKey="aulaId"
             responsiveLayout="scroll"
-            emptyMessage="Nenhum registro de presença encontrado."
+            :emptyMessage="`Nenhum registro de presença nos ${rotuloJanela}.`"
           >
             <Column header="Data" style="width: 120px">
               <template #body="{ data }">
