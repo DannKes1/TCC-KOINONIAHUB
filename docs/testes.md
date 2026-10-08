@@ -901,3 +901,63 @@ Consolidadas e situação da aula por linha. Cálculo dos indicadores centraliza
 4. Pessoas → histórico: registro de aula Em aberto aparece com a tag "Em aberto", conta em
    "Registros no histórico" e não em Presenças/Faltas/Frequência. Evidência:
    `RF34-historico-pessoas-consolidadas.png`.
+
+## Etapa 6.2 — Editar Dados da Igreja: RF44 / CSU24 (07/10/2026) · fecha a Etapa 6
+
+**Escopo.** Requisito incluído pelo autor em 06/10/2026 (motivação: o canal de contato exibido
+no cabeçalho do Termo de Uso e Sigilo, RNF 42.7). API: `PUT /api/igrejas/{id}` restrito ao
+perfil Admin e à própria igreja do token, com validação pelo DTO (`[Required]` no nome,
+`[EmailAddress]`, tamanhos); o serviço altera só os cinco campos do requisito (nome, cidade,
+UF, e-mail, telefone), sem tocar Endereco/CEP/CNPJ/LogoUrl nem os registros de aceite;
+`AtualizadoEm` preenchido pelo contexto. Front: rota `/igreja` (só Admin), item "Igreja" no
+menu abaixo de Usuários e tela `PaginaIgreja.vue` no mesmo layout de Meus Dados (Descartar /
+Salvar, validação local do nome e do telefone, erros por campo vindos do 400). Decisões em
+`docs/decisoes/etapa-6.md`.
+
+**Validação automatizada** (ambiente reproduzido a partir do package-lock.json):
+`dotnet test` = **113 aprovados, 0 falhas** (108 anteriores + 5 de `RF44_IgrejaTests`:
+200 com os campos alterados e `AtualizadoEm` preenchido; 403 para Professor; 403 para id de
+outra igreja com a mensagem de isolamento; 400 com `errors.Nome` e `errors.Email`; termo
+vigente refletindo o novo contato sem novo aceite) · `vue-tsc -b` limpo · `npm run test` =
+**9 arquivos, 54 casos verdes** (MenuLateral cobre o item "Igreja" só para Admin) ·
+`vite build` ok.
+
+**Testes manuais (front em `http://localhost:5173`, API `https://localhost:7054`, Admin e
+usuário sem perfil Admin):**
+
+1. Admin → menu **Igreja**: campos carregados do banco; alterados e-mail
+   (`secretaria@igreja.teste`), telefone e UF (`ro` → `RO` ao digitar) → **Salvar** → toast
+   "Os dados da igreja foram atualizados. O Termo de Uso e Sigilo passa a exibir o novo
+   contato." e "Última atualização" preenchida; após F5 os valores permanecem (CSU24 fluxo
+   principal). ✔ (print RF44-tela-igreja.png)
+2. `/termo` logado: cabeçalho "Canal para assuntos relacionados a dados pessoais" já mostra
+   `secretaria@igreja.teste · 69999999999`; faixa "Você já aceitou a versão vigente" e botão
+   Voltar — nenhum aceite ficou pendente e Meus Dados segue com o aceite original (RNF 44.5).
+   A tela de primeiro acesso de um convite em aberto também exibe o novo contato. ✔
+   (print RF44-termo-contato-atualizado.png)
+3. Nome em branco → "Informe o nome da igreja." sem chamar a API; e-mail `secretariaigreja.teste`
+   → **400** da API, mensagem geral "Alguns campos enviados são inválidos..." e
+   "E-mail em formato inválido." abaixo do campo; Descartar restaura os valores (RNF 44.3,
+   CSU24 FA1). ✔ (print RNF-44.3-400-email-invalido.png)
+4. Usuário sem perfil Admin: item Igreja ausente do menu e `/igreja` digitado na barra
+   redireciona ao painel; no Swagger, `PUT /api/igrejas/1` → **403** (RNF 44.1, CSU24 FA2).
+   ✔ (print RNF-44.1-403-perfil-sem-permissao.png)
+5. Admin no Swagger, `PUT /api/igrejas/999` → **403** `{"mensagem": "Acesso permitido apenas
+aos dados da própria igreja."}` — recusa antes de consultar o banco (RNF 44.2). `GET
+/api/igrejas/1` confirma os valores gravados e `atualizadoEm`. ✔
+   (print RNF-44.2-403-outra-igreja.png)
+
+**Observação.** O `PUT` substitui os cinco campos: um corpo parcial enviado pelo Swagger
+(sem `cidade`/`estado`) grava `null` nesses campos. A tela envia sempre os cinco, então o
+comportamento só aparece em chamada direta à API; registrado aqui para a 7.3 (tabela
+CSU → teste) decidir se vale um teste ou um `[Required]` adicional.
+
+**Prints (capítulo de Resultados):** `docs/evidencias/RF44-tela-igreja.png` e
+`docs/evidencias/RF44-termo-contato-atualizado.png` (Figura 34 da monografia tem o protótipo;
+este é o resultado real).
+
+**Fechamento da Etapa 6.** 6.1 (acabamento: observação da chamada, "Conferir" na importação,
+painel/minha frequência em 90 dias, histórico só de aulas consolidadas) e 6.2 (RF44) validadas:
+113 xUnit + 54 Vitest + 3 Playwright, build limpo. Próxima: Etapa 7 (7.1 FallbackPolicy +
+inventário de autorização + verificação de acesso à turma; 7.2 E2E-04..08; 7.3 tabela
+CSU → teste).
