@@ -31,23 +31,42 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             };
 
             var criada = await _igrejaRepositorio.CriarAsync(igreja);
-
-            return new IgrejaRespostaDto
-            {
-                Id = criada.Id,
-                Nome = criada.Nome,
-                Cidade = criada.Cidade,
-                Estado = criada.Estado,
-                Email = criada.Email,
-                CriadoEm = criada.CriadoEm
-            };
+            return Mapear(criada);
         }
 
         public async Task<IgrejaRespostaDto?> ObterPorIdAsync(int id)
         {
             var igreja = await _igrejaRepositorio.ObterPorIdAsync(id);
+            return igreja is null ? null : Mapear(igreja);
+        }
+
+        // RF44 (RNFs 44.2, 44.3, 44.5): só os cinco campos do requisito mudam; o restante da
+        // entidade (Endereco, CEP, CNPJ, LogoUrl) e os registros de aceite não são tocados.
+        // O cabeçalho do termo lê Nome/Email/Telefone da igreja a cada exibição, então a
+        // alteração reflete na próxima tela sem mexer nos aceites gravados (hash só do texto).
+        public async Task<IgrejaRespostaDto?> AtualizarAsync(int id, IgrejaAtualizarRequisicaoDto dto)
+        {
+            var igreja = await _igrejaRepositorio.ObterPorIdAsync(id);
             if (igreja is null) return null;
 
+            igreja.Nome = dto.Nome.Trim();
+            igreja.Cidade = TextoOuNulo(dto.Cidade);
+            igreja.Estado = TextoOuNulo(dto.Estado)?.ToUpperInvariant();
+            igreja.Email = TextoOuNulo(dto.Email);
+            igreja.Telefone = TextoOuNulo(dto.Telefone);
+
+            await _igrejaRepositorio.AtualizarAsync(igreja);
+            return Mapear(igreja);
+        }
+
+        private static string? TextoOuNulo(string? valor)
+        {
+            var texto = valor?.Trim();
+            return string.IsNullOrEmpty(texto) ? null : texto;
+        }
+
+        private static IgrejaRespostaDto Mapear(Igreja igreja)
+        {
             return new IgrejaRespostaDto
             {
                 Id = igreja.Id,
@@ -55,7 +74,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 Cidade = igreja.Cidade,
                 Estado = igreja.Estado,
                 Email = igreja.Email,
-                CriadoEm = igreja.CriadoEm
+                Telefone = igreja.Telefone,
+                CriadoEm = igreja.CriadoEm,
+                AtualizadoEm = igreja.AtualizadoEm
             };
         }
     }

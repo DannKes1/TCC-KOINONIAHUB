@@ -25,5 +25,11 @@ namespace KoinoniaHub.API.Infraestrutura.Repositorios
             await _db.SaveChangesAsync();
             return igreja;
         }
+
+        public async Task AtualizarAsync(Igreja igreja)
+        {
+            _db.Igrejas.Update(igreja);
+            await _db.SaveChangesAsync();
+        }
     }
 }

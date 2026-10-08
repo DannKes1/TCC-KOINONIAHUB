@@ -41,5 +41,21 @@ namespace KoinoniaHub.API.Controllers
             if (resposta is null) return NotFound();
             return Ok(resposta);
         }
+
+        // RF44 — Editar Dados da Igreja (RNFs 44.1 Admin; 44.2 só a própria igreja;
+        // 44.3 validação pelo DTO → 400 com os erros por campo).
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> Atualizar([FromRoute] int id, [FromBody] IgrejaAtualizarRequisicaoDto dto)
+        {
+            var igrejaIdDoToken = UsuarioAutenticado.ObterIgrejaId(User);
+            if (id != igrejaIdDoToken)
+                return StatusCode(StatusCodes.Status403Forbidden,
+                    new { mensagem = "Acesso permitido apenas aos dados da própria igreja." });
+
+            var resposta = await _igrejaServico.AtualizarAsync(id, dto);
+            if (resposta is null) return NotFound();
+            return Ok(resposta);
+        }
     }
 }

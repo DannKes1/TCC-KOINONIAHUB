@@ -7,5 +7,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Interfaces
     {
         Task<IgrejaRespostaDto> CriarAsync(IgrejaCriarRequisicaoDto dto);
         Task<IgrejaRespostaDto?> ObterPorIdAsync(int id);
+
+        // RF44: atualiza nome, cidade, estado, e-mail e telefone da igreja. Null se não existir.
+        Task<IgrejaRespostaDto?> AtualizarAsync(int id, IgrejaAtualizarRequisicaoDto dto);
     }
 }

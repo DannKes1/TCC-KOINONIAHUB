@@ -6,5 +6,6 @@ namespace KoinoniaHub.API.Dominio.Interfaces.Repositorios
     {
         Task<Igreja?> ObterPorIdAsync(int id);
         Task<Igreja> CriarAsync(Igreja igreja);
+        Task AtualizarAsync(Igreja igreja);
     }
 }
