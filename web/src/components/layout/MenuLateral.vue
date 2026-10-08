@@ -88,6 +88,18 @@ function sair() {
       Usuários
     </RouterLink>
 
+    <!-- RF44 / CSU24: dados cadastrais da igreja, só para o Admin (RNF 44.1). -->
+    <RouterLink
+      v-if="isAdmin"
+      to="/igreja"
+      class="sidebar-link"
+      :class="{ ativo: estaAtivo('/igreja') }"
+      data-testid="menu-igreja"
+    >
+      <i class="pi pi-building sidebar-icone"></i>
+      Igreja
+    </RouterLink>
+
     <div v-if="isGestor" class="sidebar-secao">EBD</div>
 
     <RouterLink

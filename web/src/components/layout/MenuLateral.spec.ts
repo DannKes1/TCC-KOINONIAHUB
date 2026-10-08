@@ -6,7 +6,8 @@ import MenuLateral from "./MenuLateral.vue";
 import { usarAutenticacaoStore } from "../../aplicacao/armazenamentos/autenticacaoStore";
 
 // Plano 7.2, "Menu lateral por perfil": Professor não vê Pessoas nem Usuários;
-// Usuario vê só Painel, Minhas Turmas e Meus Dados.
+// Usuario vê só Painel, Minhas Turmas e Meus Dados. Etapa 6.2: "Igreja" (RF44) só
+// para o Admin.
 async function montarComPerfil(perfil: string) {
   const pinia = createPinia();
   setActivePinia(pinia);
@@ -42,7 +43,7 @@ describe("MenuLateral por perfil", () => {
     localStorage.clear();
   });
 
-  it("Admin vê todos os itens, inclusive Pessoas e Usuários", async () => {
+  it("Admin vê todos os itens, inclusive Pessoas, Usuários e Igreja", async () => {
     const itens = itensDoMenu(await montarComPerfil("Admin"));
 
     expect(itens).toEqual([
@@ -52,22 +53,24 @@ describe("MenuLateral por perfil", () => {
       "Pessoas",
       "Relatórios EBD",
       "Usuários",
+      "Igreja",
       "Turmas EBD",
     ]);
   });
 
-  it("Pastor e Superintendente veem Pessoas, mas não Usuários", async () => {
+  it("Pastor e Superintendente veem Pessoas, mas não Usuários nem Igreja", async () => {
     for (const perfil of ["Pastor", "Superintendente"]) {
       const itens = itensDoMenu(await montarComPerfil(perfil));
 
       expect(itens).toContain("Pessoas");
       expect(itens).not.toContain("Usuários");
+      expect(itens).not.toContain("Igreja");
       expect(itens).toContain("Relatórios EBD");
       expect(itens).toContain("Turmas EBD");
     }
   });
 
-  it("Professor não vê Pessoas nem Usuários", async () => {
+  it("Professor não vê Pessoas, Usuários nem Igreja", async () => {
     const itens = itensDoMenu(await montarComPerfil("Professor"));
 
     expect(itens).toEqual([

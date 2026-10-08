@@ -342,3 +342,24 @@ export type AceiteTermoVM = {
   // false quando o aceite é de uma versão anterior à vigente.
   vigente: boolean;
 };
+
+// ---- Igreja (RF44 — Editar Dados da Igreja) ----
+
+export type IgrejaVM = {
+  id: number;
+  nome: string;
+  cidade: string | null;
+  estado: string | null;
+  email: string | null;
+  telefone: string | null;
+  criadoEm: string;
+  atualizadoEm: string | null;
+};
+
+export type IgrejaAtualizarDTO = {
+  Nome: string;
+  Cidade?: string | null;
+  Estado?: string | null;
+  Email?: string | null;
+  Telefone?: string | null;
+};

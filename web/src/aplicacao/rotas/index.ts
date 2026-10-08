@@ -12,6 +12,7 @@ import PaginaPainel from "../../paginas/privado/PaginaPainel.vue";
 import PaginaDepartamentosLista from "../../paginas/privado/departamentos/PaginaDepartamentosLista.vue";
 import PaginaPessoasLista from "../../paginas/privado/pessoas/PaginaPessoasLista.vue";
 import PaginaUsuariosLista from "../../paginas/privado/usuarios/PaginaUsuariosLista.vue";
+import PaginaIgreja from "../../paginas/privado/igreja/PaginaIgreja.vue";
 import PaginaMinhasTurmas from "../../paginas/privado/PaginaMinhasTurmas.vue";
 import PaginaMatriculasTurma from "../../paginas/privado/matriculas/PaginaMatriculasTurma.vue";
 import PaginaMateriasTurma from "../../paginas/privado/materias/PaginaMateriasTurma.vue";
@@ -62,6 +63,12 @@ const rotas: RouteRecordRaw[] = [
       {
         path: "usuarios",
         component: PaginaUsuariosLista,
+        meta: { requerAdmin: true },
+      },
+      {
+        // RF44 / CSU24: dados cadastrais da igreja (só Admin, RNF 44.1).
+        path: "igreja",
+        component: PaginaIgreja,
         meta: { requerAdmin: true },
       },
       {
