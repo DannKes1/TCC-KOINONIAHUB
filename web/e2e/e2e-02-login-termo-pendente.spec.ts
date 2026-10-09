@@ -1,12 +1,16 @@
 import { expect, test } from "@playwright/test";
 
 import { apiURL } from "./apoio/ambiente";
-import { lerSemente } from "./apoio/semente";
+import { evidenciaCelular, semRolagemHorizontal } from "./apoio/celular";
+import { contaPendentePara, lerSemente } from "./apoio/semente";
 
 // E2E-02 — Login com termo pendente (CSU02 fluxo alternativo + CSU23; RF2, RNFs 2.5,
-// 13.4, 42.1). A semente criou a conta com senha definida pelo Admin e sem aceite.
-test("E2E-02 login com termo pendente: só a tela /termo abre, o aceite libera a sessão e fica registrado em Meus Dados", async ({ page }) => {
-  const { pendente, igreja } = lerSemente();
+// 13.4, 42.1). A semente criou a conta com senha definida pelo Admin e sem aceite —
+// uma por projeto do Playwright (desktop e celular), pois cada conta só aceita uma vez.
+test("E2E-02 login com termo pendente: só a tela /termo abre, o aceite libera a sessão e fica registrado em Meus Dados", async ({ page }, testInfo) => {
+  const semente = lerSemente();
+  const { igreja } = semente;
+  const pendente = contaPendentePara(testInfo.project.name, semente);
 
   await page.goto("/login");
   await page.getByTestId("login-email").fill(pendente.email);
@@ -18,6 +22,9 @@ test("E2E-02 login com termo pendente: só a tela /termo abre, o aceite libera a
   await expect(page.locator("a.sidebar-link")).toHaveCount(0);
   await expect(page.getByTestId("termo-igreja-nome")).toHaveText(igreja.nome);
   await expect(page.getByTestId("termo-igreja-contato")).toContainText(igreja.email);
+  // Etapa 6.3: a tela do termo também cabe na janela (no celular vira evidência).
+  await semRolagemHorizontal(page, "Termo");
+  await evidenciaCelular(page, testInfo, "termo");
 
   // Tentar outra rota pela barra de endereço volta para /termo (RNF 2.5).
   await page.goto("/meus-dados");

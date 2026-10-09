@@ -152,3 +152,24 @@ export async function criarUsuario(
   );
   return { id: Number(r.id), conviteToken: (r.conviteToken ?? null) as string | null };
 }
+
+// Aula Em aberto na matéria informada (RF31). Quem chama precisa de acesso à turma:
+// Admin, ou Professor/Auxiliar com atribuição ativa; o ProfessorId é o PessoaId de
+// um professor com atribuição "Professor" ativa na turma.
+export async function criarAula(
+  api: APIRequestContext,
+  dados: { materiaId: number; professorId: number; data: Date; tema?: string },
+): Promise<{ id: number }> {
+  const r = await corpoOk(
+    await api.post("/api/aulas", {
+      data: {
+        Data: dados.data.toISOString(),
+        Tema: dados.tema ?? null,
+        MateriaId: dados.materiaId,
+        ProfessorId: dados.professorId,
+      },
+    }),
+    "POST aulas",
+  );
+  return { id: Number(r.id) };
+}

@@ -4,15 +4,16 @@ import type { FullConfig } from "@playwright/test";
 import { apiURL, executavelChromium } from "./apoio/ambiente";
 import {
   ARQUIVO_ESTADO_ADMIN,
+  ARQUIVO_ESTADO_ALUNO,
   ARQUIVO_ESTADO_PROFESSOR,
   criarSemente,
 } from "./apoio/semente";
 
 // Roda uma vez antes dos testes, com os servidores já no ar (Plano 7.3):
 // 1. semeia uma igreja nova pela API;
-// 2. faz login pela tela como Admin e como Professor e guarda o storageState
-//    (cookie httpOnly da sessão + localStorage da SPA) em e2e/.auth/*.json, para os
-//    fluxos que começam já autenticados.
+// 2. faz login pela tela como Admin, Professor e aluno (Usuario) e guarda o
+//    storageState (cookie httpOnly da sessão + localStorage da SPA) em
+//    e2e/.auth/*.json, para os fluxos que começam já autenticados.
 
 async function salvarEstadoDeLogin(
   baseURL: string,
@@ -60,6 +61,12 @@ export default async function globalSetup(config: FullConfig) {
     semente.professor.email,
     semente.professor.senha,
     ARQUIVO_ESTADO_PROFESSOR,
+  );
+  await salvarEstadoDeLogin(
+    baseURL,
+    semente.aluno.email,
+    semente.aluno.senha,
+    ARQUIVO_ESTADO_ALUNO,
   );
 
   console.log(
