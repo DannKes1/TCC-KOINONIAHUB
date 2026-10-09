@@ -961,3 +961,51 @@ painel/minha frequência em 90 dias, histórico só de aulas consolidadas) e 6.2
 113 xUnit + 54 Vitest + 3 Playwright, build limpo. Próxima: Etapa 7 (7.1 FallbackPolicy +
 inventário de autorização + verificação de acesso à turma; 7.2 E2E-04..08; 7.3 tabela
 CSU → teste).
+
+## Etapa 6.3 — Responsividade: fluxo do professor a 360 px (08/10/2026)
+
+**Escopo.** Leitura operacional dos RNFs "a interface deve ser responsiva" (RF3, RF5, RF6,
+RF20, RF26, RF28, RF35, RF36), no recorte aprovado na `avaliacao-pre-etapa7.md` (seção 1):
+ponto de corte 768 px; até ele a barra lateral sai do fluxo e o mesmo `MenuLateral` abre num
+`Drawer` pelo botão da `BarraTopo`; telas do fluxo do professor e do aluno sem rolagem
+horizontal da página a 360 × 640 (grades fluidas, colunas secundárias ocultas no celular,
+alvo de toque de 40 px na caixa de presença); telas administrativas apenas utilizáveis com
+rolagem. Só front e E2E; a API não muda. Decisões em `docs/decisoes/etapa-6.md`, 1.3.
+
+**Validação automatizada** (ambiente reproduzido a partir do package-lock.json):
+`vue-tsc -b` limpo · `npm run test` = **10 arquivos, 57 casos verdes** (54 + 3 de
+`LayoutPrincipal.spec`: menu de desktop no DOM e Drawer fechado; o botão abre o Drawer com
+os itens do perfil; navegar fecha) · `vite build` ok · `dotnet test` = **113** (inalterado) ·
+`npm run test:e2e` = **8 aprovados** (3 no projeto `chromium` + 5 no projeto `mobile`:
+E2E-01, E2E-02 com conta pendente própria e o novo **E2E-M1**, 3 casos — login a 360 px;
+professor: painel → Drawer → Minhas Turmas → aulas → chamada → presenças → Meus Dados;
+aluno: painel → Minha Frequência — com `semRolagemHorizontal` em cada tela e alvos de toque
+verificados). O E2E rodou contra o PostgreSQL local no ambiente `E2E`.
+
+**Testes manuais (DevTools a 360 × 640; Admin, Professor "Paula" e aluno):**
+
+1. Desktop intacto acima de 768 px: barra lateral, sem botão ☰, proporções de Meus Dados e
+   painéis iguais às anteriores. ✔
+2. Drawer: barra lateral oculta, ☰ no cabeçalho, e-mail com reticências; o Drawer abre com os
+   itens do perfil (itens altos) e fecha ao navegar; em 640 × 360 continua em Drawer. ✔
+3. Chamada a 360 px (CSU10): Minhas Turmas só com Turma/Vínculo/Ações; aulas só com
+   Data/Situação/Ações; diálogo de nova aula cabe; na chamada, Aluno e Presente visíveis sem
+   rolar, Observação rolando dentro da tabela; salvar e consolidar com diálogos cabendo na
+   tela. ✔
+4. Aluno a 360 px (CSU07): painel com os indicadores em duas colunas; Minha Frequência com
+   cartões em duas colunas e tabela rolando internamente. ✔
+5. Administrativa (Pessoas) a 360 px: abre, tabela rola dentro do container, diálogo de nova
+   pessoa a 96 vw — utilizável, sem polimento (fora do critério). ✔
+
+**Avaliação do autor (09/10/2026).** O critério foi atendido, mas o resultado é uma tela
+web comprimida, não uma interface de celular: ação principal cortada na tabela "Aulas em
+aberto" do painel do professor, três ou quatro botões só com ícone por aula, ações cortadas
+em Matrículas e Matérias. Como é o fluxo que o professor e o PO avaliam na 5.1, a Etapa 6.4
+passa a incluir o fluxo operacional no celular (cartões com botão nomeado, chamada tocável
+com barra fixa, Página da Turma como centro), com critério estrito — ver
+`RECORTE-6.4-CELULAR.md` em `docs/decisoes/`.
+
+**Prints (gerados pelo projeto `mobile` e copiados para `docs/evidencias/`):**
+`RNF-responsividade-{login, termo, painel-professor, menu-drawer, minhas-turmas, aulas-turma,
+chamada, presencas-aula, meus-dados, painel-aluno, minha-frequencia}.png`. Serão regenerados
+na 6.4-C.
