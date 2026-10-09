@@ -167,6 +167,64 @@ body {
   color: var(--ipb-cinza-claro, #7a7a7a);
 }
 
+/* Responsividade (Etapa 6.3; RNFs "a interface deve ser responsiva"): até 768 px
+   os cartões ficam mais compactos e as grades de indicadores cabem em duas colunas.
+   As tabelas já rolam internamente (responsiveLayout="scroll"). */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .stat-card {
+    padding: 14px;
+  }
+
+  .stat-card-valor {
+    font-size: 22px;
+  }
+
+  .card-tabela,
+  .card-ipb {
+    padding: 14px;
+  }
+
+  .page-container {
+    gap: 12px;
+  }
+
+  .p-dialog {
+    max-width: 96vw !important;
+  }
+
+  /* Alvos de toque (≥ 40 px): todos os botões, inclusive os pequenos das linhas
+     das tabelas. */
+  .p-button {
+    min-height: 40px;
+  }
+
+  .p-datatable .p-button-sm {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  /* Colunas secundárias que saem no celular (prop `class` da Column do PrimeVue,
+     aplicada ao cabeçalho e às células), para a ação principal da linha ficar
+     visível sem rolar a tabela. */
+  .p-datatable .col-celular-oculta {
+    display: none;
+  }
+
+  /* As larguras fixas das colunas foram pensadas para o desktop; no celular a
+     tabela distribui o espaço pelo conteúdo (min-width continua valendo — é o que
+     mantém a coluna Observação da chamada rolável dentro da tabela). */
+  .p-datatable .p-datatable-thead > tr > th,
+  .p-datatable .p-datatable-tbody > tr > td {
+    width: auto !important;
+  }
+}
+
 .acoes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

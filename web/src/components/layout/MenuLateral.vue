@@ -3,6 +3,10 @@ import { computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { usarAutenticacaoStore } from "../../aplicacao/armazenamentos/autenticacaoStore";
 
+// `emDrawer`: a mesma lista, renderizada dentro do Drawer do celular (Etapa 6.3) —
+// ocupa a largura do Drawer e dispensa a borda lateral.
+defineProps<{ emDrawer?: boolean }>();
+
 const autenticacao = usarAutenticacaoStore();
 const router = useRouter();
 const route = useRoute();
@@ -27,7 +31,7 @@ function sair() {
 </script>
 
 <template>
-  <aside class="sidebar-ipb">
+  <aside class="sidebar-ipb" :class="{ 'sidebar-em-drawer': emDrawer }">
     <div class="sidebar-igreja">
       <div class="sidebar-igreja-nome">Igreja Presbiteriana</div>
       <div class="sidebar-igreja-sub">Painel Administrativo</div>
@@ -131,6 +135,22 @@ function sair() {
   padding: 20px 14px;
   gap: 4px;
   overflow-y: auto;
+}
+
+.sidebar-em-drawer {
+  width: 100%;
+  min-height: 100%;
+  border-right: none;
+  padding-top: 8px;
+}
+
+/* No Drawer os itens viram alvos de toque (≥ 44 px de altura). */
+.sidebar-em-drawer .sidebar-link,
+.sidebar-em-drawer .sidebar-sair {
+  min-height: 44px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  font-size: 15px;
 }
 
 .sidebar-igreja {

@@ -45,6 +45,7 @@ function voltar() {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .page-header-voltar {
@@ -80,5 +81,16 @@ function voltar() {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .page-header-titulo {
+    font-size: 20px;
+  }
+
+  .page-header-acoes {
+    width: 100%;
+  }
 }
 </style>

@@ -3,11 +3,24 @@ import { usarAutenticacaoStore } from "../../aplicacao/armazenamentos/autenticac
 import logoIPB2 from "../../assets/LOGOIPB2.png";
 
 const autenticacao = usarAutenticacaoStore();
+
+// Responsividade (Etapa 6.3): até 768 px o menu lateral vira um Drawer e este
+// botão o abre; acima disso o botão fica oculto por CSS.
+const emit = defineEmits<{ (e: "abrir-menu"): void }>();
 </script>
 
 <template>
   <header class="header-ipb">
     <div class="header-marca">
+      <button
+        type="button"
+        class="header-botao-menu"
+        aria-label="Abrir menu"
+        data-testid="botao-menu"
+        @click="emit('abrir-menu')"
+      >
+        <i class="pi pi-bars" aria-hidden="true"></i>
+      </button>
       <img
         :src="logoIPB2"
         alt="Igreja Presbiteriana do Brasil"
@@ -86,5 +99,71 @@ const autenticacao = usarAutenticacaoStore();
 .header-usuario-perfil {
   font-size: 11px;
   opacity: 0.65;
+}
+
+.header-botao-menu {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--radius-sm, 6px);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.header-botao-menu:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+@media (max-width: 768px) {
+  .header-ipb {
+    padding: 0 12px;
+  }
+
+  .header-botao-menu {
+    display: inline-flex;
+  }
+
+  .header-marca {
+    gap: 10px;
+  }
+
+  .header-logo {
+    height: 36px;
+  }
+
+  .header-textos h1 {
+    font-size: 16px;
+  }
+
+  .header-slogan {
+    display: none;
+  }
+
+  /* O bloco do usuário encolhe (min-width: 0 libera o flex) e o e-mail recebe
+     reticências; a marca não encolhe. */
+  .header-marca {
+    flex-shrink: 0;
+  }
+
+  .header-usuario {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .header-usuario-nome,
+  .header-usuario-perfil {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .header-usuario-nome {
+    font-size: 12px;
+  }
 }
 </style>

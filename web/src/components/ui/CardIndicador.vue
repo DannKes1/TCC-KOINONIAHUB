@@ -43,6 +43,15 @@ defineProps<{
   flex-shrink: 0;
 }
 
+/* Celular (Etapa 6.3): a largura mínima sai para a grade caber em duas colunas. */
+@media (max-width: 768px) {
+  .card-indicador {
+    min-width: 0;
+    padding: 12px;
+    gap: 10px;
+  }
+}
+
 .card-indicador-textos {
   display: flex;
   flex-direction: column;
