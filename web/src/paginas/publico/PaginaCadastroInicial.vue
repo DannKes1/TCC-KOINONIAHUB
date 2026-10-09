@@ -107,7 +107,7 @@ async function concluirCadastro(): Promise<void> {
 </script>
 
 <template>
-  <div style="max-width: 560px; margin: 60px auto; padding: 24px">
+  <div style="max-width: 560px; margin: 40px auto; padding: 16px 16px 32px">
     <h2 style="margin: 0">Cadastro Inicial</h2>
     <p style="margin-top: 6px; opacity: 0.7">
       Crie a igreja e o primeiro usuário administrador.
@@ -127,7 +127,13 @@ async function concluirCadastro(): Promise<void> {
       >
         <div style="font-weight: 700; margin-bottom: 10px">Dados da Igreja</div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+          "
+        >
           <div style="grid-column: 1 / -1">
             <input
               v-model="nomeIgreja"
@@ -207,7 +213,13 @@ async function concluirCadastro(): Promise<void> {
       >
         <div style="font-weight: 700; margin-bottom: 10px">Administrador</div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+          "
+        >
           <div style="grid-column: 1 / -1">
             <input
               v-model="nomeAdmin"

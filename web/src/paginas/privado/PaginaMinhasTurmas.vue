@@ -70,7 +70,12 @@ onMounted(carregar);
 
     <DataTable :value="turmas" :loading="carregando" stripedRows>
       <Column field="nome" header="Turma" />
-      <Column field="tipo" header="Tipo" style="width: 110px" />
+      <Column
+        field="tipo"
+        header="Tipo"
+        style="width: 110px"
+        class="col-celular-oculta"
+      />
       <Column header="Vínculo" style="width: 140px">
         <template #body="{ data }">
           <Tag
@@ -79,12 +84,12 @@ onMounted(carregar);
           />
         </template>
       </Column>
-      <Column header="Responsável">
+      <Column header="Responsável" class="col-celular-oculta">
         <template #body="{ data }">
           {{ data.responsavel ?? "—" }}
         </template>
       </Column>
-      <Column header="Status" style="width: 100px">
+      <Column header="Status" style="width: 100px" class="col-celular-oculta">
         <template #body="{ data }">
           {{ data.ativo ? "Ativa" : "Inativa" }}
         </template>
@@ -97,12 +102,14 @@ onMounted(carregar);
               size="small"
               severity="secondary"
               outlined
+              data-testid="minhas-turmas-frequencia"
               @click="verFrequencia(data)"
             />
             <Button
               v-if="(data.vinculo || '').toLowerCase() !== 'aluno'"
               label="Abrir turma"
               size="small"
+              data-testid="minhas-turmas-abrir"
               @click="abrirTurma(data)"
             />
           </div>

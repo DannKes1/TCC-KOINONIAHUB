@@ -233,6 +233,7 @@ onMounted(carregarTudo);
         <Button
           label="Salvar"
           icon="pi pi-save"
+          data-testid="chamada-salvar"
           :loading="carregando"
           :disabled="somenteLeitura"
           @click="salvar"
@@ -278,6 +279,7 @@ onMounted(carregarTudo);
         style="
           display: flex;
           align-items: center;
+          flex-wrap: wrap;
           gap: 0.75rem;
           background: #f8faf9;
           border: 1px solid #e2e8e5;
@@ -287,7 +289,7 @@ onMounted(carregarTudo);
         "
       >
         <i class="pi pi-users" style="font-size: 1.3rem; color: #234f32"></i>
-        <div style="flex: 1">
+        <div style="flex: 1; min-width: 200px">
           <div style="font-weight: 600">Visitantes avulsos</div>
           <div style="font-size: 0.85rem; color: #6b7280">
             Pessoas sem matrícula que participaram desta aula — a contagem é
@@ -330,8 +332,9 @@ onMounted(carregarTudo);
         dataKey="alunoDepartamentoId"
         responsiveLayout="scroll"
         :rowClass="classeLinha"
+        data-testid="chamada-tabela"
       >
-        <Column field="nomeAluno" header="Aluno" sortable>
+        <Column field="nomeAluno" header="Aluno" sortable style="min-width: 160px">
           <template #body="{ data }">
             <span style="display: inline-flex; align-items: center; gap: 8px">
               {{ data.nomeAluno }}
@@ -344,12 +347,13 @@ onMounted(carregarTudo);
           </template>
         </Column>
 
-        <Column header="Presente" style="width: 140px">
+        <Column header="Presente" style="width: 110px">
           <template #body="{ data }">
             <Checkbox
               v-model="data.presente"
               :binary="true"
               :disabled="somenteLeitura || carregando"
+              data-testid="chamada-presente"
             />
           </template>
         </Column>
@@ -392,5 +396,27 @@ onMounted(carregarTudo);
 .dica-observacao .pi {
   margin-top: 2px;
   color: var(--ipb-verde, #234f32);
+}
+
+/* Celular (Etapa 6.3): a caixa de presença ganha um alvo de toque de 40 px (o input
+   invisível do PrimeVue cobre todo o .p-checkbox; a caixa visível fica com 24 px) e
+   as colunas Aluno e Presente cabem sem rolar; a Observação fica à direita, rolável
+   dentro da tabela. */
+@media (max-width: 768px) {
+  :deep(.p-checkbox) {
+    width: 2.5rem;
+    height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+  }
+
+  :deep(.p-checkbox .p-checkbox-box) {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  :deep(.p-datatable .p-datatable-tbody > tr > td) {
+    padding: 0.4rem 0.5rem;
+  }
 }
 </style>

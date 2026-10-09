@@ -316,7 +316,7 @@ onMounted(carregarTudo);
       <InputText
         v-model="busca"
         placeholder="Buscar por tema, matéria, professor ou data..."
-        style="min-width: 320px"
+        style="flex: 1 1 240px; min-width: 0"
       />
       <Dropdown
         v-model="filtroSituacao"
@@ -325,7 +325,7 @@ onMounted(carregarTudo);
         optionValue="value"
         showClear
         placeholder="Todas as situações"
-        style="min-width: 220px"
+        style="flex: 1 1 200px; min-width: 0"
       />
     </div>
 
@@ -346,9 +346,19 @@ onMounted(carregarTudo);
           </template>
         </Column>
 
-        <Column field="nomeMateria" header="Matéria" sortable />
-        <Column field="nomeProfessor" header="Professor" sortable />
-        <Column field="tema" header="Tema" />
+        <Column
+          field="nomeMateria"
+          header="Matéria"
+          sortable
+          class="col-celular-oculta"
+        />
+        <Column
+          field="nomeProfessor"
+          header="Professor"
+          sortable
+          class="col-celular-oculta"
+        />
+        <Column field="tema" header="Tema" class="col-celular-oculta" />
 
         <Column header="Situação" style="width: 220px">
           <template #body="{ data }">
@@ -361,7 +371,7 @@ onMounted(carregarTudo);
 
         <Column header="Ações" style="width: 260px">
           <template #body="{ data }">
-            <div style="display: flex; gap: 8px">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap">
               <Button
                 icon="pi pi-clipboard"
                 severity="info"

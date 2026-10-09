@@ -263,7 +263,7 @@ onMounted(carregar);
       </div>
 
       <h3 style="margin: 16px 0 6px">Endereço</h3>
-      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px">
+      <div class="grade-endereco">
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label>Endereço</label>
           <InputText
@@ -290,14 +290,7 @@ onMounted(carregar);
         </div>
       </div>
 
-      <div
-        style="
-          display: grid;
-          grid-template-columns: 2fr 2fr 1fr;
-          gap: 14px;
-          margin-top: 14px;
-        "
-      >
+      <div class="grade-endereco grade-endereco-cidade">
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label>Bairro</label>
           <InputText v-model="form.bairro" />
@@ -334,3 +327,24 @@ onMounted(carregar);
     </LoadingOverlay>
   </div>
 </template>
+
+<style scoped>
+/* Proporções do desktop preservadas; no celular (Etapa 6.3) os campos empilham. */
+.grade-endereco {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 14px;
+}
+
+.grade-endereco-cidade {
+  grid-template-columns: 2fr 2fr 1fr;
+  margin-top: 14px;
+}
+
+@media (max-width: 768px) {
+  .grade-endereco,
+  .grade-endereco-cidade {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

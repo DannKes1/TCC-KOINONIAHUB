@@ -111,7 +111,7 @@ onMounted(carregarTela);
     <div
       style="
         display: grid;
-        grid-template-columns: repeat(3, minmax(180px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 12px;
       "
     >
@@ -157,14 +157,14 @@ onMounted(carregarTela);
       v-if="aula"
       style="
         display: grid;
-        grid-template-columns: repeat(4, minmax(180px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 12px;
       "
     >
       <div><strong>Data:</strong> {{ formatarData(aula.data) }}</div>
       <div><strong>Matéria:</strong> {{ aula.nomeMateria }}</div>
       <div><strong>Professor:</strong> {{ aula.nomeProfessor }}</div>
-      <div style="display: flex; align-items: center; gap: 8px">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
         <strong>Situação:</strong>
         <TagSituacaoAula
           :situacao="aula.situacao"
