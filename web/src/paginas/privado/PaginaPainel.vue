@@ -15,6 +15,8 @@ import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Tag from "primevue/tag";
 import TagSituacaoAula from "../../components/ui/TagSituacaoAula.vue";
+import CartaoItem from "../../components/ui/CartaoItem.vue";
+import { usarTelaCompacta } from "../../aplicacao/composables/usarTelaCompacta";
 
 import { listarDepartamentos } from "../../aplicacao/servicos/departamentosServico";
 import { listarPessoas } from "../../aplicacao/servicos/pessoasServico";
@@ -54,6 +56,10 @@ type ResumoTurmaVM = {
 const autenticacao = usarAutenticacaoStore();
 const router = useRouter();
 const { carregando, erro, run } = useAsync();
+
+// Etapa 6.4: no celular, as listas do painel do professor viram cartões com a
+// ação principal nomeada (Fazer chamada / Abrir turma).
+const compacta = usarTelaCompacta();
 
 const perfilLower = computed(() =>
   (autenticacao.perfil || "").trim().toLowerCase(),
@@ -457,7 +463,43 @@ onMounted(carregarPainel);
               Aulas em aberto (fazer chamada)
             </div>
 
+            <div
+              v-if="compacta"
+              class="lista-cartoes"
+              data-testid="painel-aulas-abertas-cartoes"
+            >
+              <CartaoItem
+                v-for="aula in aulasAbertasDoProfessor"
+                :key="aula.id"
+                :titulo="formatarData(aula.data)"
+                :destaque="aula.pendenteFechamento"
+              >
+                <template #chips>
+                  <TagSituacaoAula
+                    :situacao="aula.situacao"
+                    :pendenteFechamento="aula.pendenteFechamento"
+                  />
+                </template>
+                <template #meta>
+                  {{ aula.nomeDepartamento }} · {{ aula.nomeMateria }}
+                </template>
+                <template #acoes>
+                  <Button
+                    label="Fazer chamada"
+                    icon="pi pi-clipboard"
+                    class="acao-principal"
+                    data-testid="painel-fazer-chamada"
+                    @click="abrirChamada(aula.id)"
+                  />
+                </template>
+              </CartaoItem>
+              <p v-if="aulasAbertasDoProfessor.length === 0" class="lista-vazia">
+                Nenhuma aula em aberto no momento.
+              </p>
+            </div>
+
             <DataTable
+              v-else
               :value="aulasAbertasDoProfessor"
               :rows="10"
               paginator
@@ -488,7 +530,41 @@ onMounted(carregarPainel);
           <div class="card-tabela">
             <div class="card-tabela-titulo">Minhas turmas</div>
 
+            <div
+              v-if="compacta"
+              class="lista-cartoes"
+              data-testid="painel-minhas-turmas-cartoes"
+            >
+              <CartaoItem
+                v-for="t in resumoTurmasOrdenado"
+                :key="t.departamentoId"
+                :titulo="t.nomeDepartamento"
+              >
+                <template #meta>
+                  {{ t.totalAulas }} aula(s) · {{ t.aulasAbertas }} em aberto
+                  <template v-if="t.ultimaAulaData">
+                    · última em {{ formatarData(t.ultimaAulaData) }}
+                  </template>
+                </template>
+                <template #acoes>
+                  <Button
+                    label="Abrir turma"
+                    icon="pi pi-arrow-right"
+                    severity="secondary"
+                    outlined
+                    class="acao-principal"
+                    data-testid="painel-abrir-turma"
+                    @click="abrirAulasDaTurma(t.departamentoId)"
+                  />
+                </template>
+              </CartaoItem>
+              <p v-if="resumoTurmasOrdenado.length === 0" class="lista-vazia">
+                Você ainda não tem turmas atribuídas.
+              </p>
+            </div>
+
             <DataTable
+              v-else
               :value="resumoTurmasOrdenado"
               :rows="10"
               dataKey="departamentoId"

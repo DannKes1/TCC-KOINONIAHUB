@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, inject, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import PageHeader from "../../../components/ui/PageHeader.vue";
@@ -7,6 +7,8 @@ import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 import TagSituacaoAula from "../../../components/ui/TagSituacaoAula.vue";
+import CartaoItem from "../../../components/ui/CartaoItem.vue";
+import MenuAcoes from "../../../components/ui/MenuAcoes.vue";
 
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
 import {
@@ -16,6 +18,8 @@ import {
 } from "../../../aplicacao/dominio/situacaoAula";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
+import { usarTelaCompacta } from "../../../aplicacao/composables/usarTelaCompacta";
+import { usarMostrarMais } from "../../../aplicacao/composables/usarMostrarMais";
 
 import {
   toastSuccess,
@@ -31,6 +35,7 @@ import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
 import InputText from "primevue/inputtext";
 import Calendar from "primevue/calendar";
+import type { MenuItem } from "primevue/menuitem";
 
 import { useConfirm } from "primevue/useconfirm";
 
@@ -56,6 +61,17 @@ const route = useRoute();
 const router = useRouter();
 const confirm = useConfirm();
 const autenticacao = usarAutenticacaoStore();
+
+// Etapa 6.4: abaixo de 768 px a lista vira cartões com a ação principal nomeada
+// (Fazer/Ver chamada) e as demais no ⋮; no desktop, a tabela de sempre com a
+// mesma dupla botão + ⋮ na coluna de ações.
+const compacta = usarTelaCompacta();
+
+// Dentro da Página da Turma (RF20), avisa o cabeçalho para atualizar os contadores.
+const recarregarResumoDaTurma = inject<(() => Promise<void>) | null>(
+  "turmaRecarregarResumo",
+  null,
+);
 
 // RNF 33.5: só o Administrador reabre uma aula fechada.
 const podeReabrir = computed(() => autenticacao.isAdmin);
@@ -95,6 +111,19 @@ const aulasFiltradas = computed(() => {
     );
   });
 });
+
+// Cartões: da mais recente para a mais antiga, em blocos de dez.
+const aulasOrdenadas = computed(() =>
+  [...aulasFiltradas.value].sort(
+    (a, b) => new Date(b.data).getTime() - new Date(a.data).getTime(),
+  ),
+);
+const {
+  visiveis: aulasVisiveis,
+  restantes: aulasRestantes,
+  mostrarMais,
+} = usarMostrarMais(aulasOrdenadas, 10);
+
 const materias = ref<MateriaVM[]>([]);
 const professores = ref<{ id: number; nome: string }[]>([]);
 
@@ -113,6 +142,41 @@ function abrirChamada(aula: AulaVM) {
 
 function abrirPresencas(aula: AulaVM) {
   router.push(`/aulas/${aula.id}/presencas`);
+}
+
+function rotuloChamada(aula: AulaVM) {
+  return aula.situacao === "EmAberto" ? "Fazer chamada" : "Ver chamada";
+}
+
+// Ações secundárias do ⋮ (as mesmas nos dois layouts). `visible` segue a situação
+// da aula e o perfil (RF33: consolidar/não realizada só Em aberto; reabrir só Admin).
+function itensAcoes(aula: AulaVM): MenuItem[] {
+  const emAberto = aula.situacao === "EmAberto";
+  return [
+    {
+      label: "Ver presenças registradas",
+      icon: "pi pi-list-check",
+      command: () => abrirPresencas(aula),
+    },
+    {
+      label: "Consolidar chamada",
+      icon: "pi pi-lock",
+      visible: emAberto,
+      command: () => confirmarConsolidar(aula),
+    },
+    {
+      label: "Marcar como Não realizada",
+      icon: "pi pi-ban",
+      visible: emAberto,
+      command: () => confirmarNaoRealizada(aula),
+    },
+    {
+      label: "Reabrir aula",
+      icon: "pi pi-lock-open",
+      visible: !emAberto && podeReabrir.value,
+      command: () => confirmarReabrir(aula),
+    },
+  ];
 }
 
 function limparForm() {
@@ -179,12 +243,13 @@ async function salvar() {
     toastSuccess("Aula criada com sucesso.", "Criada");
 
     dialogAberto.value = false;
-    aulas.value = await listarAulasPorDepartamento(departamentoId.value);
+    await recarregarAulas();
   }, "Não foi possível criar a aula.");
 }
 
 async function recarregarAulas() {
   aulas.value = await listarAulasPorDepartamento(departamentoId.value);
+  await recarregarResumoDaTurma?.();
 }
 
 // RF33 / CSU11: consolidar exige aula Em aberto e chamada completa. Quando a API
@@ -281,6 +346,18 @@ function formatarData(iso: string) {
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString();
 }
 
+// Cartão: dia da semana + data ("dom., 11/10/2026").
+function formatarDataLonga(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("pt-BR", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
 onMounted(carregarTudo);
 </script>
 
@@ -293,7 +370,12 @@ onMounted(carregarTudo);
       voltarLabel="Turmas EBD"
     >
       <template #acoes>
-        <Button label="Nova Aula" icon="pi pi-plus" @click="abrirNovo" />
+        <Button
+          label="Nova Aula"
+          icon="pi pi-plus"
+          data-testid="aulas-nova"
+          @click="abrirNovo"
+        />
         <Button
           label="Recarregar"
           icon="pi pi-refresh"
@@ -330,7 +412,62 @@ onMounted(carregarTudo);
     </div>
 
     <LoadingOverlay :loading="carregando" texto="Carregando aulas.">
+      <!-- Celular: cartões (Etapa 6.4). -->
+      <div v-if="compacta" class="lista-cartoes" data-testid="aulas-cartoes">
+        <CartaoItem
+          v-for="aula in aulasVisiveis"
+          :key="aula.id"
+          :destaque="aula.pendenteFechamento"
+          data-testid="aula-cartao"
+        >
+          <template #titulo>{{ formatarDataLonga(aula.data) }}</template>
+          <template #chips>
+            <TagSituacaoAula
+              :situacao="aula.situacao"
+              :pendenteFechamento="aula.pendenteFechamento"
+            />
+          </template>
+          <template #meta>
+            {{ aula.nomeMateria }} · {{ aula.nomeProfessor }}
+            <template v-if="aula.tema"><br />Tema: {{ aula.tema }}</template>
+          </template>
+          <template #acoes>
+            <Button
+              :label="rotuloChamada(aula)"
+              icon="pi pi-clipboard"
+              class="acao-principal"
+              :severity="aula.situacao === 'EmAberto' ? undefined : 'secondary'"
+              :outlined="aula.situacao !== 'EmAberto'"
+              :disabled="carregando"
+              data-testid="aula-chamada"
+              @click="abrirChamada(aula)"
+            />
+            <MenuAcoes
+              :itens="itensAcoes(aula)"
+              rotulo="Mais ações da aula"
+              :desabilitado="carregando"
+            />
+          </template>
+        </CartaoItem>
+
+        <p v-if="aulasVisiveis.length === 0" class="lista-vazia">
+          Nenhuma aula encontrada para a busca ou o filtro.
+        </p>
+
+        <Button
+          v-if="aulasRestantes > 0"
+          :label="`Mostrar mais (${aulasRestantes} restantes)`"
+          severity="secondary"
+          text
+          class="mostrar-mais"
+          data-testid="aulas-mostrar-mais"
+          @click="mostrarMais"
+        />
+      </div>
+
+      <!-- Desktop: tabela, com a ação principal nomeada e as demais no ⋮. -->
       <DataTable
+        v-else
         :value="aulasFiltradas"
         paginator
         :rows="10"
@@ -346,19 +483,9 @@ onMounted(carregarTudo);
           </template>
         </Column>
 
-        <Column
-          field="nomeMateria"
-          header="Matéria"
-          sortable
-          class="col-celular-oculta"
-        />
-        <Column
-          field="nomeProfessor"
-          header="Professor"
-          sortable
-          class="col-celular-oculta"
-        />
-        <Column field="tema" header="Tema" class="col-celular-oculta" />
+        <Column field="nomeMateria" header="Matéria" sortable />
+        <Column field="nomeProfessor" header="Professor" sortable />
+        <Column field="tema" header="Tema" />
 
         <Column header="Situação" style="width: 220px">
           <template #body="{ data }">
@@ -369,52 +496,23 @@ onMounted(carregarTudo);
           </template>
         </Column>
 
-        <Column header="Ações" style="width: 260px">
+        <Column header="Ações" style="width: 230px">
           <template #body="{ data }">
-            <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <div style="display: flex; gap: 8px; align-items: center">
               <Button
+                :label="rotuloChamada(data)"
                 icon="pi pi-clipboard"
-                severity="info"
-                v-tooltip.top="
-                  data.situacao === 'EmAberto'
-                    ? 'Fazer chamada'
-                    : 'Ver chamada (somente leitura)'
-                "
+                size="small"
+                :severity="data.situacao === 'EmAberto' ? undefined : 'secondary'"
+                :outlined="data.situacao !== 'EmAberto'"
                 :disabled="carregando"
+                data-testid="aula-chamada"
                 @click="abrirChamada(data)"
               />
-              <Button
-                icon="pi pi-list-check"
-                severity="help"
-                v-tooltip.top="'Ver presenças registradas'"
-                :disabled="carregando"
-                @click="abrirPresencas(data)"
-              />
-              <Button
-                v-if="data.situacao === 'EmAberto'"
-                icon="pi pi-lock"
-                severity="danger"
-                v-tooltip.top="'Consolidar chamada (impede alterações futuras)'"
-                :disabled="carregando"
-                @click="confirmarConsolidar(data)"
-              />
-              <Button
-                v-if="data.situacao === 'EmAberto'"
-                icon="pi pi-ban"
-                severity="secondary"
-                v-tooltip.top="
-                  'Marcar como Não realizada (só sem registros de presença)'
-                "
-                :disabled="carregando"
-                @click="confirmarNaoRealizada(data)"
-              />
-              <Button
-                v-if="data.situacao !== 'EmAberto' && podeReabrir"
-                icon="pi pi-lock-open"
-                severity="warning"
-                v-tooltip.top="'Reabrir aula (somente Administrador)'"
-                :disabled="carregando"
-                @click="confirmarReabrir(data)"
+              <MenuAcoes
+                :itens="itensAcoes(data)"
+                rotulo="Mais ações da aula"
+                :desabilitado="carregando"
               />
             </div>
           </template>
