@@ -1,14 +1,27 @@
 <script setup lang="ts">
-import { useRouter } from "vue-router";
+import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 const props = defineProps<{
   titulo: string;
   subtitulo?: string;
   voltarPara?: string;
   voltarLabel?: string;
+  // Etapa 6.4 — dentro da Página da Turma (rotas filhas com meta `abaDaTurma`) o
+  // cabeçalho da turma já mostra o nome e o link de voltar; o cabeçalho da aba só
+  // mostra as ações (Nova aula, Matricular, Recarregar…), como uma barra de
+  // ferramentas. "auto" (padrão) segue a meta da rota; a própria Página da Turma
+  // passa "completo", porque a meta da filha também chega a ela (a meta é mesclada
+  // ao longo da cadeia de rotas).
+  modo?: "auto" | "completo";
 }>();
 
 const router = useRouter();
+const route = useRoute();
+
+const somenteAcoes = computed(
+  () => props.modo !== "completo" && Boolean(route.meta?.abaDaTurma),
+);
 
 function voltar() {
   if (props.voltarPara) {
@@ -18,8 +31,11 @@ function voltar() {
 </script>
 
 <template>
-  <div class="page-header-ipb">
-    <div>
+  <div
+    class="page-header-ipb"
+    :class="{ 'page-header-somente-acoes': somenteAcoes }"
+  >
+    <div v-if="!somenteAcoes">
       <a
         v-if="voltarPara"
         href="#"
@@ -82,6 +98,10 @@ function voltar() {
   gap: 8px;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.page-header-somente-acoes {
+  justify-content: flex-start;
 }
 
 @media (max-width: 768px) {

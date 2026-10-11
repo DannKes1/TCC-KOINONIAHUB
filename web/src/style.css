@@ -167,6 +167,27 @@ body {
   color: var(--ipb-cinza-claro, #7a7a7a);
 }
 
+/* Listas em cartões no celular (Etapa 6.4): usadas no lugar da DataTable abaixo de
+   768 px pelas telas do fluxo operacional. */
+.lista-cartoes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lista-cartoes .lista-vazia {
+  margin: 4px 0;
+  padding: 14px;
+  text-align: center;
+  color: var(--ipb-cinza-claro, #7a7a7a);
+  font-size: 14px;
+}
+
+.lista-cartoes .mostrar-mais {
+  align-self: center;
+  min-height: 44px;
+}
+
 /* Responsividade (Etapa 6.3; RNFs "a interface deve ser responsiva"): até 768 px
    os cartões ficam mais compactos e as grades de indicadores cabem em duas colunas.
    As tabelas já rolam internamente (responsiveLayout="scroll"). */
@@ -207,13 +228,6 @@ body {
   .p-datatable .p-button-sm {
     min-width: 40px;
     min-height: 40px;
-  }
-
-  /* Colunas secundárias que saem no celular (prop `class` da Column do PrimeVue,
-     aplicada ao cabeçalho e às células), para a ação principal da linha ficar
-     visível sem rolar a tabela. */
-  .p-datatable .col-celular-oculta {
-    display: none;
   }
 
   /* As larguras fixas das colunas foram pensadas para o desktop; no celular a
