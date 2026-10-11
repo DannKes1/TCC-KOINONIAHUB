@@ -85,7 +85,17 @@ const formulario = reactive({
 const menuAcoes = ref();
 const turmaMenuSelecionada = ref<DepartamentoVM | null>(null);
 
+// Etapa 6.4 (RF20): "Abrir turma" leva à Página da Turma; os quatro itens seguintes
+// abrem a mesma página já na aba correspondente (URLs preservadas). Atribuições
+// só para a gestão (CSU18, RNF 21.1).
 const itensMenu = computed(() => [
+  {
+    label: "Abrir turma",
+    icon: "pi pi-arrow-right",
+    command: () =>
+      turmaMenuSelecionada.value && abrirTurma(turmaMenuSelecionada.value),
+  },
+  { separator: true },
   {
     label: "Alunos",
     icon: "pi pi-users",
@@ -107,6 +117,7 @@ const itensMenu = computed(() => [
   {
     label: "Atribuições",
     icon: "pi pi-id-card",
+    visible: autenticacao.isAdministrativo,
     command: () =>
       turmaMenuSelecionada.value &&
       abrirAtribuicoes(turmaMenuSelecionada.value),
@@ -118,6 +129,9 @@ function abrirMenu(event: Event, dep: DepartamentoVM) {
   menuAcoes.value.toggle(event);
 }
 
+function abrirTurma(dep: DepartamentoVM) {
+  router.push(`/departamentos/${dep.id}`);
+}
 function abrirMatriculas(dep: DepartamentoVM) {
   router.push(`/departamentos/${dep.id}/matriculas`);
 }

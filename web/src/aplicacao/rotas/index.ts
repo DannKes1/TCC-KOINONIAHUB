@@ -10,6 +10,7 @@ import PaginaTermo from "../../paginas/privado/PaginaTermo.vue";
 import LayoutPrincipal from "../../components/layout/LayoutPrincipal.vue";
 import PaginaPainel from "../../paginas/privado/PaginaPainel.vue";
 import PaginaDepartamentosLista from "../../paginas/privado/departamentos/PaginaDepartamentosLista.vue";
+import PaginaTurma from "../../paginas/privado/departamentos/PaginaTurma.vue";
 import PaginaPessoasLista from "../../paginas/privado/pessoas/PaginaPessoasLista.vue";
 import PaginaUsuariosLista from "../../paginas/privado/usuarios/PaginaUsuariosLista.vue";
 import PaginaIgreja from "../../paginas/privado/igreja/PaginaIgreja.vue";
@@ -76,8 +77,40 @@ const rotas: RouteRecordRaw[] = [
         component: PaginaDepartamentosLista,
       },
       {
-        path: "departamentos/:departamentoId/matriculas",
-        component: PaginaMatriculasTurma,
+        // RF20 / Etapa 6.4: Página da Turma. As abas são rotas filhas com as URLs
+        // que já existiam (…/matriculas, …/materias, …/aulas, …/atribuicoes);
+        // `abaDaTurma` faz o PageHeader de cada aba mostrar só as ações. A aba
+        // Atribuições é da gestão (CSU18, RNF 21.1). Sem aba na URL, abre Aulas.
+        path: "departamentos/:departamentoId",
+        component: PaginaTurma,
+        children: [
+          {
+            path: "",
+            redirect: (to) => ({
+              path: `/departamentos/${String(to.params.departamentoId)}/aulas`,
+            }),
+          },
+          {
+            path: "matriculas",
+            component: PaginaMatriculasTurma,
+            meta: { abaDaTurma: true },
+          },
+          {
+            path: "materias",
+            component: PaginaMateriasTurma,
+            meta: { abaDaTurma: true },
+          },
+          {
+            path: "aulas",
+            component: PaginaAulasTurma,
+            meta: { abaDaTurma: true },
+          },
+          {
+            path: "atribuicoes",
+            component: PaginaAtribuicoesDepartamento,
+            meta: { abaDaTurma: true, requerAdministrativo: true },
+          },
+        ],
       },
       {
         path: "meus-dados",
@@ -86,14 +119,6 @@ const rotas: RouteRecordRaw[] = [
       {
         path: "minhas-turmas",
         component: PaginaMinhasTurmas,
-      },
-      {
-        path: "departamentos/:departamentoId/materias",
-        component: PaginaMateriasTurma,
-      },
-      {
-        path: "departamentos/:departamentoId/aulas",
-        component: PaginaAulasTurma,
       },
       {
         path: "departamentos/:departamentoId/minha-frequencia",
@@ -110,10 +135,6 @@ const rotas: RouteRecordRaw[] = [
       {
         path: "relatorios/ebd",
         component: PaginaRelatoriosEbd,
-      },
-      {
-        path: "departamentos/:departamentoId/atribuicoes",
-        component: PaginaAtribuicoesDepartamento,
       },
     ],
   },
