@@ -30,7 +30,8 @@ export async function semRolagemHorizontal(page: Page, tela: string) {
     for (const el of Array.from(document.querySelectorAll<HTMLElement>("body *"))) {
       const caixa = el.getBoundingClientRect();
       if (caixa.width === 0 || caixa.right <= larguraJanela + 1) continue;
-      if (el.closest(".p-datatable-table-container, .p-toast, .p-dialog-mask, .p-tooltip, .p-drawer-mask, .p-confirmdialog")) continue;
+      // A faixa de abas da Página da Turma rola de propósito (.p-tablist-content).
+      if (el.closest(".p-datatable-table-container, .p-tablist-content, .p-toast, .p-dialog-mask, .p-tooltip, .p-drawer-mask, .p-confirmdialog")) continue;
       encontrados.push(`${el.tagName.toLowerCase()}.${Array.from(el.classList).slice(0, 3).join(".")} termina em ${Math.round(caixa.right)}px`);
       if (encontrados.length >= 6) break;
     }

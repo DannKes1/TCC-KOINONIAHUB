@@ -57,21 +57,27 @@ test.describe("E2E-M1 celular", () => {
       await page.waitForURL((url) => url.pathname === "/minhas-turmas");
       await expect(drawer).toBeHidden();
 
-      // Minhas Turmas → Abrir turma.
-      const linhaTurma = page.locator("tr", { hasText: turma.nome });
-      await expect(linhaTurma).toBeVisible();
+      // Minhas Turmas (cartões, Etapa 6.4) → Abrir turma → Página da Turma (RF20),
+      // que abre na aba Aulas.
+      const cartaoTurma = page.getByTestId("minhas-turmas-cartao").filter({ hasText: turma.nome });
+      await expect(cartaoTurma).toBeVisible();
       await semRolagemHorizontal(page, "Minhas Turmas");
       await evidenciaCelular(page, testInfo, "minhas-turmas");
-      await alvoDeToque(
-        await linhaTurma.getByTestId("minhas-turmas-abrir").boundingBox(),
-        "botão Abrir turma",
-        40,
-        // A tabela pode rolar dentro do próprio container: o botão não precisa caber
-        // na janela, só ter o tamanho mínimo.
-        Number.POSITIVE_INFINITY,
-      );
-      await linhaTurma.getByTestId("minhas-turmas-abrir").click();
+      const abrirTurma = cartaoTurma.getByTestId("minhas-turmas-abrir");
+      await alvoDeToque(await abrirTurma.boundingBox(), "botão Abrir turma");
+      await abrirTurma.click();
       await page.waitForURL((url) => url.pathname === `/departamentos/${turma.id}/aulas`);
+
+      // Cabeçalho da turma: nome, contadores, equipe; abas Alunos/Matérias/Aulas
+      // (Atribuições só para a gestão).
+      await expect(page.locator("h2.page-header-titulo")).toHaveText(turma.nome);
+      await expect(page.getByTestId("turma-total-alunos")).toHaveText(String(alunos.length));
+      await expect(page.getByTestId("turma-equipe")).toContainText(professor.nome);
+      await expect(page.getByTestId("turma-aba-matriculas")).toBeVisible();
+      await expect(page.getByTestId("turma-aba-materias")).toBeVisible();
+      await expect(page.getByTestId("turma-aba-aulas")).toBeVisible();
+      await expect(page.getByTestId("turma-aba-atribuicoes")).toHaveCount(0);
+      await alvoDeToque(await page.getByTestId("turma-aba-aulas").boundingBox(), "aba Aulas");
 
       // Aula Em aberto criada pela API como o próprio professor (RF31); a tela é o
       // objeto do teste, não o cadastro da aula.
@@ -90,13 +96,18 @@ test.describe("E2E-M1 celular", () => {
       }
 
       await page.reload();
-      await expect(page.locator("h2.page-header-titulo")).toContainText(turma.nome);
-      // No celular as colunas Matéria, Professor e Tema ficam ocultas (a matéria e o
-      // tema aparecem no título da chamada); a linha é a única da tabela e a primeira
-      // ação (Fazer chamada) precisa estar visível sem rolar.
-      const linhaAula = page.locator(".p-datatable tbody tr");
-      await expect(linhaAula).toHaveCount(1);
-      await expect(linhaAula.getByRole("button").first()).toBeInViewport();
+      await expect(page.locator("h2.page-header-titulo")).toHaveText(turma.nome);
+      await expect(page.getByTestId("turma-total-aulas-abertas")).toHaveText("1");
+      // Aba Aulas em cartões: a única aula, com a ação principal nomeada
+      // ("Fazer chamada") visível sem rolar e o ⋮ com as secundárias.
+      const cartaoAula = page.getByTestId("aula-cartao");
+      await expect(cartaoAula).toHaveCount(1);
+      await expect(cartaoAula).toContainText("Aula E2E celular");
+      const fazerChamada = cartaoAula.getByTestId("aula-chamada");
+      await expect(fazerChamada).toHaveText(/Fazer chamada/);
+      await fazerChamada.scrollIntoViewIfNeeded();
+      await alvoDeToque(await fazerChamada.boundingBox(), "botão Fazer chamada");
+      await expect(cartaoAula.getByTestId("menu-acoes")).toBeVisible();
       await semRolagemHorizontal(page, "Aulas da turma");
       await evidenciaCelular(page, testInfo, "aulas-turma");
 
@@ -150,9 +161,13 @@ test.describe("E2E-M1 celular", () => {
       await evidenciaCelular(page, testInfo, "painel-aluno");
 
       await page.goto("/minhas-turmas");
-      const linhaTurma = page.locator("tr", { hasText: turma.nome });
-      await expect(linhaTurma).toBeVisible();
-      await linhaTurma.getByTestId("minhas-turmas-frequencia").click();
+      const cartaoTurma = page.getByTestId("minhas-turmas-cartao").filter({ hasText: turma.nome });
+      await expect(cartaoTurma).toBeVisible();
+      // Aluno: a ação principal do cartão é Minha frequência (não há "Abrir turma").
+      await expect(cartaoTurma.getByTestId("minhas-turmas-abrir")).toHaveCount(0);
+      const minhaFrequencia = cartaoTurma.getByTestId("minhas-turmas-frequencia");
+      await alvoDeToque(await minhaFrequencia.boundingBox(), "botão Minha frequência");
+      await minhaFrequencia.click();
       await page.waitForURL(
         (url) => url.pathname === `/departamentos/${turma.id}/minha-frequencia`,
       );
