@@ -67,6 +67,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 QuantidadeVisitantes = criada.QuantidadeVisitantes,
                 MateriaId = materia.Id,
                 NomeMateria = materia.Nome,
+                DepartamentoId = materia.DepartamentoId,
+                NomeDepartamento = materia.Departamento.Nome,
                 ProfessorId = professor.Id,
                 NomeProfessor = professor.Nome,
                 CriadoEm = criada.CriadoEm
@@ -92,6 +94,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 QuantidadeVisitantes = a.QuantidadeVisitantes,
                 MateriaId = a.MateriaId,
                 NomeMateria = a.Materia.Nome,
+                DepartamentoId = a.Materia.DepartamentoId,
+                NomeDepartamento = a.Materia.Departamento.Nome,
                 ProfessorId = a.ProfessorId,
                 NomeProfessor = a.Professor.Nome,
                 CriadoEm = a.CriadoEm
@@ -113,6 +117,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 QuantidadeVisitantes = aula.QuantidadeVisitantes,
                 MateriaId = aula.MateriaId,
                 NomeMateria = aula.Materia.Nome,
+                DepartamentoId = aula.Materia.DepartamentoId,
+                NomeDepartamento = aula.Materia.Departamento.Nome,
                 ProfessorId = aula.ProfessorId,
                 NomeProfessor = aula.Professor.Nome,
                 CriadoEm = aula.CriadoEm

@@ -59,6 +59,9 @@ namespace KoinoniaHub.API.Tests
             using var json = JsonDocument.Parse(await aula.Content.ReadAsStringAsync());
             Assert.Equal(SituacaoAula.Consolidada, json.RootElement.GetProperty("situacao").GetString());
             Assert.False(json.RootElement.GetProperty("pendenteFechamento").GetBoolean());
+            // Etapa 6.4-B: a resposta identifica a turma da aula (Chamada/Presenças voltam à Página da Turma).
+            Assert.Equal(cenario.TurmaId, json.RootElement.GetProperty("departamentoId").GetInt32());
+            Assert.False(string.IsNullOrWhiteSpace(json.RootElement.GetProperty("nomeDepartamento").GetString()));
         }
 
         [Fact]
