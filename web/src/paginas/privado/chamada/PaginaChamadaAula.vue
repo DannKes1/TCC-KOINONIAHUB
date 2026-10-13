@@ -1,26 +1,29 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import TagSituacaoAula from "../../../components/ui/TagSituacaoAula.vue";
+import MenuAcoes from "../../../components/ui/MenuAcoes.vue";
+import BarraAcoesFixa from "../../../components/ui/BarraAcoesFixa.vue";
+import LinhaChamada from "../../../components/chamada/LinhaChamada.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
-
 import {
-  toastSuccess,
-  toastWarn,
-} from "../../../aplicacao/servicos/notificacoes";
+  chamadaAlterada,
+  copiarLinhas,
+  montarLoteChamada,
+  resumirChamada,
+  type LinhaChamada as LinhaChamadaVM,
+} from "../../../aplicacao/dominio/chamada";
 
-import DataTable from "primevue/datatable";
-import Column from "primevue/column";
+import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
+
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
-import Checkbox from "primevue/checkbox";
-import InputText from "primevue/inputtext";
-import Tag from "primevue/tag";
+import type { MenuItem } from "primevue/menuitem";
 
 import { useConfirm } from "primevue/useconfirm";
 
@@ -34,13 +37,13 @@ import {
   registrarChamada,
 } from "../../../aplicacao/servicos/chamadasServico";
 
-import type {
-  AulaVM,
-  ItemChamadaCompletaVM,
-} from "../../../aplicacao/modelos/dtos";
+import type { AulaVM } from "../../../aplicacao/modelos/dtos";
 
-type LinhaChamada = ItemChamadaCompletaVM;
-
+// RF32 / CSU10 (lançar chamada) e RF33 / CSU11 (consolidar). Etapa 6.4-B: a mesma
+// tela nos dois layouts — cabeçalho curto com a situação, resumo "Presentes N de M",
+// lista de alunos em que tocar na linha marca a presença, observação só quando
+// pedida e a barra fixa Salvar · Consolidar. Consolidar salva as alterações
+// pendentes antes (decisão 3 da 6.4), e a tela mostra uma mensagem por vez.
 const route = useRoute();
 const confirm = useConfirm();
 
@@ -49,7 +52,12 @@ const { carregando, erro, run } = useAsync();
 const aulaId = computed(() => Number(route.params.aulaId));
 
 const aula = ref<AulaVM | null>(null);
-const linhas = ref<LinhaChamada[]>([]);
+const linhas = ref<LinhaChamadaVM[]>([]);
+const visitantes = ref(0);
+
+// Último estado devolvido pela API — base para saber se há alteração não salva.
+const linhasSalvas = ref<LinhaChamadaVM[]>([]);
+const visitantesSalvos = ref(0);
 
 // RNF 32.2 / CSU10 FA1: só aulas Em aberto permitem lançar ou alterar a chamada;
 // Consolidada e Não realizada ficam em modo somente leitura.
@@ -57,13 +65,16 @@ const somenteLeitura = computed(
   () => aula.value !== null && aula.value.situacao !== "EmAberto",
 );
 
-const mensagemSomenteLeitura = computed(() => {
-  if (aula.value?.situacao === "Consolidada")
-    return "Esta aula está consolidada. A chamada está em modo somente leitura; apenas o Administrador pode reabri-la para correção.";
-  if (aula.value?.situacao === "NaoRealizada")
-    return "Esta aula foi marcada como Não realizada: não possui registros de presença e não entra nos cálculos de frequência. Apenas o Administrador pode reabri-la.";
-  return "";
-});
+const resumo = computed(() => resumirChamada(linhas.value));
+
+const alterado = computed(() =>
+  chamadaAlterada(
+    linhas.value,
+    linhasSalvas.value,
+    visitantes.value,
+    visitantesSalvos.value,
+  ),
+);
 
 // Alunos apontados pela API no 400 da consolidação (RNFs 32.6/33.3, CSU11 FA1).
 const idsSemRegistro = ref<Set<number>>(new Set());
@@ -72,16 +83,86 @@ function semRegistro(alunoDepartamentoId: number) {
   return idsSemRegistro.value.has(alunoDepartamentoId);
 }
 
-function classeLinha(linha: LinhaChamada) {
-  return semRegistro(linha.alunoDepartamentoId) ? "linha-sem-registro" : "";
-}
+// Uma mensagem por vez: erro da API > chamada incompleta > aula fechada.
+const mensagem = computed<{ texto: string; tipo: "erro" | "aviso" } | null>(() => {
+  if (erro.value) return { texto: erro.value, tipo: "erro" };
+
+  if (idsSemRegistro.value.size > 0) {
+    return {
+      tipo: "aviso",
+      texto: `${idsSemRegistro.value.size} aluno(s) sem registro de presença ou ausência (destacados na lista). Marque presente ou ausente e salve a chamada para poder consolidar.`,
+    };
+  }
+
+  if (aula.value?.situacao === "Consolidada") {
+    return {
+      tipo: "aviso",
+      texto:
+        "Esta aula está consolidada. A chamada está em modo somente leitura; apenas o Administrador pode reabri-la para correção.",
+    };
+  }
+
+  if (aula.value?.situacao === "NaoRealizada") {
+    return {
+      tipo: "aviso",
+      texto:
+        "Esta aula foi marcada como Não realizada: não possui registros de presença e não entra nos cálculos de frequência. Apenas o Administrador pode reabri-la.",
+    };
+  }
+
+  return null;
+});
+
+// Voltar para a Página da Turma (RF20), aba Aulas; o rótulo é o nome da turma.
+const voltarPara = computed(() =>
+  aula.value?.departamentoId
+    ? `/departamentos/${aula.value.departamentoId}/aulas`
+    : "/minhas-turmas",
+);
+const voltarLabel = computed(
+  () => aula.value?.nomeDepartamento || "Minhas Turmas",
+);
+
+const titulo = computed(() =>
+  aula.value ? `Chamada — ${formatarData(aula.value.data)}` : "Chamada",
+);
+const subtitulo = computed(() =>
+  aula.value
+    ? [aula.value.nomeMateria, aula.value.tema].filter(Boolean).join(" · ")
+    : "",
+);
+
+const itensMenu = computed<MenuItem[]>(() => [
+  {
+    label: "Recarregar",
+    icon: "pi pi-refresh",
+    command: () => void carregarTudo(),
+  },
+  {
+    label: "Limpar presenças",
+    icon: "pi pi-times-circle",
+    visible: !somenteLeitura.value,
+    command: limparPresencas,
+  },
+]);
 
 function formatarData(iso: string) {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString();
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("pt-BR");
+}
+
+function aplicarLista(itens: LinhaChamadaVM[], quantidadeVisitantes: number) {
+  linhas.value = copiarLinhas(itens).sort((a, b) =>
+    a.nomeAluno.localeCompare(b.nomeAluno, "pt-BR"),
+  );
+  linhasSalvas.value = copiarLinhas(linhas.value);
+  visitantes.value = Number(quantidadeVisitantes ?? 0);
+  visitantesSalvos.value = visitantes.value;
 }
 
 async function carregarTudo() {
+  idsSemRegistro.value = new Set();
+
   await run(async () => {
     if (!aulaId.value) throw new Error("Aula inválida.");
 
@@ -91,80 +172,84 @@ async function carregarTudo() {
     ]);
 
     aula.value = a;
-
-    linhas.value = (itens ?? []).map((x: ItemChamadaCompletaVM) => ({
-      alunoDepartamentoId: x.alunoDepartamentoId,
-      pessoaId: x.pessoaId,
-      nomeAluno: x.nomeAluno,
-      presente: Boolean(x.presente),
-      observacao: x.observacao ?? null,
-    }));
+    aplicarLista(itens ?? [], a.quantidadeVisitantes);
   }, "Não foi possível carregar a chamada.");
 }
 
-function marcarTodosPresentes() {
-  linhas.value = linhas.value.map((l) => ({ ...l, presente: true }));
+function atualizarPresente(alunoDepartamentoId: number, presente: boolean) {
+  const linha = linhas.value.find(
+    (l) => l.alunoDepartamentoId === alunoDepartamentoId,
+  );
+  if (linha) linha.presente = presente;
 }
 
-const visitantes = ref<number>(0);
-watch(
-  () => aula.value,
-  (a: any) => {
-    visitantes.value = Number(
-      a?.quantidadeVisitantes ?? a?.QuantidadeVisitantes ?? 0,
-    );
-  },
-  { immediate: true },
-);
+function atualizarObservacao(
+  alunoDepartamentoId: number,
+  observacao: string | null,
+) {
+  const linha = linhas.value.find(
+    (l) => l.alunoDepartamentoId === alunoDepartamentoId,
+  );
+  if (linha) linha.observacao = observacao;
+}
+
+function marcarTodosPresentes() {
+  if (somenteLeitura.value) return;
+  for (const l of linhas.value) l.presente = true;
+}
 
 function limparPresencas() {
-  linhas.value = linhas.value.map((l) => ({ ...l, presente: false }));
+  if (somenteLeitura.value) return;
+  for (const l of linhas.value) l.presente = false;
+}
+
+// RF32: lote (upsert) com todos os alunos da lista e a contagem de visitantes.
+async function gravarChamada() {
+  await registrarChamada(
+    aulaId.value,
+    montarLoteChamada(linhas.value, visitantes.value),
+  );
+  idsSemRegistro.value = new Set();
+
+  const [a, itens] = await Promise.all([
+    obterAula(aulaId.value),
+    listarChamadaCompleta(aulaId.value),
+  ]);
+  aula.value = a;
+  aplicarLista(itens ?? [], a.quantidadeVisitantes);
 }
 
 async function salvar() {
   if (somenteLeitura.value) return;
 
   await run(async () => {
-    await registrarChamada(aulaId.value, {
-      QuantidadeVisitantes: Number(visitantes.value ?? 0),
-      Itens: linhas.value.map((l) => ({
-        AlunoDepartamentoId: l.alunoDepartamentoId,
-        Presente: Boolean(l.presente),
-        Observacao: l.observacao?.trim() ? l.observacao.trim() : null,
-      })),
-    });
-
+    await gravarChamada();
     toastSuccess("Chamada salva com sucesso.", "Salvo");
-    idsSemRegistro.value = new Set();
-
-    const itensAtualizados = await listarChamadaCompleta(aulaId.value);
-    linhas.value = itensAtualizados.map((x: ItemChamadaCompletaVM) => ({
-      alunoDepartamentoId: x.alunoDepartamentoId,
-      pessoaId: x.pessoaId,
-      nomeAluno: x.nomeAluno,
-      presente: Boolean(x.presente),
-      observacao: x.observacao ?? null,
-    }));
   }, "Não foi possível salvar a chamada.");
 }
 
-// RF33 / CSU11: a API recusa com 400 e a lista dos alunos sem registro quando a
-// chamada está incompleta (FA1); as linhas são destacadas para o professor completar.
+// RF33 / CSU11: consolidar exige aula Em aberto e chamada completa. Com alteração
+// não salva, a chamada é salva antes (decisão 3). Quando a API devolve 400 com
+// alunosSemRegistro[], as linhas são destacadas para o professor completar (FA1).
 function confirmarConsolidar() {
   if (somenteLeitura.value) return;
 
+  const salvaAntes = alterado.value;
+
   confirm.require({
     header: "Consolidar aula",
-    message:
-      "Ao consolidar, a chamada não poderá mais ser alterada. Deseja continuar?",
+    message: salvaAntes
+      ? "A chamada será salva e consolidada. Depois disso não poderá mais ser alterada. Deseja continuar?"
+      : "Ao consolidar, a chamada não poderá mais ser alterada. Deseja continuar?",
     icon: "pi pi-exclamation-triangle",
-    acceptLabel: "Consolidar",
+    acceptLabel: salvaAntes ? "Salvar e consolidar" : "Consolidar",
     rejectLabel: "Cancelar",
     acceptClass: "p-button-danger",
     accept: async () => {
       try {
         await run(
           async () => {
+            if (salvaAntes) await gravarChamada();
             await consolidarAula(aulaId.value);
             toastSuccess("Aula consolidada com sucesso.", "Consolidada");
             idsSemRegistro.value = new Set();
@@ -176,12 +261,10 @@ function confirmarConsolidar() {
       } catch (e) {
         const alunos = extrairAlunosSemRegistro(e);
         if (alunos.length > 0) {
+          // Uma mensagem só: a lista destacada substitui o erro genérico da API.
+          erro.value = "";
           idsSemRegistro.value = new Set(
             alunos.map((a) => a.alunoDepartamentoId),
-          );
-          toastWarn(
-            "Marque presente ou ausente para os alunos destacados e salve a chamada antes de consolidar.",
-            "Chamada incompleta",
           );
         }
       }
@@ -193,230 +276,176 @@ onMounted(carregarTudo);
 </script>
 
 <template>
-  <div class="page-container">
+  <div class="page-container pagina-chamada">
     <PageHeader
-      :titulo="
-        aula
-          ? `Chamada — ${formatarData(aula.data)} (${aula.nomeMateria})`
-          : 'Chamada'
-      "
-      :subtitulo="
-        aula ? `Professor: ${aula.nomeProfessor}` : 'Registro de presença'
-      "
-      voltarPara="/departamentos"
-      voltarLabel="Turmas EBD"
+      :titulo="titulo"
+      :subtitulo="subtitulo"
+      :voltarPara="voltarPara"
+      :voltarLabel="voltarLabel"
     >
       <template #acoes>
-        <Button
-          label="Recarregar"
-          icon="pi pi-refresh"
-          severity="secondary"
-          :loading="carregando"
-          @click="carregarTudo"
+        <TagSituacaoAula
+          v-if="aula"
+          :situacao="aula.situacao"
+          :pendenteFechamento="aula.pendenteFechamento"
         />
-        <Button
-          label="Todos presentes"
-          icon="pi pi-check-circle"
-          severity="info"
-          v-tooltip.top="'Marca todos os alunos como presentes'"
-          :disabled="carregando || somenteLeitura"
-          @click="marcarTodosPresentes"
-        />
-        <Button
-          label="Limpar"
-          icon="pi pi-times-circle"
-          severity="secondary"
-          v-tooltip.top="'Desmarca todas as presenças'"
-          :disabled="carregando || somenteLeitura"
-          @click="limparPresencas"
-        />
-        <Button
-          label="Salvar"
-          icon="pi pi-save"
-          data-testid="chamada-salvar"
-          :loading="carregando"
-          :disabled="somenteLeitura"
-          @click="salvar"
-        />
-        <Button
-          label="Consolidar"
-          icon="pi pi-lock"
-          severity="danger"
-          v-tooltip.top="'Encerra a chamada (impede alterações futuras)'"
-          :disabled="carregando || somenteLeitura"
-          @click="confirmarConsolidar"
+        <MenuAcoes
+          :itens="itensMenu"
+          rotulo="Mais ações da chamada"
+          :desabilitado="carregando"
         />
       </template>
     </PageHeader>
 
-    <InlineMessage :texto="erro" tipo="erro" />
-
-    <div
-      v-if="aula"
-      style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap"
-    >
-      <span style="font-weight: 600">Situação da aula:</span>
-      <TagSituacaoAula
-        :situacao="aula.situacao"
-        :pendenteFechamento="aula.pendenteFechamento"
-      />
-    </div>
-
     <InlineMessage
-      v-if="somenteLeitura"
-      :texto="mensagemSomenteLeitura"
-      tipo="aviso"
-    />
-
-    <InlineMessage
-      v-if="idsSemRegistro.size > 0"
-      :texto="`${idsSemRegistro.size} aluno(s) sem registro de presença ou ausência (destacados na lista). Marque e salve a chamada para poder consolidar.`"
-      tipo="aviso"
+      v-if="mensagem"
+      :texto="mensagem.texto"
+      :tipo="mensagem.tipo"
+      data-testid="chamada-mensagem"
     />
 
     <LoadingOverlay :loading="carregando" texto="Carregando chamada...">
-      <div
-        style="
-          display: flex;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 0.75rem;
-          background: #f8faf9;
-          border: 1px solid #e2e8e5;
-          border-radius: 8px;
-          padding: 0.75rem 1rem;
-          margin-bottom: 1rem;
-        "
-      >
-        <i class="pi pi-users" style="font-size: 1.3rem; color: #234f32"></i>
-        <div style="flex: 1; min-width: 200px">
-          <div style="font-weight: 600">Visitantes avulsos</div>
-          <div style="font-size: 0.85rem; color: #6b7280">
-            Pessoas sem matrícula que participaram desta aula — a contagem é
-            salva junto com a chamada.
-          </div>
+      <div class="chamada-resumo" data-testid="chamada-resumo">
+        <div class="chamada-resumo-presentes">
+          <strong data-testid="chamada-contador">
+            Presentes: {{ resumo.presentes }} de {{ resumo.total }}
+          </strong>
+          <Button
+            v-if="!somenteLeitura"
+            label="Marcar todos presentes"
+            icon="pi pi-check-circle"
+            text
+            size="small"
+            class="chamada-marcar-todos"
+            :disabled="carregando || linhas.length === 0"
+            data-testid="chamada-marcar-todos"
+            @click="marcarTodosPresentes"
+          />
         </div>
-        <InputNumber
-          v-model="visitantes"
-          inputId="qtd-visitantes"
-          :min="0"
-          :max="999"
-          showButtons
-          :disabled="carregando || somenteLeitura"
-          :inputStyle="{ width: '5rem' }"
+
+        <label class="chamada-visitantes" for="qtd-visitantes">
+          <span title="Pessoas sem matrícula que participaram da aula; a contagem é salva com a chamada.">
+            Visitantes
+          </span>
+          <InputNumber
+            v-model="visitantes"
+            inputId="qtd-visitantes"
+            :min="0"
+            :max="999"
+            showButtons
+            :disabled="carregando || somenteLeitura"
+            :inputStyle="{ width: '5.5rem' }"
+          />
+        </label>
+      </div>
+
+      <div class="chamada-lista" data-testid="chamada-lista">
+        <LinhaChamada
+          v-for="linha in linhas"
+          :key="linha.alunoDepartamentoId"
+          :linha="linha"
+          :somenteLeitura="somenteLeitura"
+          :desabilitado="carregando"
+          :semRegistro="semRegistro(linha.alunoDepartamentoId)"
+          @update:presente="atualizarPresente(linha.alunoDepartamentoId, $event)"
+          @update:observacao="atualizarObservacao(linha.alunoDepartamentoId, $event)"
         />
+
+        <p v-if="!carregando && linhas.length === 0" class="chamada-vazia">
+          Nenhum aluno com matrícula ativa nesta turma.
+        </p>
       </div>
-
-      <!-- RNF 32.5 (Plano 6.10): orientação sobre o campo de observação. Como o campo
-           se repete por aluno na tabela, a dica aparece uma vez, acima dela. -->
-      <div
-        v-if="!somenteLeitura"
-        class="dica-observacao"
-        data-testid="dica-observacao"
-      >
-        <i class="pi pi-info-circle" aria-hidden="true"></i>
-        <span>
-          <strong>Observação:</strong> use este campo apenas para justificativas
-          administrativas (atraso, dispensa, saída antecipada). Não registre
-          informações de saúde ou outros dados sensíveis.
-        </span>
-      </div>
-
-      <DataTable
-        :value="linhas"
-        paginator
-        :rows="10"
-        rowHover
-        sortField="nomeAluno"
-        :sortOrder="1"
-        dataKey="alunoDepartamentoId"
-        responsiveLayout="scroll"
-        :rowClass="classeLinha"
-        data-testid="chamada-tabela"
-      >
-        <Column field="nomeAluno" header="Aluno" sortable style="min-width: 160px">
-          <template #body="{ data }">
-            <span style="display: inline-flex; align-items: center; gap: 8px">
-              {{ data.nomeAluno }}
-              <Tag
-                v-if="semRegistro(data.alunoDepartamentoId)"
-                value="Sem registro"
-                severity="warning"
-              />
-            </span>
-          </template>
-        </Column>
-
-        <Column header="Presente" style="width: 110px">
-          <template #body="{ data }">
-            <Checkbox
-              v-model="data.presente"
-              :binary="true"
-              :disabled="somenteLeitura || carregando"
-              data-testid="chamada-presente"
-            />
-          </template>
-        </Column>
-
-        <Column header="Observação" style="min-width: 260px">
-          <template #body="{ data }">
-            <InputText
-              v-model="data.observacao"
-              placeholder="Justificativa administrativa (opcional)"
-              :disabled="somenteLeitura || carregando"
-              maxlength="500"
-              style="width: 100%"
-            />
-          </template>
-        </Column>
-      </DataTable>
     </LoadingOverlay>
+
+    <div v-if="!somenteLeitura" class="espaco-barra-acoes" aria-hidden="true"></div>
+
+    <BarraAcoesFixa v-if="!somenteLeitura" rotulo="Ações da chamada">
+      <Button
+        label="Salvar chamada"
+        icon="pi pi-save"
+        class="acao-principal"
+        data-testid="chamada-salvar"
+        :loading="carregando"
+        @click="salvar"
+      />
+      <Button
+        label="Consolidar"
+        icon="pi pi-lock"
+        severity="danger"
+        outlined
+        data-testid="chamada-consolidar"
+        :disabled="carregando"
+        @click="confirmarConsolidar"
+      />
+    </BarraAcoesFixa>
   </div>
 </template>
 
 <style scoped>
-:deep(tr.linha-sem-registro > td) {
-  background: #fff4e5;
+.pagina-chamada {
+  max-width: 820px;
 }
 
-.dica-observacao {
+.chamada-resumo {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.chamada-resumo-presentes {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  margin-bottom: 10px;
-  border-left: 3px solid var(--ipb-verde, #234f32);
-  background: var(--ipb-verde-bg, #edf5f0);
-  border-radius: 6px;
-  font-size: 13px;
-  line-height: 1.45;
+  flex-wrap: wrap;
+  font-size: 15px;
+  color: #222;
+}
+
+.chamada-marcar-todos {
+  min-height: 36px;
+}
+
+.chamada-visitantes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
   color: var(--ipb-cinza, #4d4d4d);
 }
 
-.dica-observacao .pi {
-  margin-top: 2px;
-  color: var(--ipb-verde, #234f32);
+
+.chamada-lista {
+  background: var(--ipb-branco, #fff);
+  border: 1px solid var(--ipb-cinza-borda, #e2e2e2);
+  border-radius: 12px;
+  overflow: hidden;
 }
 
-/* Celular (Etapa 6.3): a caixa de presença ganha um alvo de toque de 40 px (o input
-   invisível do PrimeVue cobre todo o .p-checkbox; a caixa visível fica com 24 px) e
-   as colunas Aluno e Presente cabem sem rolar; a Observação fica à direita, rolável
-   dentro da tabela. */
+.chamada-vazia {
+  padding: 16px;
+  text-align: center;
+  color: var(--ipb-cinza-claro, #7a7a7a);
+  font-size: 14px;
+}
+
+/* Respiro para a barra fixa não cobrir a última linha. */
+.espaco-barra-acoes {
+  height: 72px;
+}
+
 @media (max-width: 768px) {
-  :deep(.p-checkbox) {
-    width: 2.5rem;
-    height: 2.5rem;
-    align-items: center;
-    justify-content: center;
+  .chamada-resumo {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
   }
 
-  :deep(.p-checkbox .p-checkbox-box) {
-    width: 1.5rem;
-    height: 1.5rem;
-  }
-
-  :deep(.p-datatable .p-datatable-tbody > tr > td) {
-    padding: 0.4rem 0.5rem;
+  .chamada-visitantes {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 </style>

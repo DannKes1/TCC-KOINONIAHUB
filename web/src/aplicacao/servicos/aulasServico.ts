@@ -25,6 +25,10 @@ function normalizarAula(bruto: any): AulaVM {
     ),
     materiaId: bruto?.MateriaId ?? bruto?.materiaId ?? 0,
     nomeMateria: bruto?.NomeMateria ?? bruto?.nomeMateria ?? "",
+    departamentoId: Number(bruto?.DepartamentoId ?? bruto?.departamentoId ?? 0),
+    nomeDepartamento: String(
+      bruto?.NomeDepartamento ?? bruto?.nomeDepartamento ?? "",
+    ),
     professorId: bruto?.ProfessorId ?? bruto?.professorId ?? 0,
     nomeProfessor: bruto?.NomeProfessor ?? bruto?.nomeProfessor ?? "",
     criadoEm: String(bruto?.CriadoEm ?? bruto?.criadoEm ?? ""),

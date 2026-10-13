@@ -218,6 +218,10 @@ export type AulaVM = {
   quantidadeVisitantes: number;
   materiaId: number;
   nomeMateria: string;
+  // Turma da aula (Etapa 6.4-B, aditivo na API): Chamada e Presenças voltam à
+  // Página da Turma. 0 / "" quando a resposta ainda não traz os campos.
+  departamentoId: number;
+  nomeDepartamento: string;
   professorId: number;
   nomeProfessor: string;
   criadoEm: string;
