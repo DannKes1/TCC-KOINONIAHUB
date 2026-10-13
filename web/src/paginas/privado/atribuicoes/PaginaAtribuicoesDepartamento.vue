@@ -329,8 +329,6 @@ onMounted(carregarTela);
     <PageHeader
       :titulo="`Atribuições - ${departamento?.nome ?? 'Turma'}`"
       subtitulo="Gestão de professores, auxiliares, líderes e demais funções da turma"
-      voltarPara="/departamentos"
-      voltarLabel="Turmas EBD"
     >
       <template #acoes>
         <Button

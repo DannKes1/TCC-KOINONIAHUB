@@ -795,8 +795,10 @@ onMounted(carregarLista);
             :value="parentescos"
             dataKey="id"
             responsiveLayout="scroll"
-            emptyMessage="Nenhum parentesco cadastrado."
           >
+            <template #empty>
+              <div style="padding: 14px; opacity: 0.7">Nenhum parentesco cadastrado.</div>
+            </template>
             <Column field="parenteNome" header="Parente" />
             <Column field="tipoRelacionamento" header="Relacionamento" />
 
@@ -927,8 +929,10 @@ onMounted(carregarLista);
             :sortOrder="-1"
             dataKey="aulaId"
             responsiveLayout="scroll"
-            emptyMessage="Nenhum histórico de presença encontrado para esta pessoa."
           >
+            <template #empty>
+              <div style="padding: 14px; opacity: 0.7">Nenhum histórico de presença encontrado para esta pessoa.</div>
+            </template>
             <Column header="Data" style="width: 120px">
               <template #body="{ data }">
                 {{ formatarData(data.dataAula) }}

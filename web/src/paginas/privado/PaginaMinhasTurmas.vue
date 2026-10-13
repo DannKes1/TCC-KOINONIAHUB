@@ -14,7 +14,9 @@ import {
 
 // RF5 / CSU06. Etapa 6.4: no celular, cada turma é um cartão com a ação principal
 // nomeada — "Abrir turma" (Página da Turma, RF20) para quem tem atribuição e
-// "Minha frequência" para o aluno; no desktop, a tabela de sempre.
+// "Minha frequência" para o aluno; no desktop, a tabela de sempre. "Minha
+// frequência" só existe para o vínculo Aluno (RF6: frequência de quem está
+// matriculado) — para professor/auxiliar a API responde que não há matrícula.
 const router = useRouter();
 const compacta = usarTelaCompacta();
 const turmas = ref<MinhaTurmaVM[]>([]);
@@ -109,11 +111,10 @@ onMounted(carregar);
             @click="abrirTurma(t)"
           />
           <Button
+            v-if="ehAluno(t)"
             label="Minha frequência"
             icon="pi pi-chart-line"
-            :class="ehAluno(t) ? 'acao-principal' : undefined"
-            :severity="ehAluno(t) ? undefined : 'secondary'"
-            :outlined="!ehAluno(t)"
+            class="acao-principal"
             data-testid="minhas-turmas-frequencia"
             @click="verFrequencia(t)"
           />
@@ -151,6 +152,7 @@ onMounted(carregar);
         <template #body="{ data }">
           <div style="display: flex; gap: 0.4rem; flex-wrap: wrap">
             <Button
+              v-if="ehAluno(data)"
               label="Minha Frequência"
               size="small"
               severity="secondary"

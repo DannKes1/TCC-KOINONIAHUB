@@ -178,8 +178,6 @@ onMounted(carregarTudo);
     <PageHeader
       :titulo="turma ? `Matrículas — ${turma.nome}` : 'Matrículas'"
       subtitulo="Gerencie os alunos matriculados nesta turma"
-      voltarPara="/departamentos"
-      voltarLabel="Turmas EBD"
     >
       <template #acoes>
         <Button label="Matricular" icon="pi pi-plus" @click="abrirNovo" />

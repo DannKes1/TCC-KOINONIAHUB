@@ -366,8 +366,6 @@ onMounted(carregarTudo);
     <PageHeader
       :titulo="turma ? `Aulas — ${turma.nome}` : 'Aulas'"
       subtitulo="Cadastre e gerencie as aulas desta turma"
-      voltarPara="/departamentos"
-      voltarLabel="Turmas EBD"
     >
       <template #acoes>
         <Button

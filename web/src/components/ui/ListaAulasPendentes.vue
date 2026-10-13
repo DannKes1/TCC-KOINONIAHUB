@@ -4,6 +4,7 @@ import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 
 import type { AulaResumidaVM } from "../../aplicacao/modelos/dtos";
+import { usarTelaCompacta } from "../../aplicacao/composables/usarTelaCompacta";
 
 // Aulas apresentadas à parte nos relatórios (RNFs 35.5, 37.5, 38.4; RF36; CSU07):
 // por padrão as pendentes de fechamento (Em aberto com data já ocorrida); com
@@ -32,6 +33,9 @@ const descricao = computed(() =>
 const cor = computed(() => (props.tipo === "nao-realizadas" ? "#6b7280" : "#8a5b00"));
 const fundo = computed(() => (props.tipo === "nao-realizadas" ? "#f3f4f6" : "#fff4e5"));
 
+// Etapa 6.4-B: no celular a tabela vira uma lista simples (uma aula por linha).
+const compacta = usarTelaCompacta();
+
 function formatarData(valor?: string | null) {
   if (!valor) return "-";
   const d = new Date(valor);
@@ -57,7 +61,16 @@ function formatarData(valor?: string | null) {
       <span style="font-size: 0.85rem; color: #4d4d4d">{{ descricao }}</span>
     </div>
 
-    <DataTable :value="aulas" dataKey="id" size="small" responsiveLayout="scroll">
+    <ul v-if="compacta" class="lista-pendentes-compacta">
+      <li v-for="a in aulas" :key="a.id">
+        <strong>{{ formatarData(a.data) }}</strong>
+        <template v-if="mostrarTurma"> · {{ a.departamento }}</template>
+        · {{ a.materia }}
+        <span class="lista-pendentes-professor">{{ a.professor }}</span>
+      </li>
+    </ul>
+
+    <DataTable v-else :value="aulas" dataKey="id" size="small" responsiveLayout="scroll">
       <Column header="Data" style="width: 120px">
         <template #body="{ data }">{{ formatarData(data.data) }}</template>
       </Column>
@@ -67,3 +80,27 @@ function formatarData(valor?: string | null) {
     </DataTable>
   </div>
 </template>
+
+<style scoped>
+.lista-pendentes-compacta {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13.5px;
+  color: #222;
+}
+
+.lista-pendentes-compacta li {
+  padding: 6px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.lista-pendentes-professor {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ipb-cinza-claro, #7a7a7a);
+}
+</style>

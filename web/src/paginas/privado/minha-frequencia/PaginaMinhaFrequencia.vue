@@ -7,8 +7,10 @@ import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import CardIndicador from "../../../components/ui/CardIndicador.vue";
 import ListaAulasPendentes from "../../../components/ui/ListaAulasPendentes.vue";
+import CartaoItem from "../../../components/ui/CartaoItem.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
+import { usarTelaCompacta } from "../../../aplicacao/composables/usarTelaCompacta";
 
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -22,6 +24,9 @@ import {
 
 const route = useRoute();
 const { carregando, erro, run } = useAsync();
+
+// Etapa 6.4-B: histórico em cartões no celular; tabela no desktop.
+const compacta = usarTelaCompacta();
 
 const departamentoId = computed(() => Number(route.params.departamentoId));
 const dados = ref<MinhaFrequenciaTurmaVM | null>(null);
@@ -87,8 +92,8 @@ onMounted(carregar);
     <PageHeader
       titulo="Minha frequência"
       :subtitulo="dados ? dados.nomeDepartamento : 'Sua presença nesta turma'"
-      voltarPara="/"
-      voltarLabel="Início"
+      voltarPara="/minhas-turmas"
+      voltarLabel="Minhas Turmas"
     />
 
     <InlineMessage v-if="erro" :texto="erro" tipo="erro" />
@@ -162,6 +167,20 @@ onMounted(carregar);
             texto="Nenhuma aula consolidada neste período."
             tipo="info"
           />
+
+          <!-- Celular (Etapa 6.4-B): um cartão por aula. -->
+          <div v-else-if="compacta" class="lista-cartoes" data-testid="frequencia-cartoes">
+            <CartaoItem
+              v-for="a in dados.aulas"
+              :key="a.aulaId"
+              :titulo="formatarData(a.data)"
+            >
+              <template #chips>
+                <Tag :severity="corSituacao(a.situacao)" :value="a.situacao" />
+              </template>
+              <template #meta>{{ a.tema || "Sem tema registrado" }}</template>
+            </CartaoItem>
+          </div>
 
           <DataTable
             v-else

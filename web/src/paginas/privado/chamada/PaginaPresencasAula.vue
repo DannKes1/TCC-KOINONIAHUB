@@ -6,8 +6,10 @@ import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import TagSituacaoAula from "../../../components/ui/TagSituacaoAula.vue";
+import CartaoItem from "../../../components/ui/CartaoItem.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
+import { usarTelaCompacta } from "../../../aplicacao/composables/usarTelaCompacta";
 
 import { obterAula } from "../../../aplicacao/servicos/aulasServico";
 import { listarPresencasRegistradas } from "../../../aplicacao/servicos/chamadasServico";
@@ -24,10 +26,29 @@ const router = useRouter();
 
 const { carregando, erro, run } = useAsync();
 
+// Etapa 6.4-B: no celular a lista vira cartões; no desktop, a tabela de sempre.
+const compacta = usarTelaCompacta();
+
 const aulaId = Number(route.params.aulaId ?? 0);
 
 const aula = ref<AulaVM | null>(null);
 const presencas = ref<PresencaVM[]>([]);
+
+const presencasOrdenadas = computed(() =>
+  [...presencas.value].sort((a, b) =>
+    a.nomeAluno.localeCompare(b.nomeAluno, "pt-BR"),
+  ),
+);
+
+// Voltar para a Página da Turma (RF20), aba Aulas, com o nome da turma no rótulo.
+const voltarPara = computed(() =>
+  aula.value?.departamentoId
+    ? `/departamentos/${aula.value.departamentoId}/aulas`
+    : "/minhas-turmas",
+);
+const voltarLabel = computed(
+  () => aula.value?.nomeDepartamento || "Minhas Turmas",
+);
 
 function formatarData(valor?: string | null) {
   if (!valor) return "-";
@@ -83,17 +104,21 @@ onMounted(carregarTela);
 <template>
   <div class="page-container">
     <PageHeader
-      :titulo="`Presenças Registradas - ${aula?.tema || 'Aula'}`"
-      subtitulo="Consulta apenas dos registros já salvos para esta aula"
-      voltarPara="/departamentos"
-      voltarLabel="Turmas EBD"
+      :titulo="aula ? `Presenças — ${formatarData(aula.data)}` : 'Presenças'"
+      :subtitulo="
+        aula
+          ? `${aula.nomeMateria}${aula.tema ? ` · ${aula.tema}` : ''} — registros já salvos desta aula`
+          : 'Consulta apenas dos registros já salvos para esta aula'
+      "
+      :voltarPara="voltarPara"
+      :voltarLabel="voltarLabel"
     >
       <template #acoes>
         <Button
-          label="Abrir Chamada"
+          :label="aula && aula.situacao !== 'EmAberto' ? 'Ver chamada' : 'Abrir chamada'"
           icon="pi pi-check-square"
           severity="secondary"
-          v-tooltip.top="'Ir para o registro de chamada desta aula'"
+          data-testid="presencas-abrir-chamada"
           @click="abrirChamada"
         />
         <Button
@@ -177,7 +202,32 @@ onMounted(carregarTela);
       :loading="carregando"
       texto="Carregando presenças registradas..."
     >
+      <!-- Celular (Etapa 6.4-B): cartões. -->
+      <div v-if="compacta" class="lista-cartoes" data-testid="presencas-cartoes">
+        <CartaoItem
+          v-for="item in presencasOrdenadas"
+          :key="item.id"
+          :titulo="item.nomeAluno"
+          data-testid="presenca-cartao"
+        >
+          <template #chips>
+            <Tag
+              :value="item.presente ? 'Presente' : 'Ausente'"
+              :severity="severityPresenca(item.presente)"
+            />
+          </template>
+          <template #meta>
+            <template v-if="item.observacao">Obs.: {{ item.observacao }}<br /></template>
+            Registrado em {{ formatarDataHora(item.criadoEm) }}
+          </template>
+        </CartaoItem>
+        <p v-if="!carregando && presencas.length === 0" class="lista-vazia">
+          Nenhuma presença registrada para esta aula.
+        </p>
+      </div>
+
       <DataTable
+        v-else
         :value="presencas"
         paginator
         :rows="10"
@@ -186,8 +236,12 @@ onMounted(carregarTela);
         :sortOrder="1"
         dataKey="id"
         responsiveLayout="scroll"
-        emptyMessage="Nenhuma presença registrada para esta aula."
       >
+        <template #empty>
+          <div style="padding: 14px; opacity: 0.7">
+            Nenhuma presença registrada para esta aula.
+          </div>
+        </template>
         <Column field="nomeAluno" header="Aluno" sortable />
 
         <Column header="Presença" style="width: 120px">

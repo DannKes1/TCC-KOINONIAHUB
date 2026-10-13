@@ -170,8 +170,6 @@ onMounted(carregarTudo);
     <PageHeader
       :titulo="turma ? `Matérias — ${turma.nome}` : 'Matérias'"
       subtitulo="Cadastre e organize as matérias desta turma"
-      voltarPara="/departamentos"
-      voltarLabel="Turmas EBD"
     >
       <template #acoes>
         <Button label="Nova Matéria" icon="pi pi-plus" @click="abrirNovo" />

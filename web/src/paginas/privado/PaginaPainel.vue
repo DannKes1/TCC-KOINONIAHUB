@@ -17,6 +17,7 @@ import Tag from "primevue/tag";
 import TagSituacaoAula from "../../components/ui/TagSituacaoAula.vue";
 import CartaoItem from "../../components/ui/CartaoItem.vue";
 import { usarTelaCompacta } from "../../aplicacao/composables/usarTelaCompacta";
+import { usarMostrarMais } from "../../aplicacao/composables/usarMostrarMais";
 
 import { listarDepartamentos } from "../../aplicacao/servicos/departamentosServico";
 import { listarPessoas } from "../../aplicacao/servicos/pessoasServico";
@@ -91,16 +92,24 @@ function abrirRelatorios() {
   router.push("/relatorios/ebd");
 }
 
+// Página da Turma (RF20); sem aba na URL, abre Aulas.
 function abrirAulasDaTurma(departamentoId: number) {
-  router.push(`/departamentos/${departamentoId}/aulas`);
+  router.push(`/departamentos/${departamentoId}`);
 }
 
-function abrirTurma(turma: MinhaTurmaVM) {
-  if ((turma.vinculo || "").toLowerCase() === "aluno") {
-    router.push(`/departamentos/${turma.departamentoId}/minha-frequencia`);
-    return;
-  }
+function abrirTurma(turma: { departamentoId: number }) {
   abrirAulasDaTurma(turma.departamentoId);
+}
+
+// Painel do usuário comum (RF3): a única ação sobre uma turma é a própria
+// frequência, e só existe para o vínculo Aluno (RF6). Atribuição em conta de
+// perfil Usuário não opera a turma (RNF 21.4) — o cartão fica sem ação.
+function ehVinculoAluno(turma: MinhaTurmaVM) {
+  return (turma.vinculo || "").toLowerCase() === "aluno";
+}
+
+function abrirMinhaFrequencia(turma: MinhaTurmaVM) {
+  router.push(`/departamentos/${turma.departamentoId}/minha-frequencia`);
 }
 
 function abrirChamada(aulaId: number) {
@@ -184,6 +193,13 @@ const presencasOrdenadas = computed(() =>
 );
 
 const resumoPresencas = computed(() => resumirPresencas(presencasRecentes.value));
+
+// Histórico em cartões (celular): dez por vez.
+const {
+  visiveis: presencasVisiveis,
+  restantes: presencasRestantes,
+  mostrarMais: mostrarMaisPresencas,
+} = usarMostrarMais(presencasOrdenadas, 10);
 
 const totalAulasConsolidadas = computed(
   () => resumoPresencas.value.aulasConsolidadas,
@@ -367,8 +383,10 @@ onMounted(carregarPainel);
               :rows="8"
               dataKey="id"
               responsiveLayout="scroll"
-              emptyMessage="Nenhuma aula encontrada nas turmas ativas."
             >
+              <template #empty>
+                <div style="padding: 14px; opacity: 0.7">Nenhuma aula encontrada nas turmas ativas.</div>
+              </template>
               <Column header="Data" style="width: 120px">
                 <template #body="{ data }">
                   {{ formatarData(data.data) }}
@@ -396,8 +414,10 @@ onMounted(carregarPainel);
               :rows="10"
               dataKey="departamentoId"
               responsiveLayout="scroll"
-              emptyMessage="Nenhuma turma EBD ativa encontrada."
             >
+              <template #empty>
+                <div style="padding: 14px; opacity: 0.7">Nenhuma turma EBD ativa encontrada.</div>
+              </template>
               <Column field="nomeDepartamento" header="Turma" />
               <Column field="totalAulas" header="Aulas" style="width: 90px" />
               <Column
@@ -502,11 +522,13 @@ onMounted(carregarPainel);
               v-else
               :value="aulasAbertasDoProfessor"
               :rows="10"
-              paginator
+              :paginator="aulasAbertasDoProfessor.length > 10"
               dataKey="id"
               responsiveLayout="scroll"
-              emptyMessage="Nenhuma aula em aberto no momento."
             >
+              <template #empty>
+                <div style="padding: 14px; opacity: 0.7">Nenhuma aula em aberto no momento.</div>
+              </template>
               <Column header="Data" style="width: 110px">
                 <template #body="{ data }">
                   {{ formatarData(data.data) }}
@@ -569,8 +591,10 @@ onMounted(carregarPainel);
               :rows="10"
               dataKey="departamentoId"
               responsiveLayout="scroll"
-              emptyMessage="Você ainda não tem turmas atribuídas."
             >
+              <template #empty>
+                <div style="padding: 14px; opacity: 0.7">Você ainda não tem turmas atribuídas.</div>
+              </template>
               <Column field="nomeDepartamento" header="Turma" />
               <Column field="totalAulas" header="Aulas" style="width: 90px" />
               <Column
@@ -620,12 +644,48 @@ onMounted(carregarPainel);
         <div class="card-tabela">
           <div class="card-tabela-titulo">Minhas turmas</div>
 
+          <div
+            v-if="compacta"
+            class="lista-cartoes"
+            data-testid="painel-aluno-turmas-cartoes"
+          >
+            <CartaoItem
+              v-for="t in minhasTurmas"
+              :key="t.departamentoId"
+              :titulo="t.nome"
+            >
+              <template #chips>
+                <Tag :value="t.vinculo" :severity="severityVinculo(t.vinculo)" />
+                <Tag v-if="!t.ativo" value="Inativa" severity="secondary" />
+              </template>
+              <template #meta>{{ t.tipo || "EBD" }}</template>
+              <template #acoes>
+                <Button
+                  v-if="ehVinculoAluno(t)"
+                  label="Minha frequência"
+                  icon="pi pi-chart-line"
+                  class="acao-principal"
+                  :disabled="!t.ativo"
+                  data-testid="painel-aluno-turma-acao"
+                  @click="abrirMinhaFrequencia(t)"
+                />
+              </template>
+            </CartaoItem>
+            <p v-if="minhasTurmas.length === 0" class="lista-vazia">
+              Você ainda não está matriculado(a) em nenhuma turma. Procure a
+              secretaria/administração da igreja.
+            </p>
+          </div>
+
           <DataTable
+            v-else
             :value="minhasTurmas"
             dataKey="departamentoId"
             responsiveLayout="scroll"
-            emptyMessage="Você ainda não está matriculado(a) em nenhuma turma. Procure a secretaria/administração da igreja."
           >
+            <template #empty>
+              <div style="padding: 14px; opacity: 0.7">Você ainda não está matriculado(a) em nenhuma turma. Procure a secretaria/administração da igreja.</div>
+            </template>
             <Column field="nome" header="Turma" sortable />
             <Column field="tipo" header="Tipo" style="width: 110px" sortable />
             <Column header="Vínculo" style="width: 140px">
@@ -644,15 +704,18 @@ onMounted(carregarPainel);
                 />
               </template>
             </Column>
-            <Column header="Ação" style="width: 110px">
+            <Column header="Ação" style="width: 170px">
               <template #body="{ data }">
                 <Button
-                  icon="pi pi-arrow-right"
+                  v-if="ehVinculoAluno(data)"
+                  label="Minha frequência"
+                  icon="pi pi-chart-line"
                   size="small"
                   severity="secondary"
-                  v-tooltip.top="'Ver aulas'"
+                  outlined
                   :disabled="!data.ativo"
-                  @click="abrirTurma(data)"
+                  data-testid="painel-aluno-turma-acao"
+                  @click="abrirMinhaFrequencia(data)"
                 />
               </template>
             </Column>
@@ -688,14 +751,52 @@ onMounted(carregarPainel);
             ou Não realizadas aparecem na lista, mas não contam.
           </p>
 
+          <div
+            v-if="compacta"
+            class="lista-cartoes"
+            data-testid="painel-aluno-historico-cartoes"
+          >
+            <CartaoItem
+              v-for="p in presencasVisiveis"
+              :key="p.aulaId"
+              :titulo="formatarData(p.dataAula)"
+            >
+              <template #chips>
+                <Tag
+                  :value="p.presente ? 'Presente' : 'Ausente'"
+                  :severity="severityPresenca(p.presente)"
+                />
+                <TagSituacaoAula :situacao="p.situacaoAula" />
+              </template>
+              <template #meta>
+                {{ p.departamentoNome }} · {{ p.materiaNome }}
+                <template v-if="p.observacao"><br />Obs.: {{ p.observacao }}</template>
+              </template>
+            </CartaoItem>
+            <p v-if="presencasOrdenadas.length === 0" class="lista-vazia">
+              Nenhum registro de presença nos {{ rotuloJanela }}.
+            </p>
+            <Button
+              v-if="presencasRestantes > 0"
+              :label="`Mostrar mais (${presencasRestantes} restantes)`"
+              severity="secondary"
+              text
+              class="mostrar-mais"
+              @click="mostrarMaisPresencas"
+            />
+          </div>
+
           <DataTable
+            v-else
             :value="presencasOrdenadas"
-            paginator
+            :paginator="presencasOrdenadas.length > 10"
             :rows="10"
             dataKey="aulaId"
             responsiveLayout="scroll"
-            :emptyMessage="`Nenhum registro de presença nos ${rotuloJanela}.`"
           >
+            <template #empty>
+              <div style="padding: 14px; opacity: 0.7">Nenhum registro de presença nos {{ rotuloJanela }}.</div>
+            </template>
             <Column header="Data" style="width: 120px">
               <template #body="{ data }">
                 {{ formatarData(data.dataAula) }}
