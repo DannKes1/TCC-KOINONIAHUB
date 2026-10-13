@@ -111,33 +111,73 @@ test.describe("E2E-M1 celular", () => {
       await semRolagemHorizontal(page, "Aulas da turma");
       await evidenciaCelular(page, testInfo, "aulas-turma");
 
-      // Chamada (CSU10): Aluno e Presente visíveis sem rolar; caixa com alvo de 40 px.
-      await page.goto(`/aulas/${aulaId}/chamada`);
-      const tabela = page.getByTestId("chamada-tabela");
-      await expect(tabela).toBeVisible();
-      await expect(tabela.locator("tbody tr")).toHaveCount(alunos.length);
-      // A tabela fica abaixo da dobra; rolar na vertical é esperado. O que não pode
-      // é precisar rolar na horizontal para ver o nome e marcar a presença.
-      const celulaAluno = tabela.locator("td", { hasText: alunos[0]!.nome });
-      await celulaAluno.scrollIntoViewIfNeeded();
-      await expect(celulaAluno).toBeInViewport();
-      const primeiraCaixa = tabela.getByTestId("chamada-presente").first();
-      await expect(primeiraCaixa).toBeInViewport();
-      await alvoDeToque(await primeiraCaixa.boundingBox(), "caixa Presente");
-      await primeiraCaixa.click();
-      await expect(primeiraCaixa.locator("input")).toBeChecked();
+      // Chamada (CSU10, Etapa 6.4-B): abre pelo cartão da aula; voltar leva à turma;
+      // tocar na linha marca a presença; "+ observação" abre o campo com a
+      // orientação da RNF 32.5; a barra fixa traz Salvar e Consolidar.
+      await fazerChamada.click();
+      await page.waitForURL((url) => url.pathname === `/aulas/${aulaId}/chamada`);
+      await expect(page.locator(".page-header-voltar")).toContainText(turma.nome);
+      const lista = page.getByTestId("chamada-lista");
+      await expect(lista.getByTestId("chamada-linha")).toHaveCount(alunos.length);
+      await expect(page.getByTestId("chamada-contador")).toHaveText(`Presentes: 0 de ${alunos.length}`);
+
+      const primeiraLinha = lista.getByTestId("chamada-linha").first();
+      await primeiraLinha.scrollIntoViewIfNeeded();
+      await expect(primeiraLinha).toBeInViewport();
+      await alvoDeToque(await primeiraLinha.getByTestId("chamada-presente").boundingBox(), "caixa Presente");
+      // Toque no nome (não na caixa): a linha inteira é o alvo.
+      await primeiraLinha.getByTestId("chamada-nome").click();
+      await expect(primeiraLinha.getByTestId("chamada-presente").locator("input")).toBeChecked();
+      await expect(page.getByTestId("chamada-contador")).toHaveText(`Presentes: 1 de ${alunos.length}`);
+
+      // Observação só quando pedida, com a orientação da RNF 32.5.
+      await expect(page.getByTestId("dica-observacao")).toHaveCount(0);
+      const segundaLinha = lista.getByTestId("chamada-linha").nth(1);
+      await segundaLinha.getByTestId("chamada-abrir-observacao").click();
+      await expect(segundaLinha.getByTestId("dica-observacao")).toContainText("informações de saúde");
+      await segundaLinha.getByTestId("chamada-observacao").fill("chegou após o início");
+      // Abrir a observação não alterou a presença da linha.
+      await expect(segundaLinha.getByTestId("chamada-presente").locator("input")).not.toBeChecked();
+
+      // Barra fixa: visível sem rolar até o fim, com alvos de 40 px.
+      const barra = page.getByTestId("barra-acoes");
+      await expect(barra).toBeInViewport();
+      const salvar = page.getByTestId("chamada-salvar");
+      const consolidar = page.getByTestId("chamada-consolidar");
+      await alvoDeToque(await salvar.boundingBox(), "botão Salvar chamada");
+      await alvoDeToque(await consolidar.boundingBox(), "botão Consolidar");
       await semRolagemHorizontal(page, "Chamada");
       await evidenciaCelular(page, testInfo, "chamada");
 
-      const salvar = page.getByTestId("chamada-salvar");
-      await alvoDeToque(await salvar.boundingBox(), "botão Salvar");
       await salvar.click();
       await expect(page.getByText("Chamada salva com sucesso.")).toBeVisible();
 
-      // Presenças da Aula: todos os alunos com registro explícito (presente/ausente).
+      // Consolidar com alteração pendente (decisão 3): marca mais um aluno sem salvar;
+      // a confirmação avisa que vai salvar e consolidar; depois a aula fica fechada,
+      // a barra some e a lista fica somente leitura (CSU11).
+      // Toque no meio da linha (fora do nome e da caixa): a linha inteira é o alvo.
+      await lista.getByTestId("chamada-linha").nth(2).click();
+      await expect(page.getByTestId("chamada-contador")).toHaveText(`Presentes: 2 de ${alunos.length}`);
+      await consolidar.click();
+      const confirmacao = page.locator(".p-confirmdialog");
+      await expect(confirmacao).toContainText("A chamada será salva e consolidada");
+      await confirmacao.getByRole("button", { name: "Salvar e consolidar" }).click();
+      await expect(page.getByText("Aula consolidada com sucesso.")).toBeVisible();
+      await expect(page.getByTestId("tag-situacao").first()).toHaveText("Consolidada");
+      await expect(barra).toHaveCount(0);
+      await expect(page.getByTestId("chamada-mensagem")).toContainText("somente leitura");
+      await expect(primeiraLinha.getByTestId("chamada-presente").locator("input")).toBeDisabled();
+      await evidenciaCelular(page, testInfo, "chamada-consolidada");
+
+      // Presenças da Aula (cartões): três registros, a observação salva e o voltar
+      // para a turma.
       await page.goto(`/aulas/${aulaId}/presencas`);
       await expect(page.locator("h2.page-header-titulo")).toContainText("Presenças");
-      await expect(page.locator(".p-datatable tbody tr")).toHaveCount(alunos.length);
+      await expect(page.locator(".page-header-voltar")).toContainText(turma.nome);
+      const cartoes = page.getByTestId("presenca-cartao");
+      await expect(cartoes).toHaveCount(alunos.length);
+      await expect(cartoes.filter({ hasText: "Presente" })).toHaveCount(2);
+      await expect(cartoes.filter({ hasText: "chegou após o início" })).toHaveCount(1);
       await semRolagemHorizontal(page, "Presenças da Aula");
       await evidenciaCelular(page, testInfo, "presencas-aula");
 
@@ -172,6 +212,7 @@ test.describe("E2E-M1 celular", () => {
         (url) => url.pathname === `/departamentos/${turma.id}/minha-frequencia`,
       );
       await expect(page.getByTestId("minha-frequencia-periodo")).toBeVisible();
+      await expect(page.locator(".page-header-voltar")).toContainText("Minhas Turmas");
       await semRolagemHorizontal(page, "Minha Frequência");
       await evidenciaCelular(page, testInfo, "minha-frequencia");
     });
