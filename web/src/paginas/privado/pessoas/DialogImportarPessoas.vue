@@ -112,7 +112,7 @@ async function enviar() {
 
 function severityItem(status: string) {
   if (status === "Criado") return "success";
-  if (status === "Ignorado") return "warning";
+  if (status === "Ignorado") return "warn";
   return "danger";
 }
 
@@ -176,13 +176,13 @@ const itensOrdenados = computed(() => {
           />
           <Tag severity="success" :value="`Criadas: ${resultado.criados}`" />
           <Tag
-            severity="warning"
+            severity="warn"
             :value="`Ignoradas: ${resultado.ignorados}`"
           />
           <Tag severity="danger" :value="`Erros: ${resultado.erros}`" />
           <Tag
             v-if="resultado.paraConferencia > 0"
-            severity="warning"
+            severity="warn"
             icon="pi pi-exclamation-triangle"
             :value="`Para conferência: ${resultado.paraConferencia}`"
             data-testid="importacao-para-conferencia"
@@ -212,7 +212,7 @@ const itensOrdenados = computed(() => {
                 <Tag
                   v-if="data.paraConferencia"
                   value="Conferir"
-                  severity="warning"
+                  severity="warn"
                   icon="pi pi-exclamation-triangle"
                   v-tooltip.top="
                     'Nome já cadastrado e linha sem e-mail: confira se é a mesma pessoa.'

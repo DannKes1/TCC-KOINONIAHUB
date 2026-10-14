@@ -75,7 +75,7 @@ function removerObservacao() {
           <Tag
             v-if="semRegistro"
             value="Sem registro"
-            severity="warning"
+            severity="warn"
             class="linha-chamada-tag"
           />
         </span>

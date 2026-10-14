@@ -32,7 +32,7 @@ const pendente = computed(
     <Tag
       v-if="pendente"
       value="Pendente"
-      severity="warning"
+      severity="warn"
       icon="pi pi-exclamation-triangle"
       data-testid="tag-pendente"
       v-tooltip.top="

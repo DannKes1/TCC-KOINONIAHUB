@@ -17,6 +17,13 @@ function montar(props: {
 }
 
 describe("TagSituacaoAula (RF31 / RNF 31.3)", () => {
+  it("Pendente sai âmbar: severidade 'warn', a única que o PrimeVue 4 reconhece", () => {
+    // Regressão (corretiva da 6.4-B): com 'warning' o PrimeVue 4 não aplica cor
+    // nenhuma e a etiqueta saía verde-clara.
+    const wrapper = montar({ situacao: "EmAberto", pendenteFechamento: true });
+    expect(wrapper.get('[data-testid="tag-pendente"]').classes()).toContain("p-tag-warn");
+  });
+
   it("Em aberto: rótulo da monografia e sem tag Pendente", () => {
     const wrapper = montar({ situacao: "EmAberto" });
 

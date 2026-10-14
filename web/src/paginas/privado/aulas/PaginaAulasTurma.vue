@@ -327,7 +327,7 @@ function confirmarReabrir(aula: AulaVM) {
     icon: "pi pi-exclamation-triangle",
     acceptLabel: "Reabrir",
     rejectLabel: "Cancelar",
-    acceptClass: "p-button-warning",
+    acceptClass: "p-button-warn",
     accept: async () => {
       await run(async () => {
         await reabrirAula(aula.id);

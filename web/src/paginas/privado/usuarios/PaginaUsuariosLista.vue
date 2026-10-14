@@ -218,8 +218,8 @@ function rotuloTermo(usuario: UsuarioVM) {
 
 function severityTermo(usuario: UsuarioVM) {
   const aceite = usuario.aceiteTermo;
-  if (!aceite) return "warning";
-  return aceite.vigente ? "success" : "warning";
+  if (!aceite) return "warn";
+  return aceite.vigente ? "success" : "warn";
 }
 
 function tooltipTermo(usuario: UsuarioVM) {
@@ -244,9 +244,9 @@ function severityPerfil(perfil: string) {
   const valor = String(perfil || "").toLowerCase();
 
   if (valor === "admin") return "danger";
-  if (valor === "pastor") return "warning";
+  if (valor === "pastor") return "warn";
   if (valor === "superintendente") return "info";
-  if (valor === "professor") return "help";
+  if (valor === "professor") return "success";
   return "secondary";
 }
 
@@ -496,7 +496,7 @@ onMounted(carregarDados);
               <Tag
                 v-if="data.convitePendente"
                 value="Convite pendente"
-                severity="warning"
+                severity="warn"
                 v-tooltip.top="
                   'A pessoa ainda não definiu a senha pelo link de convite.'
                 "

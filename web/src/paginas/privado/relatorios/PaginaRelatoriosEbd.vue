@@ -862,7 +862,7 @@ onMounted(async () => {
                               : `${data.aulasEmAberto} em aberto`
                           "
                           :severity="
-                            data.pendenteFechamento ? 'warning' : 'info'
+                            data.pendenteFechamento ? 'warn' : 'info'
                           "
                         />
                         <span

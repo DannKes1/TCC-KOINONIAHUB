@@ -131,8 +131,8 @@ function severityVinculo(vinculo: string) {
   const v = (vinculo || "").toLowerCase();
   if (v === "aluno") return "info";
   if (v === "professor") return "success";
-  if (v === "auxiliar") return "help";
-  if (v === "lider") return "warning";
+  if (v === "auxiliar") return "contrast";
+  if (v === "lider") return "warn";
   return "secondary";
 }
 

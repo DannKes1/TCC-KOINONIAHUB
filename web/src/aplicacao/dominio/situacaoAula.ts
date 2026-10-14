@@ -14,7 +14,7 @@ export const SITUACOES_AULA: SituacaoAula[] = [
 export type SeveridadeTag =
   | "success"
   | "info"
-  | "warning"
+  | "warn"
   | "danger"
   | "secondary"
   | "contrast";

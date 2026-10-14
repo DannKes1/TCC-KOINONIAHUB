@@ -168,8 +168,8 @@ function severityFuncao(funcao: string) {
   const valor = String(funcao || "").toLowerCase();
 
   if (valor === "professor") return "info";
-  if (valor === "auxiliar") return "help";
-  if (valor === "lider") return "warning";
+  if (valor === "auxiliar") return "contrast";
+  if (valor === "lider") return "warn";
 
   return "secondary";
 }

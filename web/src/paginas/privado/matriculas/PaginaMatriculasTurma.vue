@@ -156,7 +156,7 @@ function severityRelacionamento(tipo: string) {
   const t = (tipo || "").toLowerCase();
   if (t.includes("pai") || t.includes("mãe") || t.includes("mae"))
     return "info";
-  if (t.includes("responsável") || t.includes("responsavel")) return "warning";
+  if (t.includes("responsável") || t.includes("responsavel")) return "warn";
   return "secondary";
 }
 
