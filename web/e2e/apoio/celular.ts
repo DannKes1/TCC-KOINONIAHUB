@@ -41,6 +41,20 @@ export async function semRolagemHorizontal(page: Page, tela: string) {
   expect(problemas, `${tela}: rolagem horizontal indevida`).toEqual([]);
 }
 
+// Critério mais estreito, para as telas administrativas (Plano, seção 9: "utilizáveis
+// com rolagem"): a LARGURA DO DOCUMENTO é a da janela — a página não desliza para o
+// lado nem a barra do topo se mexe; uma tabela ou um filtro mais largo rola dentro
+// do <main>. Ajuste da corretiva da 6.4-B (E2E-M2).
+export async function larguraDoDocumento(page: Page, tela: string) {
+  const largura = page.viewportSize()?.width ?? 360;
+  const medida = await page.evaluate(() => ({
+    documento: document.documentElement.scrollWidth,
+    corpo: document.body.scrollWidth,
+  }));
+  expect(medida.documento, `${tela}: largura do documento`).toBe(largura);
+  expect(medida.corpo, `${tela}: largura do body`).toBe(largura);
+}
+
 // Print da tela inteira em test-results/evidencias/RNF-responsividade-<nome>.png,
 // só no projeto "mobile" (os desktop já têm prints manuais por RF). O autor copia
 // os que quiser para docs/evidencias/.

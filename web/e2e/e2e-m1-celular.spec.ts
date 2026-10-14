@@ -149,8 +149,25 @@ test.describe("E2E-M1 celular", () => {
       await semRolagemHorizontal(page, "Chamada");
       await evidenciaCelular(page, testInfo, "chamada");
 
-      await salvar.click();
+      // Toque duplo em Salvar (ajuste da corretiva da 6.4-B): dois toques "crus",
+      // sem esperar o botão entre eles, como um dedo apressado — uma gravação e um
+      // único aviso "Chamada salva". (O segundo toque chegava com a primeira
+      // gravação já concluída e gerava o segundo aviso.)
+      const caixaSalvar = (await salvar.boundingBox())!;
+      const [xSalvar, ySalvar] = [caixaSalvar.x + caixaSalvar.width / 2, caixaSalvar.y + caixaSalvar.height / 2];
+      let gravacoes = 0;
+      const contarGravacao = (r: { method(): string; url(): string }) => {
+        if (r.method() === "POST" && /\/api\/aulas\/\d+\/presencas$/.test(r.url())) gravacoes++;
+      };
+      page.on("request", contarGravacao);
+      await page.touchscreen.tap(xSalvar, ySalvar);
+      await page.touchscreen.tap(xSalvar, ySalvar);
       await expect(page.getByText("Chamada salva com sucesso.")).toBeVisible();
+      await page.waitForTimeout(700); // janela de espera do botão + tempo de um segundo aviso aparecer
+      page.off("request", contarGravacao);
+      expect(gravacoes, "toque duplo em Salvar deve gravar uma vez").toBe(1);
+      await expect(page.getByText("Chamada salva com sucesso.")).toHaveCount(1);
+      await expect(salvar).toBeEnabled();
 
       // Consolidar com alteração pendente (decisão 3): marca mais um aluno sem salvar;
       // a confirmação avisa que vai salvar e consolidar; depois a aula fica fechada,
