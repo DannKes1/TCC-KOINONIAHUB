@@ -1,6 +1,6 @@
 # Etapa 6 — Acabamento de UI, RF44 (Editar Dados da Igreja), responsividade e Página da Turma · resumo de decisões
 
-Entregas 6.1 (acabamento, 06/10/2026), 6.2 (RF44, 07/10/2026), 6.3 (responsividade, 08/10/2026) e 6.4 (Página da Turma e fluxo operacional no celular; 6.4-A em 09/10/2026, 6.4-B em 10/10/2026, C a seguir). Plano de Desenvolvimento, seções 5, 6.10, 7.2 e 7.3; monografia RF44 e CSU24 (incluídos em 06/10/2026 por decisão do autor), RNFs 32.5, 41.3, 42.7, 44.1–44.5 e os RNFs "a interface deve ser responsiva"; RF3, RF5, RF6, RF20, RF23, RF31, RF33, RF34; CSU06–CSU12, CSU18; avaliação pré-Etapa 7 (`avaliacao-pre-etapa7.md`, seção 1) e recorte da 6.4 (`recorte-6.4-celular.md`). Escrito conforme a regra "Resumo de decisões por etapa" (Plano 1.1).
+Entregas 6.1 (acabamento, 06/10/2026), 6.2 (RF44, 07/10/2026), 6.3 (responsividade, 08/10/2026) e 6.4 (Página da Turma e fluxo operacional no celular; 6.4-A em 09/10/2026, 6.4-B em 10/10/2026 com corretiva de desktop em 12/10/2026, C a seguir). Plano de Desenvolvimento, seções 5, 6.10, 7.2 e 7.3; monografia RF44 e CSU24 (incluídos em 06/10/2026 por decisão do autor), RNFs 32.5, 41.3, 42.7, 44.1–44.5 e os RNFs "a interface deve ser responsiva"; RF3, RF5, RF6, RF20, RF23, RF31, RF33, RF34; CSU06–CSU12, CSU18; avaliação pré-Etapa 7 (`avaliacao-pre-etapa7.md`, seção 1) e recorte da 6.4 (`recorte-6.4-celular.md`). Escrito conforme a regra "Resumo de decisões por etapa" (Plano 1.1).
 
 ## 1. Decisões tomadas dentro da margem de julgamento
 
@@ -84,6 +84,22 @@ Entregas 6.1 (acabamento, 06/10/2026), 6.2 (RF44, 07/10/2026), 6.3 (responsivida
 
 **Fica para a 6.4-C:** contador do cabeçalho da turma recarregar também após matricular aluno ou criar matéria (hoje só a aba Aulas avisa o cabeçalho), junto com Alunos e Matérias em cartões.
 
+### 1.6 Corretiva da 6.4-B — Chamada e Presenças no desktop (12/10/2026)
+
+**Origem.** A 6.4-B passou nos testes (113 / 79 / 8), mas usada no computador a Chamada e as Presenças ficaram ruins (prints do autor). Os testes não pegaram porque o E2E-M1 só roda no celular e o Vitest não vê layout. Cinco defeitos, todos de front.
+
+**1. Chamada presa em 820 px.** A coluna estreita vinha do recorte pensado para o celular. No desktop a lista agora é uma **grade de cartões** (`auto-fill, minmax(300px, 1fr)`: 3 colunas a 1366, 5 a 1920), com borda verde no aluno presente e âmbar no "Sem registro"; no celular continua uma coluna só, como estava. A grade é só CSS na página — a `LinhaChamada` é a mesma nos dois layouts.
+
+**2. Barra × rodapé.** A barra era `position: fixed` a partir da barra lateral: não sabia onde o rodapé estava e o cobria em parte (faixa verde acima dela, bloco verde embaixo do "Sair"); o espaçador dentro do conteúdo não resolvia, porque o rodapé fica fora do `<main>`. Causa de fundo: `.conteudo` tinha `overflow-y: auto`, o que o tornava contêiner de rolagem e impedia `position: sticky` de grudar na janela — e esse `overflow` não servia para nada, porque quem rola é o documento (o layout usa `min-height`). Correção: sem o `overflow`, o `<main>` vira coluna flex, a página da chamada ocupa a altura dele (`flex: 1 0 auto`) e a barra é `sticky; bottom: 0` com `margin-top: auto`, encostada nas bordas da área de conteúdo. Com lista longa, gruda na borda de baixo da janela; no fim da rolagem ou com lista curta, para **logo acima do rodapé**, sem cobri-lo, em qualquer largura (medido: borda inferior da barra = topo do rodapé a 1366, 1920 e 360). No desktop a barra mostra à esquerda "Presentes N de M" e "Alterações não salvas" / "Tudo salvo" (`chamadaAlterada`, a mesma função da decisão 3); no celular o resumo continua no topo da tela.
+
+**3. Cor `warning` não existe no PrimeVue 4.** O nome é `warn` (as classes do tema são `p-tag-warn` e `p-button-warn`); com `warning` nenhuma cor era aplicada e "Pendente" e "Sem registro" saíam verde-claros. Trocado em todos os pontos (tags de situação e da chamada, `situacaoAula.ts`, Atribuições, Matrículas, Painel, Importação, Usuários, Relatórios e o `acceptClass` do Reabrir). Mesmo defeito, achado na varredura: `help` é cor de `Button`, não de `Tag` — Auxiliar passou a `contrast` (Painel, Atribuições) e Professor em Usuários a `success` (como no Painel). Spec de regressão no `TagSituacaoAula`: "Pendente" tem a classe `p-tag-warn`.
+
+**4. Dois "Chamada salva" num toque.** O botão só fica desabilitado na renderização seguinte; um toque que gera dois cliques chama `salvar` duas vezes antes disso. `usarAcaoUnica` (novo, com spec) bloqueia de forma síncrona o segundo acionamento enquanto o primeiro não termina; vale para Salvar e para a confirmação do Consolidar. Conferido no navegador: duplo clique em Salvar → um aviso.
+
+**5. Presenças no mesmo padrão da Chamada.** Situação e ⋮ (Recarregar) no cabeçalho, ao lado de "Abrir chamada"/"Ver chamada"; saiu a linha "Data / Matéria / Professor / Situação", que repetia o cabeçalho; indicadores com o `CardIndicador` do projeto em vez de estilo inline; um cartão por aluno, em grade no desktop e em uma coluna no celular — sem `DataTable`, portanto sem barra de páginas com uma página só; "Registrado em dd/mm/aaaa às hh:mm" numa linha. No celular a tela muda pouco (cabeçalho e indicadores no padrão novo; os cartões são os mesmos).
+
+**Lição registrada.** Defeito de layout de desktop não aparece em teste de regra nem no E2E de celular. Daqui em diante, toda entrega que toca tela traz print a 1366 e a 1920 tirado aqui antes de sair, além do 360; o E2E-04 da 7.2 (chamada até relatório) roda no projeto desktop.
+
 ## 2. Arquivos criados ou alterados
 
 API — `Aplicacao/DTOS/Respostas/PessoaImportacaoRespostaDto.cs`, `Aplicacao/Servicos/Implementacoes/PessoaImportacaoServico.cs` (6.1); `Aplicacao/DTOS/Requisicoes/IgrejaAtualizarRequisicaoDto.cs` (novo), `Aplicacao/DTOS/Respostas/IgrejaRespostaDto.cs`, `Aplicacao/Servicos/{Interfaces/IIgrejaServico, Implementacoes/IgrejaServico}.cs`, `Dominio/Interfaces/Repositorios/IIgrejaRepositorio.cs`, `Infraestrutura/Repositorios/IgrejaRepositorio.cs`, `Controllers/IgrejasController.cs` (6.2).
@@ -97,6 +113,8 @@ Front (6.4-A) — `aplicacao/composables/{usarTelaCompacta, usarMostrarMais}.ts`
 API (6.4-B) — `Aplicacao/DTOS/Respostas/AulaRespostaDto.cs` (+ `DepartamentoId`, `NomeDepartamento`), `Aplicacao/Servicos/Implementacoes/AulaServico.cs`; `RF33_ConsolidarAulaTests` (asserção). Total xUnit: 113.
 
 Front (6.4-B) — `aplicacao/dominio/chamada.ts` (novo, + spec); `components/chamada/LinhaChamada.vue` (novo, + spec); `components/ui/BarraAcoesFixa.vue` (novo); `components/ui/{InlineMessage, ListaAulasPendentes}.vue`; `aplicacao/{modelos/dtos, servicos/aulasServico}.ts`; `paginas/privado/chamada/{PaginaChamadaAula, PaginaPresencasAula}.vue`; `paginas/privado/{PaginaPainel, PaginaMinhasTurmas}.vue`; `paginas/privado/minha-frequencia/PaginaMinhaFrequencia.vue`; `paginas/privado/pessoas/PaginaPessoasLista.vue` (`#empty`); as quatro abas (`voltarPara` removido). Vitest: 79 casos.
+
+Front (corretiva da 6.4-B) — `components/layout/LayoutPrincipal.vue` (sem `overflow`, coluna flex); `components/ui/BarraAcoesFixa.vue` (sticky, slot `resumo`); `aplicacao/composables/usarAcaoUnica.ts` (novo, + spec, 2); `paginas/privado/chamada/{PaginaChamadaAula, PaginaPresencasAula}.vue`; `components/ui/TagSituacaoAula.spec.ts` (+1); `warning` → `warn` e `help` → cor válida em `TagSituacaoAula`, `LinhaChamada`, `situacaoAula.ts`, Atribuições, Matrículas, Painel, `DialogImportarPessoas`, Usuários, Relatórios e Aulas. Vitest: 82 casos (16 arquivos).
 
 E2E (6.3) — `playwright.config.ts` (projetos `chromium` e `mobile`); `e2e/apoio/{semente, api, celular}.ts`; `e2e/global-setup.ts`; `e2e/e2e-02-login-termo-pendente.spec.ts`; `e2e/e2e-m1-celular.spec.ts` (novo). Playwright: 3 fluxos no desktop + 5 no celular (E2E-01, E2E-02 e os três casos do E2E-M1). (6.4-A) — `e2e/e2e-m1-celular.spec.ts` e `e2e/apoio/celular.ts` ajustados aos cartões e à Página da Turma.
 
