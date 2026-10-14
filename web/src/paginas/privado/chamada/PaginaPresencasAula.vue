@@ -7,27 +7,28 @@ import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import TagSituacaoAula from "../../../components/ui/TagSituacaoAula.vue";
 import CartaoItem from "../../../components/ui/CartaoItem.vue";
+import CardIndicador from "../../../components/ui/CardIndicador.vue";
+import MenuAcoes from "../../../components/ui/MenuAcoes.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
-import { usarTelaCompacta } from "../../../aplicacao/composables/usarTelaCompacta";
 
 import { obterAula } from "../../../aplicacao/servicos/aulasServico";
 import { listarPresencasRegistradas } from "../../../aplicacao/servicos/chamadasServico";
 
 import type { AulaVM, PresencaVM } from "../../../aplicacao/modelos/dtos";
 
-import DataTable from "primevue/datatable";
-import Column from "primevue/column";
 import Button from "primevue/button";
 import Tag from "primevue/tag";
+import type { MenuItem } from "primevue/menuitem";
 
+// RF34 / CSU10 — consulta dos registros já salvos de uma aula. Corretiva da 6.4-B:
+// mesmo padrão da Chamada nos dois layouts — cabeçalho com a situação, "Ver
+// chamada" e ⋮ (Recarregar); indicadores com o CardIndicador do projeto; um cartão
+// por aluno, em grade no desktop e em uma coluna no celular.
 const route = useRoute();
 const router = useRouter();
 
 const { carregando, erro, run } = useAsync();
-
-// Etapa 6.4-B: no celular a lista vira cartões; no desktop, a tabela de sempre.
-const compacta = usarTelaCompacta();
 
 const aulaId = Number(route.params.aulaId ?? 0);
 
@@ -50,6 +51,23 @@ const voltarLabel = computed(
   () => aula.value?.nomeDepartamento || "Minhas Turmas",
 );
 
+const titulo = computed(() =>
+  aula.value ? `Presenças — ${formatarData(aula.value.data)}` : "Presenças",
+);
+const subtitulo = computed(() =>
+  aula.value
+    ? [aula.value.nomeMateria, aula.value.tema].filter(Boolean).join(" · ")
+    : "",
+);
+
+const itensMenu = computed<MenuItem[]>(() => [
+  {
+    label: "Recarregar",
+    icon: "pi pi-refresh",
+    command: () => void carregarTela(),
+  },
+]);
+
 function formatarData(valor?: string | null) {
   if (!valor) return "-";
 
@@ -59,13 +77,19 @@ function formatarData(valor?: string | null) {
   return data.toLocaleDateString("pt-BR");
 }
 
+// "dd/mm/aaaa às hh:mm" — curto o bastante para caber numa linha do cartão.
 function formatarDataHora(valor?: string | null) {
   if (!valor) return "-";
 
   const data = new Date(valor);
   if (Number.isNaN(data.getTime())) return "-";
 
-  return data.toLocaleString("pt-BR");
+  const dia = data.toLocaleDateString("pt-BR");
+  const hora = data.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${dia} às ${hora}`;
 }
 
 function severityPresenca(presente: boolean) {
@@ -104,16 +128,17 @@ onMounted(carregarTela);
 <template>
   <div class="page-container">
     <PageHeader
-      :titulo="aula ? `Presenças — ${formatarData(aula.data)}` : 'Presenças'"
-      :subtitulo="
-        aula
-          ? `${aula.nomeMateria}${aula.tema ? ` · ${aula.tema}` : ''} — registros já salvos desta aula`
-          : 'Consulta apenas dos registros já salvos para esta aula'
-      "
+      :titulo="titulo"
+      :subtitulo="subtitulo"
       :voltarPara="voltarPara"
       :voltarLabel="voltarLabel"
     >
       <template #acoes>
+        <TagSituacaoAula
+          v-if="aula"
+          :situacao="aula.situacao"
+          :pendenteFechamento="aula.pendenteFechamento"
+        />
         <Button
           :label="aula && aula.situacao !== 'EmAberto' ? 'Ver chamada' : 'Abrir chamada'"
           icon="pi pi-check-square"
@@ -121,89 +146,41 @@ onMounted(carregarTela);
           data-testid="presencas-abrir-chamada"
           @click="abrirChamada"
         />
-        <Button
-          label="Recarregar"
-          icon="pi pi-refresh"
-          severity="secondary"
-          :loading="carregando"
-          @click="carregarTela"
+        <MenuAcoes
+          :itens="itensMenu"
+          rotulo="Mais ações das presenças"
+          :desabilitado="carregando"
         />
       </template>
     </PageHeader>
 
     <InlineMessage :texto="erro" tipo="erro" />
 
-    <div
-      style="
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 12px;
-      "
-    >
-      <div
-        style="
-          border: 1px solid rgba(0, 0, 0, 0.08);
-          border-radius: 12px;
-          padding: 12px;
-        "
-      >
-        <div style="font-size: 12px; opacity: 0.7">Total de registros</div>
-        <div style="font-size: 24px; font-weight: 700">
-          {{ totalRegistros }}
-        </div>
-      </div>
-
-      <div
-        style="
-          border: 1px solid rgba(0, 0, 0, 0.08);
-          border-radius: 12px;
-          padding: 12px;
-        "
-      >
-        <div style="font-size: 12px; opacity: 0.7">Presentes</div>
-        <div style="font-size: 24px; font-weight: 700">
-          {{ totalPresentes }}
-        </div>
-      </div>
-
-      <div
-        style="
-          border: 1px solid rgba(0, 0, 0, 0.08);
-          border-radius: 12px;
-          padding: 12px;
-        "
-      >
-        <div style="font-size: 12px; opacity: 0.7">Ausentes</div>
-        <div style="font-size: 24px; font-weight: 700">{{ totalAusentes }}</div>
-      </div>
-    </div>
-
-    <div
-      v-if="aula"
-      style="
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 12px;
-      "
-    >
-      <div><strong>Data:</strong> {{ formatarData(aula.data) }}</div>
-      <div><strong>Matéria:</strong> {{ aula.nomeMateria }}</div>
-      <div><strong>Professor:</strong> {{ aula.nomeProfessor }}</div>
-      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
-        <strong>Situação:</strong>
-        <TagSituacaoAula
-          :situacao="aula.situacao"
-          :pendenteFechamento="aula.pendenteFechamento"
-        />
-      </div>
+    <div class="presencas-indicadores" data-testid="presencas-indicadores">
+      <CardIndicador
+        rotulo="Registros"
+        :valor="totalRegistros"
+        icone="pi pi-list-check"
+      />
+      <CardIndicador
+        rotulo="Presentes"
+        :valor="totalPresentes"
+        icone="pi pi-check-circle"
+        tom="sucesso"
+      />
+      <CardIndicador
+        rotulo="Ausentes"
+        :valor="totalAusentes"
+        icone="pi pi-times-circle"
+        :tom="totalAusentes > 0 ? 'perigo' : 'padrao'"
+      />
     </div>
 
     <LoadingOverlay
       :loading="carregando"
       texto="Carregando presenças registradas..."
     >
-      <!-- Celular (Etapa 6.4-B): cartões. -->
-      <div v-if="compacta" class="lista-cartoes" data-testid="presencas-cartoes">
+      <div class="lista-presencas" data-testid="presencas-cartoes">
         <CartaoItem
           v-for="item in presencasOrdenadas"
           :key="item.id"
@@ -217,50 +194,64 @@ onMounted(carregarTela);
             />
           </template>
           <template #meta>
-            <template v-if="item.observacao">Obs.: {{ item.observacao }}<br /></template>
-            Registrado em {{ formatarDataHora(item.criadoEm) }}
+            <span v-if="item.observacao" class="presenca-observacao">
+              Obs.: {{ item.observacao }}
+            </span>
+            <span class="presenca-registro">
+              Registrado em {{ formatarDataHora(item.criadoEm) }}
+            </span>
           </template>
         </CartaoItem>
+
         <p v-if="!carregando && presencas.length === 0" class="lista-vazia">
           Nenhuma presença registrada para esta aula.
         </p>
       </div>
-
-      <DataTable
-        v-else
-        :value="presencas"
-        paginator
-        :rows="10"
-        rowHover
-        sortField="nomeAluno"
-        :sortOrder="1"
-        dataKey="id"
-        responsiveLayout="scroll"
-      >
-        <template #empty>
-          <div style="padding: 14px; opacity: 0.7">
-            Nenhuma presença registrada para esta aula.
-          </div>
-        </template>
-        <Column field="nomeAluno" header="Aluno" sortable />
-
-        <Column header="Presença" style="width: 120px">
-          <template #body="{ data }">
-            <Tag
-              :value="data.presente ? 'Presente' : 'Ausente'"
-              :severity="severityPresenca(data.presente)"
-            />
-          </template>
-        </Column>
-
-        <Column field="observacao" header="Observação" />
-
-        <Column header="Registrado em" style="width: 180px">
-          <template #body="{ data }">
-            {{ formatarDataHora(data.criadoEm) }}
-          </template>
-        </Column>
-      </DataTable>
     </LoadingOverlay>
   </div>
 </template>
+
+<style scoped>
+.presencas-indicadores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.lista-presencas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.lista-vazia {
+  grid-column: 1 / -1;
+  margin: 4px 0;
+  padding: 14px;
+  text-align: center;
+  color: var(--ipb-cinza-claro, #7a7a7a);
+  font-size: 14px;
+}
+
+.presenca-observacao {
+  display: block;
+  color: var(--ipb-cinza, #4d4d4d);
+}
+
+.presenca-registro {
+  display: block;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .presencas-indicadores {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .lista-presencas {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

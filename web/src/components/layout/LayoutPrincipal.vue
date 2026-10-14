@@ -67,11 +67,19 @@ watch(
   min-height: 0;
 }
 
+/* Sem overflow próprio (Etapa 6.4-B corretiva): quem rola é o documento (o layout
+   tem min-height, não height). Um overflow aqui transformava o <main> em contêiner
+   de rolagem e impedia `position: sticky` de grudar na janela — a barra de ações da
+   chamada precisava disso para nunca cobrir o rodapé. */
+/* Coluna flex: a página pode ocupar a altura toda do <main> (flex: 1) quando
+   precisa encostar algo no fim — a barra de ações da chamada. As demais páginas
+   continuam com a altura do próprio conteúdo. */
 .conteudo {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
   padding: 28px 32px;
-  overflow-y: auto;
   background: var(--ipb-cinza-bg, #f7f7f7);
 }
 

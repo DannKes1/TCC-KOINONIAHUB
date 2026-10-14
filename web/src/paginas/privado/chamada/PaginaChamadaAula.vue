@@ -11,6 +11,7 @@ import BarraAcoesFixa from "../../../components/ui/BarraAcoesFixa.vue";
 import LinhaChamada from "../../../components/chamada/LinhaChamada.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
+import { usarAcaoUnica } from "../../../aplicacao/composables/usarAcaoUnica";
 import {
   chamadaAlterada,
   copiarLinhas,
@@ -48,6 +49,10 @@ const route = useRoute();
 const confirm = useConfirm();
 
 const { carregando, erro, run } = useAsync();
+
+// Salvar e Consolidar ignoram um segundo toque enquanto a requisição anda
+// (corretiva da 6.4-B: um toque no celular gerava dois "Chamada salva").
+const { emAndamento, executar } = usarAcaoUnica();
 
 const aulaId = computed(() => Number(route.params.aulaId));
 
@@ -222,17 +227,19 @@ async function gravarChamada() {
 async function salvar() {
   if (somenteLeitura.value) return;
 
-  await run(async () => {
-    await gravarChamada();
-    toastSuccess("Chamada salva com sucesso.", "Salvo");
-  }, "Não foi possível salvar a chamada.");
+  await executar(() =>
+    run(async () => {
+      await gravarChamada();
+      toastSuccess("Chamada salva com sucesso.", "Salvo");
+    }, "Não foi possível salvar a chamada."),
+  );
 }
 
 // RF33 / CSU11: consolidar exige aula Em aberto e chamada completa. Com alteração
 // não salva, a chamada é salva antes (decisão 3). Quando a API devolve 400 com
 // alunosSemRegistro[], as linhas são destacadas para o professor completar (FA1).
 function confirmarConsolidar() {
-  if (somenteLeitura.value) return;
+  if (somenteLeitura.value || emAndamento.value) return;
 
   const salvaAntes = alterado.value;
 
@@ -245,30 +252,31 @@ function confirmarConsolidar() {
     acceptLabel: salvaAntes ? "Salvar e consolidar" : "Consolidar",
     rejectLabel: "Cancelar",
     acceptClass: "p-button-danger",
-    accept: async () => {
-      try {
-        await run(
-          async () => {
-            if (salvaAntes) await gravarChamada();
-            await consolidarAula(aulaId.value);
-            toastSuccess("Aula consolidada com sucesso.", "Consolidada");
-            idsSemRegistro.value = new Set();
-            aula.value = await obterAula(aulaId.value);
-          },
-          "Não foi possível consolidar a aula.",
-          { throwOnError: true },
-        );
-      } catch (e) {
-        const alunos = extrairAlunosSemRegistro(e);
-        if (alunos.length > 0) {
-          // Uma mensagem só: a lista destacada substitui o erro genérico da API.
-          erro.value = "";
-          idsSemRegistro.value = new Set(
-            alunos.map((a) => a.alunoDepartamentoId),
+    accept: () =>
+      executar(async () => {
+        try {
+          await run(
+            async () => {
+              if (salvaAntes) await gravarChamada();
+              await consolidarAula(aulaId.value);
+              toastSuccess("Aula consolidada com sucesso.", "Consolidada");
+              idsSemRegistro.value = new Set();
+              aula.value = await obterAula(aulaId.value);
+            },
+            "Não foi possível consolidar a aula.",
+            { throwOnError: true },
           );
+        } catch (e) {
+          const alunos = extrairAlunosSemRegistro(e);
+          if (alunos.length > 0) {
+            // Uma mensagem só: a lista destacada substitui o erro genérico da API.
+            erro.value = "";
+            idsSemRegistro.value = new Set(
+              alunos.map((a) => a.alunoDepartamentoId),
+            );
+          }
         }
-      }
-    },
+      }),
   });
 }
 
@@ -357,15 +365,25 @@ onMounted(carregarTudo);
       </div>
     </LoadingOverlay>
 
-    <div v-if="!somenteLeitura" class="espaco-barra-acoes" aria-hidden="true"></div>
-
     <BarraAcoesFixa v-if="!somenteLeitura" rotulo="Ações da chamada">
+      <template #resumo>
+        <strong>Presentes: {{ resumo.presentes }} de {{ resumo.total }}</strong>
+        <span
+          class="chamada-estado-salvo"
+          :class="{ 'chamada-estado-pendente': alterado }"
+          data-testid="chamada-estado-salvo"
+        >
+          <i :class="alterado ? 'pi pi-pencil' : 'pi pi-check'" aria-hidden="true"></i>
+          {{ alterado ? "Alterações não salvas" : "Tudo salvo" }}
+        </span>
+      </template>
       <Button
         label="Salvar chamada"
         icon="pi pi-save"
         class="acao-principal"
         data-testid="chamada-salvar"
-        :loading="carregando"
+        :loading="emAndamento"
+        :disabled="carregando || emAndamento"
         @click="salvar"
       />
       <Button
@@ -374,7 +392,7 @@ onMounted(carregarTudo);
         severity="danger"
         outlined
         data-testid="chamada-consolidar"
-        :disabled="carregando"
+        :disabled="carregando || emAndamento"
         @click="confirmarConsolidar"
       />
     </BarraAcoesFixa>
@@ -382,10 +400,6 @@ onMounted(carregarTudo);
 </template>
 
 <style scoped>
-.pagina-chamada {
-  max-width: 820px;
-}
-
 .chamada-resumo {
   display: flex;
   align-items: center;
@@ -431,9 +445,55 @@ onMounted(carregarTudo);
   font-size: 14px;
 }
 
-/* Respiro para a barra fixa não cobrir a última linha. */
-.espaco-barra-acoes {
-  height: 72px;
+/* Ocupa a altura do <main> para a barra de ações encostar no fim (ver BarraAcoesFixa). */
+.pagina-chamada {
+  flex: 1 0 auto;
+}
+
+.chamada-estado-salvo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ipb-verde, #234f32);
+}
+
+.chamada-estado-pendente {
+  color: #8a5b00;
+  font-weight: 600;
+}
+
+/* Desktop (corretiva da 6.4-B): a lista aproveita a largura — cada aluno é um
+   cartão numa grade; no celular continua uma coluna só, como estava. */
+@media (min-width: 769px) {
+  .chamada-lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 10px;
+    align-items: start;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .chamada-lista :deep(.linha-chamada),
+  .chamada-lista :deep(.linha-chamada:last-child) {
+    border: 1px solid var(--ipb-cinza-borda, #e2e2e2);
+    border-radius: 10px;
+  }
+
+  .chamada-lista :deep(.linha-chamada-presente) {
+    border-color: #b9dcc4;
+  }
+
+  .chamada-lista :deep(.linha-chamada-sem-registro) {
+    border-color: #f0c68a;
+  }
+
+  .chamada-lista .chamada-vazia {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 768px) {
