@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import Drawer from "primevue/drawer";
@@ -13,6 +13,13 @@ import MenuLateral from "./MenuLateral.vue";
 // muda para quem lê o menu por seletor; o Drawer só renderiza enquanto está aberto.
 const route = useRoute();
 const menuAberto = ref(false);
+
+// Ajuste da corretiva da 6.4-B: só a tela que tem a barra de ações (meta
+// `barraAcoes` na rota) fica sem o overflow do <main> — é o que deixa a barra
+// `sticky` grudar na janela. Nas demais, o <main> volta a conter a própria largura,
+// como antes da corretiva: conteúdo mais largo que 360 px rola dentro dele
+// (telas administrativas, "utilizáveis com rolagem") sem alargar o documento.
+const comBarraAcoes = computed(() => Boolean(route.meta.barraAcoes));
 
 // Qualquer navegação fecha o Drawer (o link do menu já levou para a tela).
 watch(
@@ -42,7 +49,7 @@ watch(
         <MenuLateral em-drawer />
       </Drawer>
 
-      <main class="conteudo">
+      <main class="conteudo" :class="{ 'conteudo-com-barra': comBarraAcoes }">
         <RouterView />
       </main>
     </div>
@@ -67,13 +74,12 @@ watch(
   min-height: 0;
 }
 
-/* Sem overflow próprio (Etapa 6.4-B corretiva): quem rola é o documento (o layout
-   tem min-height, não height). Um overflow aqui transformava o <main> em contêiner
-   de rolagem e impedia `position: sticky` de grudar na janela — a barra de ações da
-   chamada precisava disso para nunca cobrir o rodapé. */
-/* Coluna flex: a página pode ocupar a altura toda do <main> (flex: 1) quando
-   precisa encostar algo no fim — a barra de ações da chamada. As demais páginas
-   continuam com a altura do próprio conteúdo. */
+/* O <main> contém a própria largura (overflow): uma tabela ou um filtro mais largo
+   que a janela rola dentro dele, sem alargar o documento nem deslocar a barra do
+   topo (critério a 360 px: largura do documento = largura da janela). Quem rola na
+   vertical continua sendo o documento (o layout tem min-height, não height).
+   Coluna flex: a página pode ocupar a altura toda do <main> (flex: 1) quando
+   precisa encostar algo no fim — a barra de ações da chamada. */
 .conteudo {
   flex: 1;
   min-width: 0;
@@ -81,6 +87,15 @@ watch(
   flex-direction: column;
   padding: 28px 32px;
   background: var(--ipb-cinza-bg, #f7f7f7);
+  overflow-x: auto;
+}
+
+/* Tela com barra de ações (meta `barraAcoes`, Etapa 6.4-B corretiva): sem overflow,
+   senão o <main> vira contêiner de rolagem e `position: sticky` deixa de grudar na
+   janela — a barra precisa disso para nunca cobrir o rodapé. A própria tela garante
+   que cabe em 360 px (E2E-M1). */
+.conteudo-com-barra {
+  overflow: visible;
 }
 
 .footer-ipb {

@@ -35,6 +35,11 @@ async function montar() {
             path: "minhas-turmas",
             component: { template: "<div>turmas</div>" },
           },
+          {
+            path: "aulas/:aulaId/chamada",
+            component: { template: "<div>chamada</div>" },
+            meta: { barraAcoes: true },
+          },
         ],
       },
       { path: "/:pathMatch(.*)*", component: { template: "<div />" } },
@@ -103,6 +108,25 @@ describe("LayoutPrincipal — menu em Drawer (Etapa 6.3)", () => {
     await flushPromises();
     // O Drawer é desmontado ao fechar (PrimeVue renderiza só enquanto visível).
     expect(linksDoDrawer()).toEqual([]);
+
+    wrapper.unmount();
+  });
+
+  // Ajuste da corretiva da 6.4-B: o <main> contém a própria largura em todas as
+  // telas (documento = janela a 360 px) e só a tela com barra de ações
+  // (meta barraAcoes) recebe a classe que tira esse overflow para a barra grudar.
+  it("marca o <main> só na rota com barra de ações", async () => {
+    const { wrapper, router } = await montar();
+
+    expect(wrapper.get("main.conteudo").classes()).not.toContain("conteudo-com-barra");
+
+    await router.push("/aulas/3/chamada");
+    await flushPromises();
+    expect(wrapper.get("main.conteudo").classes()).toContain("conteudo-com-barra");
+
+    await router.push("/minhas-turmas");
+    await flushPromises();
+    expect(wrapper.get("main.conteudo").classes()).not.toContain("conteudo-com-barra");
 
     wrapper.unmount();
   });

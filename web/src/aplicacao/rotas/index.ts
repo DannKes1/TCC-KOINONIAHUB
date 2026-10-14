@@ -127,6 +127,9 @@ const rotas: RouteRecordRaw[] = [
       {
         path: "aulas/:aulaId/chamada",
         component: PaginaChamadaAula,
+        // Barra de ações sticky (Salvar · Consolidar): o LayoutPrincipal tira o
+        // overflow do <main> só aqui.
+        meta: { barraAcoes: true },
       },
       {
         path: "aulas/:aulaId/presencas",
