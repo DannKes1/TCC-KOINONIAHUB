@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { useRoute } from "vue-router";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { onBeforeRouteLeave, useRoute } from "vue-router";
 
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
@@ -13,6 +13,7 @@ import LinhaChamada from "../../../components/chamada/LinhaChamada.vue";
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 import { usarAcaoUnica } from "../../../aplicacao/composables/usarAcaoUnica";
 import {
+  alunosSemRegistro,
   chamadaAlterada,
   copiarLinhas,
   montarLoteChamada,
@@ -20,7 +21,11 @@ import {
   type LinhaChamada as LinhaChamadaVM,
 } from "../../../aplicacao/dominio/chamada";
 
-import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
+import {
+  confirmarAsync,
+  toastSuccess,
+  type OpcoesConfirmacao,
+} from "../../../aplicacao/servicos/notificacoes";
 
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
@@ -45,13 +50,18 @@ import type { AulaVM } from "../../../aplicacao/modelos/dtos";
 // lista de alunos em que tocar na linha marca a presença, observação só quando
 // pedida e a barra fixa Salvar · Consolidar. Consolidar salva as alterações
 // pendentes antes (decisão 3 da 6.4), e a tela mostra uma mensagem por vez.
+//
+// Etapa 6.4-C: (a) "Sem registro" aparece desde a carga (campo `registrado` da API)
+// e a confirmação do Consolidar nomeia quem será gravado como ausente (CSU11 passo
+// 2); (b) sair, recarregar ou fechar a aba com alterações não salvas pede
+// confirmação.
 const route = useRoute();
 const confirm = useConfirm();
 
 const { carregando, erro, run } = useAsync();
 
-// Salvar e Consolidar ignoram um segundo toque enquanto a requisição anda
-// (corretiva da 6.4-B: um toque no celular gerava dois "Chamada salva").
+// Salvar e Consolidar ignoram um segundo toque enquanto a requisição anda e por
+// meio segundo depois (corretiva da 6.4-B e seu ajuste: toque duplo no celular).
 const { emAndamento, executar } = usarAcaoUnica();
 
 const aulaId = computed(() => Number(route.params.aulaId));
@@ -81,21 +91,34 @@ const alterado = computed(() =>
   ),
 );
 
-// Alunos apontados pela API no 400 da consolidação (RNFs 32.6/33.3, CSU11 FA1).
+// Matrículas sem registro explícito (RNFs 32.6/33.3): vêm da carga (`registrado ===
+// false`) e, se a API ainda recusar a consolidação, do 400 com alunosSemRegistro[]
+// (CSU11 FA1). Uma linha dessas que o professor já tocou deixa de contar.
 const idsSemRegistro = ref<Set<number>>(new Set());
 
+const semRegistroLista = computed(() =>
+  alunosSemRegistro(linhas.value, linhasSalvas.value, idsSemRegistro.value),
+);
+const idsSemRegistroVisiveis = computed(
+  () => new Set(semRegistroLista.value.map((l) => l.alunoDepartamentoId)),
+);
+
 function semRegistro(alunoDepartamentoId: number) {
-  return idsSemRegistro.value.has(alunoDepartamentoId);
+  return idsSemRegistroVisiveis.value.has(alunoDepartamentoId);
 }
 
 // Uma mensagem por vez: erro da API > chamada incompleta > aula fechada.
 const mensagem = computed<{ texto: string; tipo: "erro" | "aviso" } | null>(() => {
   if (erro.value) return { texto: erro.value, tipo: "erro" };
 
-  if (idsSemRegistro.value.size > 0) {
+  const semRegistroTotal = semRegistroLista.value.length;
+  if (semRegistroTotal > 0 && !somenteLeitura.value) {
     return {
       tipo: "aviso",
-      texto: `${idsSemRegistro.value.size} aluno(s) sem registro de presença ou ausência (destacados na lista). Marque presente ou ausente e salve a chamada para poder consolidar.`,
+      texto:
+        semRegistroTotal === 1
+          ? "1 aluno sem registro de presença ou ausência (destacado na lista). Marque presente quem veio; ao salvar ou consolidar, quem ficar sem marcação será registrado como ausente."
+          : `${semRegistroTotal} alunos sem registro de presença ou ausência (destacados na lista). Marque presente quem veio; ao salvar ou consolidar, quem ficar sem marcação será registrado como ausente.`,
     };
   }
 
@@ -141,7 +164,7 @@ const itensMenu = computed<MenuItem[]>(() => [
   {
     label: "Recarregar",
     icon: "pi pi-refresh",
-    command: () => void carregarTudo(),
+    command: () => void recarregar(),
   },
   {
     label: "Limpar presenças",
@@ -163,11 +186,13 @@ function aplicarLista(itens: LinhaChamadaVM[], quantidadeVisitantes: number) {
   linhasSalvas.value = copiarLinhas(linhas.value);
   visitantes.value = Number(quantidadeVisitantes ?? 0);
   visitantesSalvos.value = visitantes.value;
+  // A API é a fonte do "sem registro"; depois de salvar, todos passam a registrados.
+  idsSemRegistro.value = new Set(
+    linhas.value.filter((l) => !l.registrado).map((l) => l.alunoDepartamentoId),
+  );
 }
 
 async function carregarTudo() {
-  idsSemRegistro.value = new Set();
-
   await run(async () => {
     if (!aulaId.value) throw new Error("Aula inválida.");
 
@@ -179,6 +204,22 @@ async function carregarTudo() {
     aula.value = a;
     aplicarLista(itens ?? [], a.quantidadeVisitantes);
   }, "Não foi possível carregar a chamada.");
+}
+
+// (b) Recarregar pelo ⋮ descarta o que não foi salvo: pede confirmação antes.
+async function recarregar() {
+  if (alterado.value) {
+    const segue = await confirmarAsync(confirm, {
+      header: "Recarregar chamada",
+      message:
+        "Há alterações não salvas. Recarregar descarta essas alterações e traz a chamada como está gravada. Deseja continuar?",
+      icon: "pi pi-refresh",
+      acceptLabel: "Recarregar e descartar",
+      rejectLabel: "Continuar editando",
+    });
+    if (!segue) return;
+  }
+  await carregarTudo();
 }
 
 function atualizarPresente(alunoDepartamentoId: number, presente: boolean) {
@@ -214,7 +255,6 @@ async function gravarChamada() {
     aulaId.value,
     montarLoteChamada(linhas.value, visitantes.value),
   );
-  idsSemRegistro.value = new Set();
 
   const [a, itens] = await Promise.all([
     obterAula(aulaId.value),
@@ -235,25 +275,40 @@ async function salvar() {
   );
 }
 
-// RF33 / CSU11: consolidar exige aula Em aberto e chamada completa. Com alteração
-// não salva, a chamada é salva antes (decisão 3). Quando a API devolve 400 com
-// alunosSemRegistro[], as linhas são destacadas para o professor completar (FA1).
+// RF33 / CSU11: consolidar exige aula Em aberto e chamada completa. Passo 2 (6.4-C):
+// com alteração não salva ou aluno sem registro, a confirmação informa quais alunos
+// serão registrados como ausentes e, confirmada, a chamada é gravada antes de
+// consolidar. FA1 (400 com alunosSemRegistro[]) fica para o caso de a API ainda
+// recusar: as linhas são destacadas para o professor completar.
 function confirmarConsolidar() {
   if (somenteLeitura.value || emAndamento.value) return;
 
-  const salvaAntes = alterado.value;
+  const ausentesImplicitos = semRegistroLista.value.map((l) => l.nomeAluno);
+  const salvaAntes = alterado.value || ausentesImplicitos.length > 0;
 
-  confirm.require({
+  let message: string;
+  if (ausentesImplicitos.length > 0) {
+    message =
+      ausentesImplicitos.length === 1
+        ? "O aluno abaixo está sem registro e será gravado como ausente. A chamada será salva e consolidada; depois disso não poderá mais ser alterada. Deseja continuar?"
+        : `Os ${ausentesImplicitos.length} alunos abaixo estão sem registro e serão gravados como ausentes. A chamada será salva e consolidada; depois disso não poderá mais ser alterada. Deseja continuar?`;
+  } else if (salvaAntes) {
+    message =
+      "A chamada será salva e consolidada. Depois disso não poderá mais ser alterada. Deseja continuar?";
+  } else {
+    message =
+      "Ao consolidar, a chamada não poderá mais ser alterada. Deseja continuar?";
+  }
+
+  const opcoes: OpcoesConfirmacao = {
     header: "Consolidar aula",
-    message: salvaAntes
-      ? "A chamada será salva e consolidada. Depois disso não poderá mais ser alterada. Deseja continuar?"
-      : "Ao consolidar, a chamada não poderá mais ser alterada. Deseja continuar?",
-    icon: "pi pi-exclamation-triangle",
+    message,
+    itens: ausentesImplicitos.length > 0 ? ausentesImplicitos : undefined,
+    icon: "pi pi-lock",
     acceptLabel: salvaAntes ? "Salvar e consolidar" : "Consolidar",
     rejectLabel: "Cancelar",
-    acceptClass: "p-button-danger",
     accept: () =>
-      executar(async () => {
+      void executar(async () => {
         try {
           await run(
             async () => {
@@ -277,10 +332,39 @@ function confirmarConsolidar() {
           }
         }
       }),
-  });
+  };
+  confirm.require(opcoes);
 }
 
-onMounted(carregarTudo);
+// (b) Sair da tela com alterações não salvas: confirmação pela rota e aviso do
+// navegador ao fechar ou recarregar a aba (o texto do aviso é do próprio navegador).
+onBeforeRouteLeave(async () => {
+  if (!alterado.value || somenteLeitura.value) return true;
+  return confirmarAsync(confirm, {
+    header: "Sair da chamada",
+    message:
+      "Há alterações não salvas nesta chamada. Se sair agora, elas serão perdidas. Deseja sair sem salvar?",
+    icon: "pi pi-exclamation-triangle",
+    acceptLabel: "Sair sem salvar",
+    rejectLabel: "Continuar na chamada",
+  });
+});
+
+function avisarAntesDeFechar(evento: BeforeUnloadEvent) {
+  if (!alterado.value || somenteLeitura.value) return;
+  evento.preventDefault();
+  // Navegadores antigos exigem returnValue para mostrar o aviso.
+  evento.returnValue = "";
+}
+
+onMounted(() => {
+  window.addEventListener("beforeunload", avisarAntesDeFechar);
+  void carregarTudo();
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("beforeunload", avisarAntesDeFechar);
+});
 </script>
 
 <template>
@@ -429,7 +513,6 @@ onMounted(carregarTudo);
   font-size: 14px;
   color: var(--ipb-cinza, #4d4d4d);
 }
-
 
 .chamada-lista {
   background: var(--ipb-branco, #fff);

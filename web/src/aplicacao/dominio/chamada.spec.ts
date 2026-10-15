@@ -1,4 +1,5 @@
 import {
+  alunosSemRegistro,
   chamadaAlterada,
   montarLoteChamada,
   normalizarObservacao,
@@ -8,8 +9,8 @@ import {
 
 // RF32 / CSU10 e decisão 3 da 6.4 (Consolidar salva as alterações pendentes antes):
 // regras puras da tela de chamada.
-function linha(id: number, presente: boolean, observacao: string | null = null): LinhaChamada {
-  return { alunoDepartamentoId: id, pessoaId: id * 10, nomeAluno: `Aluno ${id}`, presente, observacao };
+function linha(id: number, presente: boolean, observacao: string | null = null, registrado = true): LinhaChamada {
+  return { alunoDepartamentoId: id, pessoaId: id * 10, nomeAluno: `Aluno ${id}`, presente, observacao, registrado };
 }
 
 describe("resumirChamada", () => {
@@ -59,5 +60,26 @@ describe("montarLoteChamada", () => {
     expect(normalizarObservacao(undefined)).toBeNull();
     expect(normalizarObservacao("")).toBeNull();
     expect(normalizarObservacao(" x ")).toBe("x");
+  });
+});
+
+// Etapa 6.4-C (a): quem está sem registro e o professor ainda não tocou é quem será
+// gravado como ausente — é a lista que a confirmação do Consolidar nomeia.
+describe("alunosSemRegistro", () => {
+  const salva = [linha(1, true), linha(2, false, null, false), linha(3, false, null, false)];
+  const ids = new Set([2, 3]);
+
+  it("lista os sem registro não tocados, na ordem da chamada", () => {
+    const atual = salva.map((l) => ({ ...l }));
+    expect(alunosSemRegistro(atual, salva, ids).map((l) => l.alunoDepartamentoId)).toEqual([2, 3]);
+  });
+
+  it("quem foi marcado presente ou recebeu observação sai da lista", () => {
+    const atual = [linha(1, true), linha(2, true, null, false), linha(3, false, "avisou", false)];
+    expect(alunosSemRegistro(atual, salva, ids)).toEqual([]);
+  });
+
+  it("sem ids, lista vazia mesmo com linhas", () => {
+    expect(alunosSemRegistro(salva, salva, new Set())).toEqual([]);
   });
 });

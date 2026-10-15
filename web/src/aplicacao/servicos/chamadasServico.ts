@@ -16,6 +16,9 @@ function normalizarItemChamada(bruto: any): ItemChamadaCompletaVM {
     observacao: (bruto?.Observacao ?? bruto?.observacao ?? null) as
       | string
       | null,
+    // Resposta sem o campo (API anterior à 6.4-C) é tratada como registrada, para
+    // não destacar a turma inteira por engano.
+    registrado: Boolean(bruto?.Registrado ?? bruto?.registrado ?? true),
   };
 }
 

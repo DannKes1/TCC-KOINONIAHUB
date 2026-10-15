@@ -22,6 +22,15 @@ export function resumirChamada(linhas: LinhaChamada[]) {
   return { total, presentes, ausentes: total - presentes };
 }
 
+/** True quando a linha difere do seu último estado salvo (presença ou observação). */
+export function linhaAlterada(atual: LinhaChamada, antes: LinhaChamada | undefined): boolean {
+  if (!antes) return true;
+  return (
+    Boolean(antes.presente) !== Boolean(atual.presente) ||
+    normalizarObservacao(antes.observacao) !== normalizarObservacao(atual.observacao)
+  );
+}
+
 /** True quando algo na tela difere do que a API devolveu por último. */
 export function chamadaAlterada(
   atual: LinhaChamada[],
@@ -33,14 +42,29 @@ export function chamadaAlterada(
   if (atual.length !== salva.length) return true;
 
   const porId = new Map(salva.map((l) => [l.alunoDepartamentoId, l]));
-  return atual.some((l) => {
-    const antes = porId.get(l.alunoDepartamentoId);
-    if (!antes) return true;
-    return (
-      Boolean(antes.presente) !== Boolean(l.presente) ||
-      normalizarObservacao(antes.observacao) !== normalizarObservacao(l.observacao)
-    );
-  });
+  return atual.some((l) => linhaAlterada(l, porId.get(l.alunoDepartamentoId)));
+}
+
+/**
+ * Alunos sem registro explícito que o professor ainda não tocou (Etapa 6.4-C,
+ * RNFs 32.6/33.3, CSU11 passo 2): ao salvar ou consolidar, serão gravados como
+ * ausentes — é quem a confirmação do Consolidar nomeia. `idsSemRegistro` vem da
+ * carga (`registrado === false`) ou do 400 da consolidação (alunosSemRegistro[]).
+ * Uma linha dessas que o professor já marcou (presente ou observação) deixa de
+ * ser "sem registro": vai ser gravada com o que ele escolheu.
+ */
+export function alunosSemRegistro(
+  atual: LinhaChamada[],
+  salva: LinhaChamada[],
+  idsSemRegistro: Set<number>,
+): LinhaChamada[] {
+  if (idsSemRegistro.size === 0) return [];
+  const porId = new Map(salva.map((l) => [l.alunoDepartamentoId, l]));
+  return atual.filter(
+    (l) =>
+      idsSemRegistro.has(l.alunoDepartamentoId) &&
+      !linhaAlterada(l, porId.get(l.alunoDepartamentoId)),
+  );
 }
 
 export function montarLoteChamada(

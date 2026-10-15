@@ -249,6 +249,9 @@ export type ItemChamadaCompletaVM = {
   nomeAluno: string;
   presente: boolean;
   observacao: string | null;
+  // Etapa 6.4-C (aditivo na API): já existe registro explícito de presença ou
+  // ausência para a matrícula nesta aula. False = "sem registro" (RNFs 32.6/33.3).
+  registrado: boolean;
 };
 
 export type PresencaVM = {

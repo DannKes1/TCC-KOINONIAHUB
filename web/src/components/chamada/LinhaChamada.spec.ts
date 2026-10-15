@@ -14,6 +14,7 @@ function montar(linha: Partial<LinhaChamadaVM> = {}, props: Record<string, unkno
     nomeAluno: "Ana Luiza",
     presente: false,
     observacao: null,
+    registrado: true,
     ...linha,
   };
   return mount(LinhaChamada, {
