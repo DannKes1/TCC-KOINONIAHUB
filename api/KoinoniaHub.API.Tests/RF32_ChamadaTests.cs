@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using KoinoniaHub.API.Dominio.Entidades;
@@ -82,6 +82,32 @@ namespace KoinoniaHub.API.Tests
             var presenca = Assert.Single(await CenarioAula.LerPresencasAsync(_fabrica, aulaId));
             Assert.False(presenca.Presente);
             Assert.Equal("Saiu mais cedo", presenca.Observacao);
+        }
+
+        [Fact]
+        public async Task ChamadaCompleta_InformaRegistrado_PorMatricula()
+        {
+            // Etapa 6.4-C (RNFs 32.6/33.3): a chamada completa distingue "ausente" de
+            // "sem registro" — Registrado = true só para a matrícula que já tem presença
+            // ou ausência lançada; a sem registro vem Presente = false e Registrado = false.
+            var cenario = await CenarioAula.CriarAsync(_fabrica, "rf32d");
+            var aulaId = await cenario.CriarAulaAsync(_fabrica, SituacaoAula.EmAberto, (cenario.MatriculaAId, false));
+            var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
+
+            var resposta = await professor.GetAsync($"/api/aulas/{aulaId}/chamada");
+            Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+
+            using var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+            var itens = json.RootElement.EnumerateArray().ToList();
+            Assert.Equal(2, itens.Count);
+
+            var comRegistro = itens.Single(i => i.GetProperty("alunoDepartamentoId").GetInt32() == cenario.MatriculaAId);
+            var semRegistro = itens.Single(i => i.GetProperty("alunoDepartamentoId").GetInt32() == cenario.MatriculaBId);
+
+            Assert.True(comRegistro.GetProperty("registrado").GetBoolean());
+            Assert.False(comRegistro.GetProperty("presente").GetBoolean());
+            Assert.False(semRegistro.GetProperty("registrado").GetBoolean());
+            Assert.False(semRegistro.GetProperty("presente").GetBoolean());
         }
 
         [Fact]

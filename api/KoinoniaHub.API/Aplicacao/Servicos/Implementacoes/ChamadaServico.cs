@@ -59,7 +59,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                     PessoaId = m.PessoaId,
                     NomeAluno = m.Pessoa.Nome,
                     Presente = p?.Presente ?? false,
-                    Observacao = p?.Observacao
+                    Observacao = p?.Observacao,
+                    Registrado = p is not null
                 };
             }).ToList();
 
