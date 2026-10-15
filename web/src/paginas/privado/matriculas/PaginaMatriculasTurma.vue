@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, inject, onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
+import CartaoItem from "../../../components/ui/CartaoItem.vue";
+import MenuAcoes from "../../../components/ui/MenuAcoes.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
+import { usarTelaCompacta } from "../../../aplicacao/composables/usarTelaCompacta";
+import { usarMostrarMais } from "../../../aplicacao/composables/usarMostrarMais";
 
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -15,6 +19,7 @@ import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
 import InputText from "primevue/inputtext";
 import Tag from "primevue/tag";
+import type { MenuItem } from "primevue/menuitem";
 
 import { useConfirm } from "primevue/useconfirm";
 
@@ -42,6 +47,18 @@ import type {
 const route = useRoute();
 const confirm = useConfirm();
 
+// Etapa 6.4-C (RF20 / RF27–RF28): abaixo de 768 px a lista vira cartões — um por
+// aluno, com "Responsáveis" como ação principal e "Remover matrícula" no ⋮, dez por
+// vez; no desktop a tabela continua igual.
+const compacta = usarTelaCompacta();
+
+// Dentro da Página da Turma (RF20), avisa o cabeçalho para atualizar o contador de
+// alunos ativos depois de matricular ou remover.
+const recarregarResumoDaTurma = inject<(() => Promise<void>) | null>(
+  "turmaRecarregarResumo",
+  null,
+);
+
 const { carregando, erro, run, clearErrors } = useAsync();
 
 const departamentoId = computed(() => Number(route.params.departamentoId));
@@ -49,6 +66,26 @@ const departamentoId = computed(() => Number(route.params.departamentoId));
 const turma = ref<DepartamentoVM | null>(null);
 const alunos = ref<AlunoDaClasseVM[]>([]);
 const pessoas = ref<PessoaVM[]>([]);
+
+const alunosOrdenados = computed(() =>
+  [...alunos.value].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+);
+const {
+  visiveis: alunosVisiveis,
+  restantes: alunosRestantes,
+  mostrarMais,
+} = usarMostrarMais(alunosOrdenados, 10);
+
+function itensAcoes(aluno: AlunoDaClasseVM): MenuItem[] {
+  return [
+    {
+      label: "Remover matrícula",
+      icon: "pi pi-trash",
+      visible: aluno.matriculaAtiva,
+      command: () => confirmarRemover(aluno),
+    },
+  ];
+}
 
 const dialogAberto = ref(false);
 
@@ -108,6 +145,7 @@ async function salvar() {
 
     dialogAberto.value = false;
     alunos.value = await listarAlunosDaTurma(departamentoId.value);
+    await recarregarResumoDaTurma?.();
   }, "Não foi possível matricular o aluno.");
 }
 
@@ -120,7 +158,6 @@ function confirmarRemover(aluno: AlunoDaClasseVM) {
     icon: "pi pi-exclamation-triangle",
     acceptLabel: "Remover",
     rejectLabel: "Cancelar",
-    acceptClass: "p-button-danger",
     accept: async () => {
       await run(async () => {
         await removerMatricula(departamentoId.value, aluno.matriculaId);
@@ -128,6 +165,7 @@ function confirmarRemover(aluno: AlunoDaClasseVM) {
         toastSuccess("Matrícula removida com sucesso.", "Removido");
 
         alunos.value = await listarAlunosDaTurma(departamentoId.value);
+        await recarregarResumoDaTurma?.();
       }, "Não foi possível remover a matrícula.");
     },
   });
@@ -194,7 +232,62 @@ onMounted(carregarTudo);
     <InlineMessage :texto="erro" tipo="erro" />
 
     <LoadingOverlay :loading="carregando" texto="Carregando matrículas...">
+      <!-- Celular: cartões (Etapa 6.4-C). -->
+      <div v-if="compacta" class="lista-cartoes" data-testid="alunos-cartoes">
+        <CartaoItem
+          v-for="aluno in alunosVisiveis"
+          :key="aluno.matriculaId"
+          :titulo="aluno.nome"
+          data-testid="aluno-cartao"
+        >
+          <template #chips>
+            <Tag
+              :value="aluno.matriculaAtiva ? 'Matrícula ativa' : 'Matrícula inativa'"
+              :severity="aluno.matriculaAtiva ? 'success' : 'secondary'"
+            />
+            <Tag
+              v-if="aluno.statusPessoa && aluno.statusPessoa !== 'Ativo'"
+              :value="`Pessoa: ${aluno.statusPessoa}`"
+              severity="warn"
+            />
+          </template>
+          <template #acoes>
+            <Button
+              label="Responsáveis"
+              icon="pi pi-id-card"
+              severity="secondary"
+              outlined
+              class="acao-principal"
+              :disabled="carregando"
+              data-testid="aluno-responsaveis"
+              @click="abrirResponsaveis(aluno)"
+            />
+            <MenuAcoes
+              :itens="itensAcoes(aluno)"
+              rotulo="Mais ações do aluno"
+              :desabilitado="carregando"
+            />
+          </template>
+        </CartaoItem>
+
+        <p v-if="!carregando && alunosVisiveis.length === 0" class="lista-vazia">
+          Nenhum aluno matriculado nesta turma.
+        </p>
+
+        <Button
+          v-if="alunosRestantes > 0"
+          :label="`Mostrar mais (${alunosRestantes} restantes)`"
+          severity="secondary"
+          text
+          class="mostrar-mais"
+          data-testid="alunos-mostrar-mais"
+          @click="mostrarMais"
+        />
+      </div>
+
+      <!-- Desktop: tabela de sempre. -->
       <DataTable
+        v-else
         :value="alunos"
         paginator
         :rows="10"

@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, inject, onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
+import CartaoItem from "../../../components/ui/CartaoItem.vue";
+import MenuAcoes from "../../../components/ui/MenuAcoes.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
+import { usarTelaCompacta } from "../../../aplicacao/composables/usarTelaCompacta";
+import { usarMostrarMais } from "../../../aplicacao/composables/usarMostrarMais";
 
 import {
   toastSuccess,
@@ -23,6 +27,8 @@ import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
 import Checkbox from "primevue/checkbox";
+import Tag from "primevue/tag";
+import type { MenuItem } from "primevue/menuitem";
 
 import { useConfirm } from "primevue/useconfirm";
 
@@ -41,12 +47,48 @@ import type {
 const route = useRoute();
 const confirm = useConfirm();
 
+// Etapa 6.4-C (RF20 / RF24–RF26): abaixo de 768 px a lista vira cartões — um por
+// matéria, com "Editar" como ação principal e Ativar/Inativar no ⋮, dez por vez;
+// no desktop a tabela continua igual.
+const compacta = usarTelaCompacta();
+
+// Dentro da Página da Turma (RF20), avisa o cabeçalho para atualizar o contador de
+// matérias depois de criar, editar ou ativar/inativar.
+const recarregarResumoDaTurma = inject<(() => Promise<void>) | null>(
+  "turmaRecarregarResumo",
+  null,
+);
+
 const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
 
 const departamentoId = computed(() => Number(route.params.departamentoId));
 
 const turma = ref<DepartamentoVM | null>(null);
 const materias = ref<MateriaVM[]>([]);
+
+// Mesma ordem da tabela: ordem de exibição e, em empate, nome.
+const materiasOrdenadas = computed(() =>
+  [...materias.value].sort(
+    (a, b) =>
+      (a.ordemExibicao ?? 0) - (b.ordemExibicao ?? 0) ||
+      a.nome.localeCompare(b.nome, "pt-BR"),
+  ),
+);
+const {
+  visiveis: materiasVisiveis,
+  restantes: materiasRestantes,
+  mostrarMais,
+} = usarMostrarMais(materiasOrdenadas, 10);
+
+function itensAcoes(m: MateriaVM): MenuItem[] {
+  return [
+    {
+      label: m.ativo ? "Inativar" : "Ativar",
+      icon: m.ativo ? "pi pi-ban" : "pi pi-check",
+      command: () => confirmarAlternarAtivo(m),
+    },
+  ];
+}
 
 const dialogAberto = ref(false);
 const editandoId = ref<number | null>(null);
@@ -121,6 +163,7 @@ async function salvar() {
 
     dialogAberto.value = false;
     materias.value = await listarMaterias(departamentoId.value);
+    await recarregarResumoDaTurma?.();
   }, "Não foi possível salvar a matéria.");
 }
 
@@ -135,7 +178,6 @@ function confirmarAlternarAtivo(m: MateriaVM) {
     icon: "pi pi-exclamation-triangle",
     acceptLabel: novoAtivo ? "Ativar" : "Inativar",
     rejectLabel: "Cancelar",
-    acceptClass: novoAtivo ? "p-button-success" : "p-button-danger",
     accept: async () => {
       await run(
         async () => {
@@ -153,6 +195,7 @@ function confirmarAlternarAtivo(m: MateriaVM) {
             "Concluído",
           );
           materias.value = await listarMaterias(departamentoId.value);
+          await recarregarResumoDaTurma?.();
         },
         novoAtivo
           ? "Não foi possível ativar a matéria."
@@ -186,7 +229,58 @@ onMounted(carregarTudo);
     <InlineMessage :texto="erro" tipo="erro" />
 
     <LoadingOverlay :loading="carregando" texto="Carregando matérias...">
+      <!-- Celular: cartões (Etapa 6.4-C). -->
+      <div v-if="compacta" class="lista-cartoes" data-testid="materias-cartoes">
+        <CartaoItem
+          v-for="m in materiasVisiveis"
+          :key="m.id"
+          :titulo="m.nome"
+          data-testid="materia-cartao"
+        >
+          <template #chips>
+            <Tag
+              :value="m.ativo ? 'Ativa' : 'Inativa'"
+              :severity="m.ativo ? 'success' : 'secondary'"
+            />
+          </template>
+          <template #meta>Ordem de exibição: {{ m.ordemExibicao ?? "—" }}</template>
+          <template #acoes>
+            <Button
+              label="Editar"
+              icon="pi pi-pencil"
+              severity="secondary"
+              outlined
+              class="acao-principal"
+              :disabled="carregando"
+              data-testid="materia-editar"
+              @click="abrirEdicao(m)"
+            />
+            <MenuAcoes
+              :itens="itensAcoes(m)"
+              rotulo="Mais ações da matéria"
+              :desabilitado="carregando"
+            />
+          </template>
+        </CartaoItem>
+
+        <p v-if="!carregando && materiasVisiveis.length === 0" class="lista-vazia">
+          Nenhuma matéria cadastrada nesta turma.
+        </p>
+
+        <Button
+          v-if="materiasRestantes > 0"
+          :label="`Mostrar mais (${materiasRestantes} restantes)`"
+          severity="secondary"
+          text
+          class="mostrar-mais"
+          data-testid="materias-mostrar-mais"
+          @click="mostrarMais"
+        />
+      </div>
+
+      <!-- Desktop: tabela de sempre. -->
       <DataTable
+        v-else
         :value="materias"
         paginator
         :rows="10"
