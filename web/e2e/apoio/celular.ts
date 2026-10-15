@@ -5,38 +5,62 @@ import { dirname, resolve } from "node:path";
 
 // Apoio do critério de responsividade (Etapa 6.3; RNFs "a interface deve ser
 // responsiva"): nenhuma tela do fluxo do professor pode exigir rolagem horizontal
-// da página a 360 px. Tabelas largas rolam dentro do próprio container do
-// PrimeVue (.p-datatable-table-container) — isso é permitido e não conta aqui.
-
-export async function semRolagemHorizontal(page: Page, tela: string) {
+// da página a 360 px. Desde a 6.4-C o padrão é o MODO ESTRITO (Plano, 6.12): além
+// do documento e do <main>, nenhum container interno pode rolar para o lado — nem a
+// tabela do PrimeVue (.p-datatable-table-container), que nas telas operacionais deu
+// lugar aos cartões. Só a faixa de abas da Página da Turma (.p-tablist-content)
+// rola de propósito. `estrito: false` volta ao critério da 6.3 (tabelas podem rolar
+// dentro do próprio container).
+export async function semRolagemHorizontal(
+  page: Page,
+  tela: string,
+  opcoes: { estrito?: boolean } = {},
+) {
+  const estrito = opcoes.estrito ?? true;
   // Referência: a largura configurada da janela. Na emulação de celular o Chromium
   // alarga window.innerWidth quando o conteúdo transborda, o que esconderia o defeito.
   const largura = page.viewportSize()?.width ?? 360;
 
-  const problemas = await page.evaluate((larguraJanela) => {
-    const encontrados: string[] = [];
-    const raiz = document.documentElement;
-    if (raiz.scrollWidth > larguraJanela + 1) {
-      encontrados.push(`documento com ${raiz.scrollWidth}px para uma janela de ${larguraJanela}px`);
-    }
-    // A área de conteúdo do layout tem overflow próprio; uma rolagem lateral nela
-    // seria o mesmo defeito, só que escondido do documento.
-    const conteudo = document.querySelector("main.conteudo");
-    if (conteudo && conteudo.scrollWidth > conteudo.clientWidth + 1) {
-      encontrados.push(`main.conteudo com ${conteudo.scrollWidth}px para ${conteudo.clientWidth}px visíveis`);
-    }
-    // Elementos que passam da borda direita (fora das tabelas, que rolam por conta
-    // própria, e das camadas flutuantes do PrimeVue: toasts, diálogos, tooltips).
-    for (const el of Array.from(document.querySelectorAll<HTMLElement>("body *"))) {
-      const caixa = el.getBoundingClientRect();
-      if (caixa.width === 0 || caixa.right <= larguraJanela + 1) continue;
-      // A faixa de abas da Página da Turma rola de propósito (.p-tablist-content).
-      if (el.closest(".p-datatable-table-container, .p-tablist-content, .p-toast, .p-dialog-mask, .p-tooltip, .p-drawer-mask, .p-confirmdialog")) continue;
-      encontrados.push(`${el.tagName.toLowerCase()}.${Array.from(el.classList).slice(0, 3).join(".")} termina em ${Math.round(caixa.right)}px`);
-      if (encontrados.length >= 6) break;
-    }
-    return encontrados;
-  }, largura);
+  const problemas = await page.evaluate(
+    ({ larguraJanela, estrito }) => {
+      const encontrados: string[] = [];
+      const descrever = (el: Element) =>
+        `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ""}.${Array.from(el.classList).slice(0, 3).join(".")}`;
+      const raiz = document.documentElement;
+      if (raiz.scrollWidth > larguraJanela + 1) {
+        encontrados.push(`documento com ${raiz.scrollWidth}px para uma janela de ${larguraJanela}px`);
+      }
+      // A área de conteúdo do layout tem overflow próprio; uma rolagem lateral nela
+      // seria o mesmo defeito, só que escondido do documento.
+      const conteudo = document.querySelector("main.conteudo");
+      if (conteudo && conteudo.scrollWidth > conteudo.clientWidth + 1) {
+        encontrados.push(`main.conteudo com ${conteudo.scrollWidth}px para ${conteudo.clientWidth}px visíveis`);
+      }
+      // Camadas flutuantes do PrimeVue (toasts, diálogos, tooltips) ficam fora da conta;
+      // a faixa de abas rola de propósito; fora do modo estrito, a tabela também.
+      const ignorados = [".p-tablist-content", ".p-toast", ".p-dialog-mask", ".p-tooltip", ".p-drawer-mask", ".p-confirmdialog"];
+      if (!estrito) ignorados.push(".p-datatable-table-container");
+      const seletorIgnorados = ignorados.join(", ");
+
+      for (const el of Array.from(document.querySelectorAll<HTMLElement>("body *"))) {
+        if (el.closest(seletorIgnorados)) continue;
+        // Modo estrito: nenhum container interno pode rolar para o lado.
+        if (estrito && el !== conteudo) {
+          const overflowX = getComputedStyle(el).overflowX;
+          if ((overflowX === "auto" || overflowX === "scroll") && el.scrollWidth > el.clientWidth + 1) {
+            encontrados.push(`${descrever(el)} rola para o lado (${el.scrollWidth}px em ${el.clientWidth}px)`);
+          }
+        }
+        // Elementos que passam da borda direita.
+        const caixa = el.getBoundingClientRect();
+        if (caixa.width === 0 || caixa.right <= larguraJanela + 1) continue;
+        encontrados.push(`${descrever(el)} termina em ${Math.round(caixa.right)}px`);
+        if (encontrados.length >= 6) break;
+      }
+      return encontrados;
+    },
+    { larguraJanela: largura, estrito },
+  );
 
   expect(problemas, `${tela}: rolagem horizontal indevida`).toEqual([]);
 }

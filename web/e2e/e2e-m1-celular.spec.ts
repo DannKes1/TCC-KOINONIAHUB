@@ -16,6 +16,9 @@ import {
 // Minha Frequência — abrem sem rolagem horizontal da página, com o menu no Drawer e
 // alvos de toque de pelo menos 40 px; na Chamada, Aluno e Presente ficam visíveis sem
 // rolar. Login/Termo com termo pendente estão no E2E-02, que também roda no celular.
+// Desde a 6.4-C, `semRolagemHorizontal` roda em MODO ESTRITO (Plano, 6.12): nenhum
+// container interno rola para o lado nas telas operacionais — abas Alunos e Matérias
+// incluídas, agora em cartões.
 
 test.describe("E2E-M1 celular", () => {
   test("tela de login cabe em 360 px", async ({ page }, testInfo) => {
@@ -79,6 +82,35 @@ test.describe("E2E-M1 celular", () => {
       await expect(page.getByTestId("turma-aba-atribuicoes")).toHaveCount(0);
       await alvoDeToque(await page.getByTestId("turma-aba-aulas").boundingBox(), "aba Aulas");
 
+      // Aba Alunos em cartões (6.4-C): um por matrícula, "Responsáveis" como ação
+      // principal e o ⋮; nenhum container rola para o lado.
+      await page.getByTestId("turma-aba-matriculas").click();
+      await page.waitForURL((url) => url.pathname === `/departamentos/${turma.id}/matriculas`);
+      const cartoesAlunos = page.getByTestId("aluno-cartao");
+      await expect(cartoesAlunos).toHaveCount(alunos.length);
+      await expect(cartoesAlunos.first()).toContainText("Matrícula ativa");
+      const responsaveis = cartoesAlunos.first().getByTestId("aluno-responsaveis");
+      await responsaveis.scrollIntoViewIfNeeded();
+      await alvoDeToque(await responsaveis.boundingBox(), "botão Responsáveis");
+      await expect(cartoesAlunos.first().getByTestId("menu-acoes")).toBeVisible();
+      await semRolagemHorizontal(page, "Turma — aba Alunos");
+      await evidenciaCelular(page, testInfo, "turma-alunos");
+
+      // Aba Matérias em cartões (6.4-C): "Editar" como ação principal e o ⋮.
+      await page.getByTestId("turma-aba-materias").click();
+      await page.waitForURL((url) => url.pathname === `/departamentos/${turma.id}/materias`);
+      const cartoesMaterias = page.getByTestId("materia-cartao");
+      await expect(cartoesMaterias).toHaveCount(1);
+      await expect(cartoesMaterias.first()).toContainText("Ativa");
+      const editarMateria = cartoesMaterias.first().getByTestId("materia-editar");
+      await alvoDeToque(await editarMateria.boundingBox(), "botão Editar matéria");
+      await expect(cartoesMaterias.first().getByTestId("menu-acoes")).toBeVisible();
+      await semRolagemHorizontal(page, "Turma — aba Matérias");
+      await evidenciaCelular(page, testInfo, "turma-materias");
+
+      await page.getByTestId("turma-aba-aulas").click();
+      await page.waitForURL((url) => url.pathname === `/departamentos/${turma.id}/aulas`);
+
       // Aula Em aberto criada pela API como o próprio professor (RF31); a tela é o
       // objeto do teste, não o cadastro da aula.
       const api = await novoClienteApi(apiURL);
@@ -121,6 +153,11 @@ test.describe("E2E-M1 celular", () => {
       await expect(lista.getByTestId("chamada-linha")).toHaveCount(alunos.length);
       await expect(page.getByTestId("chamada-contador")).toHaveText(`Presentes: 0 de ${alunos.length}`);
 
+      // 6.4-C (a): aula recém-criada — todos sem registro, destacados desde a carga,
+      // com o aviso contando quantos são (RNFs 32.6/33.3).
+      await expect(page.getByTestId("chamada-mensagem")).toContainText(`${alunos.length} alunos sem registro`);
+      await expect(lista.locator(".linha-chamada-sem-registro")).toHaveCount(alunos.length);
+
       const primeiraLinha = lista.getByTestId("chamada-linha").first();
       await primeiraLinha.scrollIntoViewIfNeeded();
       await expect(primeiraLinha).toBeInViewport();
@@ -139,6 +176,11 @@ test.describe("E2E-M1 celular", () => {
       // Abrir a observação não alterou a presença da linha.
       await expect(segundaLinha.getByTestId("chamada-presente").locator("input")).not.toBeChecked();
 
+      // Quem o professor tocou (presença ou observação) deixa de ser "sem registro":
+      // só o terceiro aluno continua destacado.
+      await expect(lista.locator(".linha-chamada-sem-registro")).toHaveCount(alunos.length - 2);
+      await expect(page.getByTestId("chamada-mensagem")).toContainText("1 aluno sem registro");
+
       // Barra fixa: visível sem rolar até o fim, com alvos de 40 px.
       const barra = page.getByTestId("barra-acoes");
       await expect(barra).toBeInViewport();
@@ -148,6 +190,26 @@ test.describe("E2E-M1 celular", () => {
       await alvoDeToque(await consolidar.boundingBox(), "botão Consolidar");
       await semRolagemHorizontal(page, "Chamada");
       await evidenciaCelular(page, testInfo, "chamada");
+
+      // 6.4-C (a) — CSU11 passo 2: Consolidar com aluno sem registro nomeia quem será
+      // gravado como ausente (lista com rolagem própria, dentro da tela) e oferece
+      // "Salvar e consolidar". Aqui o professor cancela e salva primeiro.
+      await consolidar.click();
+      const confirmacaoNomes = page.locator(".p-confirmdialog");
+      await expect(confirmacaoNomes).toContainText("será gravado como ausente");
+      const listaNomes = confirmacaoNomes.getByTestId("confirm-lista");
+      await expect(listaNomes.locator("li")).toHaveCount(1);
+      await expect(listaNomes).toContainText(alunos[2]!.nome);
+      const caixaConfirmacao = (await confirmacaoNomes.boundingBox())!;
+      expect(caixaConfirmacao.x, "diálogo começa dentro da tela").toBeGreaterThanOrEqual(0);
+      expect(caixaConfirmacao.x + caixaConfirmacao.width, "diálogo termina dentro da tela").toBeLessThanOrEqual(361);
+      expect(caixaConfirmacao.y, "diálogo não passa do topo").toBeGreaterThanOrEqual(0);
+      const botaoSalvarConsolidar = confirmacaoNomes.getByRole("button", { name: "Salvar e consolidar" });
+      await expect(botaoSalvarConsolidar).toBeVisible();
+      await alvoDeToque(await botaoSalvarConsolidar.boundingBox(), "botão Salvar e consolidar");
+      await evidenciaCelular(page, testInfo, "chamada-consolidar-sem-registro");
+      await confirmacaoNomes.getByRole("button", { name: "Cancelar" }).click();
+      await expect(confirmacaoNomes).toBeHidden();
 
       // Toque duplo em Salvar (ajuste da corretiva da 6.4-B): dois toques "crus",
       // sem esperar o botão entre eles, como um dedo apressado — uma gravação e um
@@ -175,6 +237,17 @@ test.describe("E2E-M1 celular", () => {
       // Toque no meio da linha (fora do nome e da caixa): a linha inteira é o alvo.
       await lista.getByTestId("chamada-linha").nth(2).click();
       await expect(page.getByTestId("chamada-contador")).toHaveText(`Presentes: 2 de ${alunos.length}`);
+
+      // 6.4-C (b): com alteração não salva, voltar para a turma pede confirmação;
+      // "Continuar na chamada" mantém a tela e a marcação.
+      await page.locator(".page-header-voltar").click();
+      const confirmacaoSair = page.locator(".p-confirmdialog");
+      await expect(confirmacaoSair).toContainText("alterações não salvas");
+      await confirmacaoSair.getByRole("button", { name: "Continuar na chamada" }).click();
+      await expect(confirmacaoSair).toBeHidden();
+      expect(new URL(page.url()).pathname).toBe(`/aulas/${aulaId}/chamada`);
+      await expect(page.getByTestId("chamada-contador")).toHaveText(`Presentes: 2 de ${alunos.length}`);
+
       await consolidar.click();
       const confirmacao = page.locator(".p-confirmdialog");
       await expect(confirmacao).toContainText("A chamada será salva e consolidada");
