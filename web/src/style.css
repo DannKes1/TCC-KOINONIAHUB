@@ -514,3 +514,208 @@ body {
 .p-tag .p-tag-value {
   color: inherit !important;
 }
+
+/* ------------------------------------------------------------------ */
+/* Diálogos de confirmação e avisos (Etapa 6.4-C) — um só lugar.        */
+/* Instâncias globais no App.vue (ConfirmDialog.kh-confirm, Toast.kh-   */
+/* toast): tema do projeto e, no celular, dentro da tela com margem.    */
+/* ------------------------------------------------------------------ */
+
+.kh-confirm.p-dialog {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--ipb-cinza-borda);
+  box-shadow: 0 12px 40px rgba(26, 59, 37, 0.18);
+  font-family: var(--font-body);
+  max-height: calc(100vh - 24px);
+  max-width: calc(100vw - 24px);
+}
+
+.kh-confirm .p-dialog-header {
+  padding: 18px 22px 10px;
+  border-bottom: none;
+}
+
+.kh-confirm .p-dialog-title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ipb-verde-escuro);
+}
+
+.kh-confirm .p-dialog-content {
+  padding: 4px 22px 16px;
+  color: var(--ipb-cinza);
+  overflow: auto;
+}
+
+.kh-confirm-corpo {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+/* Ícone no padrão dos cartões de indicador: círculo no verde claro do projeto. */
+.kh-confirm-icone {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ipb-verde-bg);
+  color: var(--ipb-verde);
+  font-size: 20px;
+}
+
+.kh-confirm-texto {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.kh-confirm-mensagem,
+.kh-confirm-rodape {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.kh-confirm-rodape {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--ipb-cinza-claro);
+}
+
+/* Lista de itens (nomes dos alunos sem registro): rolagem própria, nunca estoura
+   o diálogo nem a tela do celular. */
+.kh-confirm-lista {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  list-style: none;
+  max-height: 176px;
+  overflow: auto;
+  border: 1px solid var(--ipb-cinza-borda);
+  border-radius: var(--radius-sm);
+  background: var(--ipb-cinza-bg);
+  font-size: 14px;
+}
+
+.kh-confirm-lista li {
+  padding: 5px 0;
+  border-bottom: 1px solid var(--ipb-cinza-borda);
+  overflow-wrap: anywhere;
+}
+
+.kh-confirm-lista li:last-child {
+  border-bottom: none;
+}
+
+.kh-confirm .p-dialog-footer {
+  padding: 8px 22px 18px;
+  border-top: none;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.kh-confirm .p-dialog-footer .p-button {
+  min-height: 42px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+
+/* Botão de confirmação sempre no verde do projeto; o de recusa, contornado.
+   Seletores com três classes: o tema do PrimeVue é injetado depois deste arquivo
+   e empataria em especificidade com dois. */
+.kh-confirm .p-dialog-footer .p-button.p-confirmdialog-accept-button {
+  background: var(--ipb-verde);
+  border: 1px solid var(--ipb-verde);
+  color: #fff;
+  box-shadow: none;
+}
+
+.kh-confirm .p-dialog-footer .p-button.p-confirmdialog-accept-button:not(:disabled):hover {
+  background: var(--ipb-verde-claro);
+  border-color: var(--ipb-verde-claro);
+  color: #fff;
+}
+
+/* A regra geral de botão deste arquivo pinta de verde, com !important e seis
+   classes de especificidade, todo botão sem variante — e o de recusa não tem
+   variante. Este seletor tem sete classes e também !important para vencer. */
+.kh-confirm.p-dialog.p-confirmdialog .p-dialog-footer .p-button.p-component.p-confirmdialog-reject-button {
+  background: transparent !important;
+  border: 1px solid var(--ipb-verde) !important;
+  color: var(--ipb-verde);
+  box-shadow: none;
+}
+
+.kh-confirm.p-dialog.p-confirmdialog .p-dialog-footer .p-button.p-component.p-confirmdialog-reject-button:not(:disabled):hover {
+  background: var(--ipb-verde-bg) !important;
+  color: var(--ipb-verde);
+}
+
+/* Avisos */
+.kh-toast .p-toast-message {
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+}
+
+.kh-toast .p-toast-summary {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.kh-toast .p-toast-detail {
+  overflow-wrap: anywhere;
+}
+
+.kh-toast .p-toast-message-success {
+  background: var(--ipb-verde-bg);
+  border-color: var(--ipb-sucesso);
+  color: var(--ipb-verde-escuro);
+}
+
+.kh-toast .p-toast-message-success .p-toast-message-icon,
+.kh-toast .p-toast-message-success .p-toast-close-button {
+  color: var(--ipb-verde-escuro);
+}
+
+@media (max-width: 640px) {
+  .kh-confirm .p-dialog-header,
+  .kh-confirm .p-dialog-content,
+  .kh-confirm .p-dialog-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .kh-confirm-icone {
+    width: 38px;
+    height: 38px;
+    font-size: 17px;
+  }
+
+  .kh-confirm-lista {
+    max-height: 132px;
+  }
+
+  /* Botões empilhados, o de confirmação por cima. */
+  .kh-confirm .p-dialog-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .kh-confirm .p-dialog-footer .p-button {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .kh-toast.p-toast {
+    top: 12px;
+  }
+}

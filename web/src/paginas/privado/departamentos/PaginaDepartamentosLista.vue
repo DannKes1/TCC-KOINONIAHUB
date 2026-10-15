@@ -210,7 +210,6 @@ function confirmarAlternarAtivo(dep: DepartamentoVM) {
     icon: "pi pi-exclamation-triangle",
     acceptLabel: novoAtivo ? "Ativar" : "Inativar",
     rejectLabel: "Cancelar",
-    acceptClass: novoAtivo ? "p-button-success" : "p-button-danger",
     accept: async () => {
       await run(
         async () => {

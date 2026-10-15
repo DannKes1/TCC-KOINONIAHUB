@@ -304,7 +304,6 @@ function confirmarEncerramento(item: AtribuicaoVM) {
     icon: "pi pi-exclamation-triangle",
     acceptLabel: "Encerrar",
     rejectLabel: "Cancelar",
-    acceptClass: "p-button-danger",
     accept: async () => {
       await run(async () => {
         await encerrarAtribuicao(item.id);

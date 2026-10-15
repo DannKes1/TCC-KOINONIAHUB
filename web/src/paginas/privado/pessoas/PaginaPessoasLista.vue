@@ -412,7 +412,6 @@ function confirmarRemocaoParentesco(item: ParentescoVM) {
     icon: "pi pi-exclamation-triangle",
     acceptLabel: "Remover",
     rejectLabel: "Cancelar",
-    acceptClass: "p-button-danger",
     accept: async () => {
       await run(async () => {
         await removerParentesco(pessoa.id, item.id);

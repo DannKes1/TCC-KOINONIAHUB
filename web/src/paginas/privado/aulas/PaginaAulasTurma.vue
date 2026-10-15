@@ -264,7 +264,6 @@ function confirmarConsolidar(aula: AulaVM) {
     icon: "pi pi-exclamation-triangle",
     acceptLabel: "Consolidar",
     rejectLabel: "Cancelar",
-    acceptClass: "p-button-danger",
     accept: async () => {
       try {
         await run(
@@ -302,7 +301,6 @@ function confirmarNaoRealizada(aula: AulaVM) {
     icon: "pi pi-exclamation-triangle",
     acceptLabel: "Marcar como Não realizada",
     rejectLabel: "Cancelar",
-    acceptClass: "p-button-danger",
     accept: async () => {
       await run(async () => {
         await marcarAulaNaoRealizada(aula.id);
@@ -327,7 +325,6 @@ function confirmarReabrir(aula: AulaVM) {
     icon: "pi pi-exclamation-triangle",
     acceptLabel: "Reabrir",
     rejectLabel: "Cancelar",
-    acceptClass: "p-button-warn",
     accept: async () => {
       await run(async () => {
         await reabrirAula(aula.id);
