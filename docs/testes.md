@@ -1009,3 +1009,88 @@ com barra fixa, Página da Turma como centro), com critério estrito — ver
 `RNF-responsividade-{login, termo, painel-professor, menu-drawer, minhas-turmas, aulas-turma,
 chamada, presencas-aula, meus-dados, painel-aluno, minha-frequencia}.png`. Serão regenerados
 na 6.4-C.
+
+## Etapa 6.4 — Página da Turma e fluxo operacional no celular (09 a 14/10/2026) · fecha a Etapa 6
+
+**Escopo.** RF20 (Tela de Turma) e a leitura estrita dos RNFs "a interface deve ser responsiva"
+para as telas operacionais, conforme `docs/decisoes/recorte-6.4-celular.md` (aprovado em
+09/10/2026 após a avaliação do autor sobre a 6.3): cada item de lista é um cartão com uma ação
+principal nomeada, a chamada é tocável com barra Salvar · Consolidar, e nenhuma tela operacional
+tem rolagem horizontal, nem interna, a 360 × 640. Cinco entregas: **6.4-A** (09/10) peças
+reutilizáveis, Página da Turma com abas como rotas filhas, aba Aulas, Minhas Turmas e painel do
+professor em cartões; **6.4-B** (10/10) chamada enxuta nos dois layouts, Presenças, painel do
+aluno e Minha Frequência em cartões, voltar hierárquico, "Minha frequência" só para o vínculo
+Aluno, Consolidar salvando as pendentes; **corretiva** (12/10) Chamada e Presenças no desktop em
+grade de cartões, barra `sticky` sem cobrir o rodapé, severidade `warn` do PrimeVue 4, clique
+duplo ignorado; **ajuste** (13/10) bloqueio de 500 ms após a gravação, `overflow` do `<main>` só
+retirado na rota da chamada; **6.4-C** (14/10) abas Alunos e Matérias em cartões, contadores do
+cabeçalho recontados a partir das abas, "Sem registro" visível desde a carga (campo aditivo
+`Registrado` na chamada completa), Consolidar nomeando quem será gravado como ausente (CSU11,
+passo 2 com o texto novo), confirmação ao sair ou recarregar com alterações não salvas, diálogos
+e avisos globais no tema e dentro da tela do celular, E2E-M1 em modo estrito. Decisões em
+`docs/decisoes/etapa-6.md`, 1.4 a 1.8.
+
+**Validação automatizada (14/10/2026, ambiente do autor):** `dotnet build` e `dotnet test` =
+**114 aprovados** (113 + `ChamadaCompleta_InformaRegistrado_PorMatricula`) · `vue-tsc -b` limpo ·
+`npm run test` = **19 arquivos, 102 casos** (66 → 79 na 6.4-B: `chamada.spec` 6, `LinhaChamada.spec`
+7; → 82 na corretiva: `usarAcaoUnica.spec` 2, `TagSituacaoAula.spec` +1; → 86 no ajuste:
+`usarAcaoUnica` +1, `LayoutPrincipal.spec` +1, `PaginaChamadaAula.spec` 2; → 102 na 6.4-C:
+`PaginaChamadaAula.spec` 10, `chamada.spec` 9, `PaginaMatriculasTurma.spec` 2,
+`PaginaMateriasTurma.spec` 3) · `npm run build` ok · `npm run test:e2e` = **10 aprovados**
+(3 no projeto `chromium` + 7 no projeto `mobile`: E2E-01, E2E-02, os três casos do **E2E-M1**
+reescrito — professor: painel → Drawer → Minhas Turmas → Página da Turma com abas Alunos,
+Matérias e Aulas em cartões → chamada pelo cartão da aula → "Sem registro" desde a carga e baixa
+ao tocar → toque no meio da linha → dois toques crus em Salvar geram um único POST e um único
+aviso → confirmação do Consolidar com os nomes dentro da tela → aula consolidada, barra some →
+confirmação ao sair → Presenças em cartões → Meus Dados; aluno: painel → Minha Frequência — tudo
+com `semRolagemHorizontal` **estrito** (nenhum container interno rola; só a faixa de abas) — e os
+dois casos do **E2E-M2**: largura do documento e do `body` = 360 em Pessoas, Usuários, Igreja,
+Relatórios, Turmas EBD, Importação aberta, nas quatro abas da turma, na Chamada e nas Presenças).
+O E2E rodou contra o PostgreSQL local no ambiente `E2E`.
+
+**Testes manuais (Admin, Professor "Paula" e aluno; 1366 × 768, 1920 × 1080 e 360 × 640):**
+
+1. Página da Turma (RF20): `/departamentos/{id}` abre na aba Aulas; cabeçalho com nome, tipo,
+   situação, contadores e equipe; aba Atribuições só para a gestão; voltar leva a Turmas EBD
+   (gestão) ou Minhas Turmas (professor); as URLs antigas das abas continuam válidas. ✔
+2. Celular: Painel do professor, Minhas Turmas, abas Aulas, Alunos e Matérias em cartões com
+   ação principal nomeada e ⋮; "Abrir turma" em todo lugar; aluno sem "Abrir turma" e com
+   "Minha frequência" só no vínculo Aluno; contadores do cabeçalho mudam após matricular ou
+   criar matéria sem recarregar. ✔
+3. Chamada nos dois layouts: topo curto com voltar para a turma (nome da turma no rótulo),
+   "Presentes N de M", ⋮ com Recarregar e Limpar, visitantes numa linha, aviso da RNF 32.5 só
+   ao abrir "+ observação", uma mensagem por vez; desktop em grade de cartões (3 colunas a
+   1366, 5 a 1920) com "Alterações não salvas" / "Tudo salvo" na barra; celular em uma coluna;
+   toque em qualquer ponto da linha alterna a presença; barra Salvar · Consolidar visível ao
+   rolar e parando acima do rodapé no fim, nas três larguras. ✔
+4. Consolidar: com alteração pendente ou aluno sem registro, a confirmação nomeia quem será
+   gravado como ausente (lista com rolagem própria, cabendo a 360 px) e "Salvar e consolidar"
+   grava e consolida; sem pendência, confirmação simples sem gravação antes; aula consolidada
+   fica somente leitura e a barra some; Presenças mostra os listados como Ausente. ✔
+5. CSU11 FA1 (recusa da API): aula com aluno matriculado depois da chamada salva → uma única
+   mensagem âmbar, linha destacada "Sem registro", nenhuma mensagem vermelha junto. ✔
+6. Alterações não salvas: voltar → "Sair da chamada" / "Continuar na chamada"; F5 → aviso do
+   navegador; ⋮ → Recarregar → confirmação; sem alteração, nada pergunta. ✔
+7. Clique duplo em Salvar (desktop e celular): um único aviso "Chamada salva com sucesso". ✔
+8. Etiquetas âmbar (Pendente, Sem registro, Pastor, Convite pendente) e botão Reabrir em âmbar;
+   Auxiliar em etiqueta escura. ✔
+9. Diálogos e avisos (Consolidar, Marcar não realizada, Reabrir, Remover matrícula, Recarregar
+   chamada): título em Merriweather verde escuro, ícone em círculo, botão de confirmação verde,
+   recusa contornada; a 360 px dentro da tela com botões empilhados. ✔
+10. Telas administrativas a 360 px (Pessoas, Usuários, Igreja, Relatórios, Turmas EBD, Importação,
+    abas da turma): `document.documentElement.scrollWidth` = 360; o que for mais largo rola
+    dentro do conteúdo; a barra do topo não se move. ✔
+11. Painel do professor sem aulas em aberto: "Nenhuma aula em aberto no momento.", sem paginador. ✔
+
+**Prints em `docs/evidencias/`:** `RF20-pagina-turma-desktop.png`; `RF32-chamada-desktop-1920.png`,
+`RF32-chamada-alteracoes-nao-salvas.png`, `RF32-chamada-toque-duplo-360.png`,
+`RF32-recarregar-com-alteracoes-360.png`; `RF33-chamada-consolidada-desktop.png`;
+`RF34-presencas-desktop.png`; `RNF-32.5-dica-observacao.png`; `RNF-32.6-sem-registro-desde-a-carga.png`,
+`RNF-32.6-sem-registro-baixa-ao-marcar.png`; `CSU11-FA1-sem-registro-desktop.png`,
+`CSU11-passo2-consolidar-nomes-360.png`; `RNF-dialogos-tema-360.png`, `RNF-dialogos-tema-1366.png`;
+`RNF-responsividade-usuarios-360.png`, `RNF-responsividade-pessoas-360.png`; e os 15 gerados pelo
+projeto `mobile`: `RNF-responsividade-{login, termo, painel-professor, menu-drawer, minhas-turmas,
+aulas-turma, turma-alunos, turma-materias, chamada, chamada-consolidar-sem-registro,
+chamada-consolidada, presencas-aula, meus-dados, painel-aluno, minha-frequencia}.png`.
+
+**Registro para o Plano:** aplicado na v1.4 (`docs/plano-de-desenvolvimento.md`).
