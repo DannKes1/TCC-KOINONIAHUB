@@ -1094,3 +1094,67 @@ aulas-turma, turma-alunos, turma-materias, chamada, chamada-consolidar-sem-regis
 chamada-consolidada, presencas-aula, meus-dados, painel-aluno, minha-frequencia}.png`.
 
 **Registro para o Plano:** aplicado na v1.4 (`docs/plano-de-desenvolvimento.md`).
+
+---
+
+## Etapa 6.5 — RF45: editar e excluir aula Em aberto (15/10/2026)
+
+**Escopo.** Seção 6.14 do Plano: `PUT /api/aulas/{id}` e `DELETE /api/aulas/{id}` com a
+autorização do cadastro (RNF 45.1: gestão ou atribuição ativa na turma); edição só de aula Em
+aberto (45.2), com matéria da mesma turma e professor com atribuição ativa de Professor (45.4);
+exclusão só de aula Em aberto e sem nenhum registro de presença (45.5, a mesma condição da 33.7).
+Campos aditivos `Conteudo` e `PossuiPresencas` em `AulaRespostaDto` (decisão do autor em
+15/10/2026): o primeiro para o diálogo de edição vir preenchido, o segundo para a tela não
+oferecer Excluir quando já há chamada (CSU09 FA3). Na aba Aulas, "Editar aula" e "Excluir aula"
+entram no ⋮ dos dois layouts, com `visible` pela situação e pelas presenças; o diálogo de nova
+aula é reaproveitado em modo edição e ganha o campo "Conteúdo (opcional)" nos dois modos
+(RF45 e CSU09 FA1 declaram o conteúdo editável); a exclusão passa pela confirmação comum do
+App.vue, sem `acceptClass`. Nenhuma tabela nova. Primeira entrega produzida no Claude Code.
+Decisões em `docs/decisoes/etapa-6.md`, 1.9.
+
+**Validação automatizada (15/10/2026, ambiente do autor):** `dotnet build` e `dotnet test` =
+**123 aprovados** (114 + `RF45_EditarAulaTests`, 9 casos: editar Em aberto → 200 e GET reflete;
+Consolidada → 400; Não realizada → 400; matéria de outra turma → 400; professor sem atribuição
+de Professor → 400; Professor de outra turma → 403; excluir sem presenças → 204 e some da
+listagem; excluir com presenças → 400 e `possuiPresencas` verdadeiro na listagem; excluir
+Consolidada → 400) · `vue-tsc -b` limpo · `npm run test` = **20 arquivos, 105 casos** (102 +
+`PaginaAulasTurma.spec` 3: visibilidade de Editar/Excluir nos três estados, edição pelo diálogo
+com `atualizarAula` e recontagem do cabeçalho, exclusão pela confirmação comum) · `npm run build`
+ok · `npm run test:e2e` = **10 aprovados** (3 no projeto `chromium` + 7 no projeto `mobile`),
+E2E-M1 em modo estrito sem alteração. O E2E rodou contra o PostgreSQL local no ambiente `E2E`.
+
+**Testes manuais (professora Paula e Admin; desktop e 360 × 640):**
+
+1. Nova aula com Tema e Conteúdo: aviso "Aula criada com sucesso.", aula Em aberto na lista. ✔
+2. ⋮ → Editar aula (CSU09 FA1): diálogo "Editar aula" preenchido com data, matéria, professor,
+   tema e conteúdo; tema alterado e salvo → "Aula atualizada com sucesso.", lista atualizada. ✔
+3. Validação (RNF 45.3): matéria limpa → aviso âmbar "Selecione a matéria.", diálogo aberto. ✔
+4. ⋮ → Excluir aula sem chamada (CSU09 FA2, RNF 45.5): confirmação "Excluir aula" com data e
+   matéria, botão "Excluir" verde e "Cancelar" contornado → "Aula excluída com sucesso.", aula
+   some, contador "Aulas em aberto" do cabeçalho recontado. ✔
+5. Aula Em aberto com chamada salva (CSU09 FA3): ⋮ oferece "Editar aula" e não oferece
+   "Excluir aula". ✔
+6. Aula Consolidada ou Não realizada (RNF 45.2): ⋮ sem Editar e sem Excluir. ✔
+7. Recusa direta pela API (CSU09 FA3 passo 2, Swagger como Admin): PUT em aula Consolidada →
+   400 "Somente aulas Em aberto podem ser editadas."; DELETE em aula Em aberto com chamada →
+   400 "Uma aula com registros de presença não pode ser excluída."; DELETE em aula Consolidada →
+   400 "Somente aulas Em aberto podem ser excluídas.". ✔
+8. Matéria de outra turma (RNF 45.4): PUT → 400 "A matéria informada não pertence à turma desta
+   aula.". ✔
+9. Professor sem atribuição na turma (RNF 45.1): PUT e DELETE → 403. ✔
+10. Celular a 360 × 640: diálogo de edição com o campo Conteúdo cabendo na tela; confirmação de
+    exclusão dentro da tela com botões empilhados e "Excluir" por cima; sem rolagem horizontal. ✔
+
+**Prints em `docs/evidencias/`:** `RF45-dialogo-nova-aula-conteudo.png`, `RF45-editar-aula-desktop.png`,
+`RF45-confirmar-excluir-desktop.png`, `RNF-45.5-sem-excluir-com-presenca.png`,
+`RNF-45.2-put-consolidada-400.png`, `RNF-45.2-delete-consolidada-400.png`, `RF45-editar-aula-360.png`,
+`RF45-confirmar-excluir-360.png`.
+
+**Observação registrada:** para o Professor, `GET /api/aulas/{id}` de aula inexistente devolve
+400 (o guarda de acesso lança antes do serviço); para a gestão, 404. Comportamento anterior à
+6.5, não alterado; fica para a 7.1.
+
+**Registro para o Plano (v1.5):** seção 4 (linha `api/aulas` e RF45 → Atende), seção 5 (linha
+6.5 atendida em 15/10/2026), seção 6.14 (ATENDIDA; 9 casos; exclusão → 204), seção 7 (9 casos),
+seção 9 (retirar a linha RF45; acrescentar o CSU09 passo 4 com "e, opcionalmente, o tema e o
+conteúdo"). Texto completo no relato da entrega e em `docs/decisoes/etapa-6.md`, 1.9.
