@@ -16,6 +16,8 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
         public int TurmaId { get; init; }
         public int MateriaId { get; init; }
         public int ProfessorPessoaId { get; init; }
+        // Pessoa do professor sem atribuição na turma (RF45: não pode ser o responsável).
+        public int ProfessorSemAtribuicaoPessoaId { get; init; }
         public int MatriculaAId { get; init; }
         public int MatriculaBId { get; init; }
         public int MatriculaInativaId { get; init; }
@@ -81,6 +83,7 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
                 TurmaId = turma.Id,
                 MateriaId = materia.Id,
                 ProfessorPessoaId = professorPessoa.Id,
+                ProfessorSemAtribuicaoPessoaId = professorForaPessoa.Id,
                 MatriculaAId = matriculaA.Id,
                 MatriculaBId = matriculaB.Id,
                 MatriculaInativaId = matriculaInativa.Id,
@@ -158,6 +161,13 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
             using var escopo = fabrica.Services.CreateScope();
             var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
             return await db.Aulas.AsNoTracking().SingleAsync(a => a.Id == aulaId);
+        }
+
+        public static async Task<Aula?> LerAulaOuNuloAsync(KoinoniaHubWebApplicationFactory fabrica, int aulaId)
+        {
+            using var escopo = fabrica.Services.CreateScope();
+            var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+            return await db.Aulas.AsNoTracking().SingleOrDefaultAsync(a => a.Id == aulaId);
         }
 
         public static async Task<List<Presenca>> LerPresencasAsync(KoinoniaHubWebApplicationFactory fabrica, int aulaId)
