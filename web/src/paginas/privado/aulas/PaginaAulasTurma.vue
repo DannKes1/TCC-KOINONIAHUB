@@ -34,6 +34,7 @@ import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
 import InputText from "primevue/inputtext";
+import Textarea from "primevue/textarea";
 import Calendar from "primevue/calendar";
 import type { MenuItem } from "primevue/menuitem";
 
@@ -45,6 +46,8 @@ import { listarAtribuicoesPorDepartamento } from "../../../aplicacao/servicos/at
 import {
   listarAulasPorDepartamento,
   criarAula,
+  atualizarAula,
+  excluirAula,
   consolidarAula,
   marcarAulaNaoRealizada,
   reabrirAula,
@@ -129,9 +132,14 @@ const professores = ref<{ id: number; nome: string }[]>([]);
 
 const dialogAberto = ref(false);
 
+// RF45: o mesmo diálogo serve ao cadastro (null) e à edição de uma aula Em aberto.
+const aulaEmEdicao = ref<AulaVM | null>(null);
+const editando = computed(() => aulaEmEdicao.value !== null);
+
 const form = reactive({
   data: null as Date | null,
   tema: "",
+  conteudo: "",
   materiaId: null as number | null,
   professorId: null as number | null,
 });
@@ -149,7 +157,8 @@ function rotuloChamada(aula: AulaVM) {
 }
 
 // Ações secundárias do ⋮ (as mesmas nos dois layouts). `visible` segue a situação
-// da aula e o perfil (RF33: consolidar/não realizada só Em aberto; reabrir só Admin).
+// da aula e o perfil (RF33: consolidar/não realizada só Em aberto; reabrir só Admin;
+// RF45: editar só Em aberto, excluir só Em aberto e sem registro de presença — CSU09 FA3).
 function itensAcoes(aula: AulaVM): MenuItem[] {
   const emAberto = aula.situacao === "EmAberto";
   return [
@@ -157,6 +166,12 @@ function itensAcoes(aula: AulaVM): MenuItem[] {
       label: "Ver presenças registradas",
       icon: "pi pi-list-check",
       command: () => abrirPresencas(aula),
+    },
+    {
+      label: "Editar aula",
+      icon: "pi pi-pencil",
+      visible: emAberto,
+      command: () => abrirEditar(aula),
     },
     {
       label: "Consolidar chamada",
@@ -176,12 +191,19 @@ function itensAcoes(aula: AulaVM): MenuItem[] {
       visible: !emAberto && podeReabrir.value,
       command: () => confirmarReabrir(aula),
     },
+    {
+      label: "Excluir aula",
+      icon: "pi pi-trash",
+      visible: emAberto && !aula.possuiPresencas,
+      command: () => confirmarExcluir(aula),
+    },
   ];
 }
 
 function limparForm() {
   form.data = null;
   form.tema = "";
+  form.conteudo = "";
   form.materiaId = null;
   form.professorId = null;
 }
@@ -189,6 +211,22 @@ function limparForm() {
 function abrirNovo() {
   clearErrors();
   limparForm();
+  aulaEmEdicao.value = null;
+  dialogAberto.value = true;
+}
+
+// RF45 / CSU09 FA1: o diálogo abre preenchido com a aula Em aberto escolhida.
+function abrirEditar(aula: AulaVM) {
+  if (aula.situacao !== "EmAberto") return;
+
+  clearErrors();
+  const data = new Date(aula.data);
+  form.data = Number.isNaN(data.getTime()) ? null : data;
+  form.tema = aula.tema ?? "";
+  form.conteudo = aula.conteudo ?? "";
+  form.materiaId = aula.materiaId || null;
+  form.professorId = aula.professorId || null;
+  aulaEmEdicao.value = aula;
   dialogAberto.value = true;
 }
 
@@ -230,21 +268,55 @@ async function salvar() {
     return;
   }
 
-  await run(async () => {
-    const dataIso = (form.data as Date).toISOString();
+  const emEdicao = aulaEmEdicao.value;
 
-    await criarAula({
-      Data: dataIso,
-      Tema: form.tema?.trim() || null,
-      MateriaId: form.materiaId as number,
-      ProfessorId: form.professorId as number,
-    });
+  await run(
+    async () => {
+      const dados = {
+        Data: (form.data as Date).toISOString(),
+        Tema: form.tema?.trim() || null,
+        Conteudo: form.conteudo?.trim() || null,
+        MateriaId: form.materiaId as number,
+        ProfessorId: form.professorId as number,
+      };
 
-    toastSuccess("Aula criada com sucesso.", "Criada");
+      if (emEdicao) {
+        await atualizarAula(emEdicao.id, dados);
+        toastSuccess("Aula atualizada com sucesso.", "Atualizada");
+      } else {
+        await criarAula(dados);
+        toastSuccess("Aula criada com sucesso.", "Criada");
+      }
 
-    dialogAberto.value = false;
-    await recarregarAulas();
-  }, "Não foi possível criar a aula.");
+      dialogAberto.value = false;
+      aulaEmEdicao.value = null;
+      await recarregarAulas();
+    },
+    emEdicao
+      ? "Não foi possível atualizar a aula."
+      : "Não foi possível criar a aula.",
+  );
+}
+
+// RF45 / CSU09 FA2 (RNFs 45.2 e 45.5): só Em aberto e sem nenhum registro de
+// presença; a confirmação é a comum do App.vue.
+function confirmarExcluir(aula: AulaVM) {
+  if (aula.situacao !== "EmAberto" || aula.possuiPresencas) return;
+
+  confirm.require({
+    header: "Excluir aula",
+    message: `A aula de ${formatarData(aula.data)} (${aula.nomeMateria}) será excluída definitivamente. Deseja continuar?`,
+    icon: "pi pi-exclamation-triangle",
+    acceptLabel: "Excluir",
+    rejectLabel: "Cancelar",
+    accept: async () => {
+      await run(async () => {
+        await excluirAula(aula.id);
+        toastSuccess("Aula excluída com sucesso.", "Excluída");
+        await recarregarAulas();
+      }, "Não foi possível excluir a aula.");
+    },
+  });
 }
 
 async function recarregarAulas() {
@@ -525,8 +597,9 @@ onMounted(carregarTudo);
       modal
       :closable="!carregando"
       :dismissableMask="!carregando"
-      header="Nova aula"
+      :header="editando ? 'Editar aula' : 'Nova aula'"
       style="width: 600px; max-width: 92vw"
+      data-testid="aula-dialogo"
     >
       <div class="page-container">
         <div style="display: flex; flex-direction: column; gap: 6px">
@@ -587,6 +660,23 @@ onMounted(carregarTudo);
           />
         </div>
 
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label>Conteúdo (opcional)</label>
+          <Textarea
+            v-model="form.conteudo"
+            rows="3"
+            autoResize
+            placeholder="Resumo do que será ministrado."
+            data-testid="aula-conteudo"
+          />
+          <FieldError
+            :texto="
+              firstFieldError(fieldErrors, 'Conteudo') ||
+              firstFieldError(fieldErrors, 'conteudo')
+            "
+          />
+        </div>
+
         <FieldError
           :texto="
             firstFieldError(fieldErrors, 'DepartamentoId') ||
@@ -606,6 +696,7 @@ onMounted(carregarTudo);
           label="Salvar"
           icon="pi pi-check"
           :loading="carregando"
+          data-testid="aula-salvar"
           @click="salvar"
         />
       </template>

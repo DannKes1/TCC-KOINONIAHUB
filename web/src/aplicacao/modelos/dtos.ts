@@ -211,10 +211,16 @@ export type AulaVM = {
   id: number;
   data: string;
   tema: string | null;
+  // Conteúdo da aula (Etapa 6.5, aditivo na API): preenche o diálogo de edição (RF45).
+  conteudo: string | null;
   // Situação da aula (RF31): EmAberto | Consolidada | NaoRealizada.
   situacao: SituacaoAula;
   // Em aberto com data já ocorrida (RNF 31.3), calculado pela API.
   pendenteFechamento: boolean;
+  // Já existe registro de presença (Etapa 6.5, aditivo): a tela não oferece
+  // Excluir (RNF 45.5, CSU09 FA3). Sem o campo na resposta, vale `true`: nunca
+  // oferecer uma exclusão que a API vai recusar.
+  possuiPresencas: boolean;
   quantidadeVisitantes: number;
   materiaId: number;
   nomeMateria: string;
@@ -239,6 +245,16 @@ export type AulaCriarDTO = {
   Tema?: string | null;
   Conteudo?: string | null;
   Observacoes?: string | null;
+  MateriaId: number;
+  ProfessorId: number;
+};
+
+// RF45: os campos editáveis de uma aula Em aberto (sem situação, visitantes ou
+// observações, que pertencem à chamada e ao fechamento).
+export type AulaAtualizarDTO = {
+  Data: string;
+  Tema?: string | null;
+  Conteudo?: string | null;
   MateriaId: number;
   ProfessorId: number;
 };

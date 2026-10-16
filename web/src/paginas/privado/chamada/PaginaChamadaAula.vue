@@ -275,7 +275,7 @@ async function salvar() {
   );
 }
 
-// RF33 / CSU11: consolidar exige aula Em aberto e chamada completa. Passo 2 (6.4-C):
+// RF33 / CSU11: consolidar exige aula Em aberto e chamada completa. Passos 2–4 (6.4-C):
 // com alteração não salva ou aluno sem registro, a confirmação informa quais alunos
 // serão registrados como ausentes e, confirmada, a chamada é gravada antes de
 // consolidar. FA1 (400 com alunosSemRegistro[]) fica para o caso de a API ainda

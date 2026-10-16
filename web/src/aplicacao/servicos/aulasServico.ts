@@ -1,5 +1,10 @@
 import { clienteHttp } from "./clienteHttp";
-import type { AlunoSemRegistroVM, AulaVM, AulaCriarDTO } from "../modelos/dtos";
+import type {
+  AlunoSemRegistroVM,
+  AulaVM,
+  AulaAtualizarDTO,
+  AulaCriarDTO,
+} from "../modelos/dtos";
 import {
   ehPendenteFechamento,
   normalizarSituacaoAula,
@@ -9,17 +14,22 @@ function normalizarAula(bruto: any): AulaVM {
   const situacao = normalizarSituacaoAula(bruto?.Situacao ?? bruto?.situacao);
   const data = String(bruto?.Data ?? bruto?.data ?? "");
   const pendenteDaApi = bruto?.PendenteFechamento ?? bruto?.pendenteFechamento;
+  const possuiPresencasDaApi = bruto?.PossuiPresencas ?? bruto?.possuiPresencas;
 
   return {
     id: bruto?.Id ?? bruto?.id ?? 0,
     data,
     tema: bruto?.Tema ?? bruto?.tema ?? null,
+    conteudo: bruto?.Conteudo ?? bruto?.conteudo ?? null,
     situacao,
     // A API calcula (Plano 6.2); a regra local só cobre resposta sem o campo.
     pendenteFechamento:
       typeof pendenteDaApi === "boolean"
         ? pendenteDaApi
         : ehPendenteFechamento(situacao, data),
+    // Sem o campo (API anterior à 6.5), assume que há registros: Excluir não aparece.
+    possuiPresencas:
+      typeof possuiPresencasDaApi === "boolean" ? possuiPresencasDaApi : true,
     quantidadeVisitantes: Number(
       bruto?.QuantidadeVisitantes ?? bruto?.quantidadeVisitantes ?? 0,
     ),
@@ -51,6 +61,18 @@ export async function obterAula(id: number) {
 export async function criarAula(dto: AulaCriarDTO) {
   const resposta = await clienteHttp.post(`/api/aulas`, dto);
   return normalizarAula(resposta.data);
+}
+
+// RF45 — editar aula Em aberto (RNFs 45.2 e 45.4; 400 quando a situação, a
+// matéria ou o professor não permitem).
+export async function atualizarAula(id: number, dto: AulaAtualizarDTO) {
+  const resposta = await clienteHttp.put(`/api/aulas/${id}`, dto);
+  return normalizarAula(resposta.data);
+}
+
+// RF45 — excluir aula Em aberto sem nenhum registro de presença (RNF 45.5).
+export async function excluirAula(id: number) {
+  await clienteHttp.delete(`/api/aulas/${id}`);
 }
 
 // RF33 — consolidar (só Em aberto e com chamada completa; 400 com
