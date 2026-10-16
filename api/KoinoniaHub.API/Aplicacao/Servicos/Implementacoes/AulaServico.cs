@@ -56,23 +56,10 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             };
 
             var criada = await _repositorio.CriarAsync(aula);
+            criada.Materia = materia;
+            criada.Professor = professor;
 
-            return new AulaRespostaDto
-            {
-                Id = criada.Id,
-                Data = criada.Data,
-                Tema = criada.Tema,
-                Situacao = criada.Situacao,
-                PendenteFechamento = CalcularPendenteFechamento(criada),
-                QuantidadeVisitantes = criada.QuantidadeVisitantes,
-                MateriaId = materia.Id,
-                NomeMateria = materia.Nome,
-                DepartamentoId = materia.DepartamentoId,
-                NomeDepartamento = materia.Departamento.Nome,
-                ProfessorId = professor.Id,
-                NomeProfessor = professor.Nome,
-                CriadoEm = criada.CriadoEm
-            };
+            return Mapear(criada, possuiPresencas: false);
         }
 
         public async Task<List<AulaRespostaDto>> ListarPorDepartamentoAsync(int igrejaId, int departamentoId)
@@ -84,22 +71,16 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             var aulas = await _repositorio.ListarPorDepartamentoAsync(igrejaId, departamentoId);
 
-            return aulas.Select(a => new AulaRespostaDto
-            {
-                Id = a.Id,
-                Data = a.Data,
-                Tema = a.Tema,
-                Situacao = a.Situacao,
-                PendenteFechamento = CalcularPendenteFechamento(a),
-                QuantidadeVisitantes = a.QuantidadeVisitantes,
-                MateriaId = a.MateriaId,
-                NomeMateria = a.Materia.Nome,
-                DepartamentoId = a.Materia.DepartamentoId,
-                NomeDepartamento = a.Materia.Departamento.Nome,
-                ProfessorId = a.ProfessorId,
-                NomeProfessor = a.Professor.Nome,
-                CriadoEm = a.CriadoEm
-            }).ToList();
+            // Etapa 6.5: uma consulta só diz quais aulas da turma já têm presença
+            // (PossuiPresencas), em vez de uma por aula.
+            var comPresencas = await _db.Presencas.AsNoTracking()
+                .Where(p => p.Aula.Materia.DepartamentoId == departamentoId)
+                .Select(p => p.AulaId)
+                .Distinct()
+                .ToListAsync();
+            var idsComPresencas = comPresencas.ToHashSet();
+
+            return aulas.Select(a => Mapear(a, idsComPresencas.Contains(a.Id))).ToList();
         }
 
         public async Task<AulaRespostaDto?> ObterPorIdAsync(int igrejaId, int aulaId)
@@ -107,22 +88,76 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             var aula = await _repositorio.ObterPorIdAsync(igrejaId, aulaId);
             if (aula is null) return null;
 
-            return new AulaRespostaDto
-            {
-                Id = aula.Id,
-                Data = aula.Data,
-                Tema = aula.Tema,
-                Situacao = aula.Situacao,
-                PendenteFechamento = CalcularPendenteFechamento(aula),
-                QuantidadeVisitantes = aula.QuantidadeVisitantes,
-                MateriaId = aula.MateriaId,
-                NomeMateria = aula.Materia.Nome,
-                DepartamentoId = aula.Materia.DepartamentoId,
-                NomeDepartamento = aula.Materia.Departamento.Nome,
-                ProfessorId = aula.ProfessorId,
-                NomeProfessor = aula.Professor.Nome,
-                CriadoEm = aula.CriadoEm
-            };
+            var possuiPresencas = await _db.Presencas.AnyAsync(p => p.AulaId == aulaId);
+            return Mapear(aula, possuiPresencas);
+        }
+
+        // RF45 / RNFs 45.2 e 45.4 (CSU09 FA1): só aula Em aberto; a matéria nova tem
+        // de ser da mesma turma da aula e o professor precisa de atribuição ativa de
+        // Professor nessa turma (mesma regra do cadastro, RNF 21.3). AtualizadoEm é
+        // preenchido pelo DbContext.
+        public async Task<AulaRespostaDto?> AtualizarAsync(int igrejaId, int aulaId, AulaAtualizarRequisicaoDto dto)
+        {
+            var aula = await _repositorio.ObterPorIdAsync(igrejaId, aulaId);
+            if (aula is null) return null;
+
+            if (aula.Situacao != SituacaoAula.EmAberto)
+                throw new InvalidOperationException("Somente aulas Em aberto podem ser editadas.");
+
+            var departamentoId = aula.Materia.DepartamentoId;
+
+            var materia = await _db.Materias
+                .Include(m => m.Departamento)
+                .FirstOrDefaultAsync(m =>
+                    m.Id == dto.MateriaId &&
+                    m.DepartamentoId == departamentoId &&
+                    m.Departamento.IgrejaId == igrejaId);
+
+            if (materia is null)
+                throw new InvalidOperationException("A matéria informada não pertence à turma desta aula.");
+
+            var professor = await _db.Pessoas
+                .Where(p => p.IgrejaId == igrejaId && p.Id == dto.ProfessorId)
+                .Where(p => p.Atribuicoes.Any(a =>
+                    a.DepartamentoId == departamentoId &&
+                    a.Funcao == "Professor" &&
+                    a.Ativo))
+                .FirstOrDefaultAsync();
+
+            if (professor is null)
+                throw new InvalidOperationException("Professor não encontrado ou sem atribuição ativa de Professor neste departamento.");
+
+            aula.Data = dto.Data;
+            aula.Tema = dto.Tema;
+            aula.Conteudo = dto.Conteudo;
+            aula.MateriaId = materia.Id;
+            aula.Materia = materia;
+            aula.ProfessorId = professor.Id;
+            aula.Professor = professor;
+
+            await _db.SaveChangesAsync();
+
+            var possuiPresencas = await _db.Presencas.AnyAsync(p => p.AulaId == aulaId);
+            return Mapear(aula, possuiPresencas);
+        }
+
+        // RF45 / RNFs 45.2 e 45.5 (CSU09 FA2): só aula Em aberto e sem nenhum registro
+        // de presença — a mesma condição da RNF 33.7 para Não realizada. Aula com
+        // registros permanece Em aberto até ser consolidada.
+        public async Task<bool> ExcluirAsync(int igrejaId, int aulaId)
+        {
+            var aula = await _repositorio.ObterPorIdAsync(igrejaId, aulaId);
+            if (aula is null) return false;
+
+            if (aula.Situacao != SituacaoAula.EmAberto)
+                throw new InvalidOperationException("Somente aulas Em aberto podem ser excluídas.");
+
+            var possuiPresencas = await _db.Presencas.AnyAsync(p => p.AulaId == aulaId);
+            if (possuiPresencas)
+                throw new InvalidOperationException("Uma aula com registros de presença não pode ser excluída.");
+
+            await _repositorio.ExcluirAsync(aula);
+            return true;
         }
 
         // RF33 / RNFs 32.6, 33.2 e 33.3: só aulas Em aberto são consolidadas, e apenas
@@ -203,6 +238,26 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
         private static bool CalcularPendenteFechamento(Aula aula) =>
             aula.Situacao == SituacaoAula.EmAberto && aula.Data.Date < DateTime.UtcNow.Date;
+
+        // Exige Materia (com Departamento) e Professor carregados.
+        private static AulaRespostaDto Mapear(Aula aula, bool possuiPresencas) => new()
+        {
+            Id = aula.Id,
+            Data = aula.Data,
+            Tema = aula.Tema,
+            Conteudo = aula.Conteudo,
+            Situacao = aula.Situacao,
+            PendenteFechamento = CalcularPendenteFechamento(aula),
+            PossuiPresencas = possuiPresencas,
+            QuantidadeVisitantes = aula.QuantidadeVisitantes,
+            MateriaId = aula.MateriaId,
+            NomeMateria = aula.Materia.Nome,
+            DepartamentoId = aula.Materia.DepartamentoId,
+            NomeDepartamento = aula.Materia.Departamento.Nome,
+            ProfessorId = aula.ProfessorId,
+            NomeProfessor = aula.Professor.Nome,
+            CriadoEm = aula.CriadoEm
+        };
 
     }
 

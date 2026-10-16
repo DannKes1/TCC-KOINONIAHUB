@@ -7,5 +7,6 @@ namespace KoinoniaHub.API.Dominio.Interfaces.Repositorios
         Task<Aula> CriarAsync(Aula aula);
         Task<Aula?> ObterPorIdAsync(int igrejaId, int aulaId);
         Task<List<Aula>> ListarPorDepartamentoAsync(int igrejaId, int departamentoId);
+        Task ExcluirAsync(Aula aula);
     }
 }

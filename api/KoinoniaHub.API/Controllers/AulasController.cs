@@ -96,6 +96,61 @@ namespace KoinoniaHub.API.Controllers
             }
         }
 
+        // RF45 / RNF 45.1: gestão ou atribuição ativa na turma, como no cadastro.
+        // 45.2 e 45.4 devolvem 400 pelo serviço.
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> Atualizar([FromRoute] int id, [FromBody] AulaAtualizarRequisicaoDto dto)
+        {
+            var igrejaId = UsuarioAutenticado.ObterIgrejaId(User);
+            var usuarioId = UsuarioAutenticado.ObterUsuarioId(User);
+            var perfil = UsuarioAutenticado.ObterPerfil(User);
+
+            try
+            {
+                await _autorizacao.GarantirAcessoAulaAsync(igrejaId, usuarioId, perfil, id);
+
+                var resposta = await _servico.AtualizarAsync(igrejaId, id, dto);
+                if (resposta is null) return NotFound();
+
+                return Ok(resposta);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { mensagem = ex.Message });
+            }
+        }
+
+        // RF45 / RNFs 45.1, 45.2 e 45.5: só aula Em aberto e sem registro de presença.
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Excluir([FromRoute] int id)
+        {
+            var igrejaId = UsuarioAutenticado.ObterIgrejaId(User);
+            var usuarioId = UsuarioAutenticado.ObterUsuarioId(User);
+            var perfil = UsuarioAutenticado.ObterPerfil(User);
+
+            try
+            {
+                await _autorizacao.GarantirAcessoAulaAsync(igrejaId, usuarioId, perfil, id);
+
+                var ok = await _servico.ExcluirAsync(igrejaId, id);
+                if (!ok) return NotFound();
+
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { mensagem = ex.Message });
+            }
+        }
+
         // RF33 / RNF 33.1: gestão ou atribuição ativa na turma. Chamada incompleta
         // (32.6/33.3) devolve 400 com a lista dos alunos sem registro.
         [HttpPatch("{id:int}/consolidar")]

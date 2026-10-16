@@ -46,5 +46,11 @@ namespace KoinoniaHub.API.Infraestrutura.Repositorios
                 .OrderByDescending(a => a.Data)
                 .ToListAsync();
         }
+
+        public async Task ExcluirAsync(Aula aula)
+        {
+            _db.Aulas.Remove(aula);
+            await _db.SaveChangesAsync();
+        }
     }
 }

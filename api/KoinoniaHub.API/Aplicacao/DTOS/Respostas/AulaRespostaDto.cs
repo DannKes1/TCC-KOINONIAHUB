@@ -5,10 +5,19 @@
         public int Id { get; set; }
         public DateTime Data { get; set; }
         public string? Tema { get; set; }
-       
+
+        // Etapa 6.5 (aditivo): o conteúdo entra na resposta para o diálogo de edição
+        // (RF45) vir preenchido.
+        public string? Conteudo { get; set; }
+
         public string Situacao { get; set; } = string.Empty;
 
         public bool PendenteFechamento { get; set; }
+
+        // Etapa 6.5 (aditivo): se a aula já tem algum registro de presença. A tela
+        // usa para não oferecer Excluir (RNF 45.5, CSU09 FA3); a API recusa de
+        // qualquer jeito.
+        public bool PossuiPresencas { get; set; }
 
         public int QuantidadeVisitantes { get; set; }
 
