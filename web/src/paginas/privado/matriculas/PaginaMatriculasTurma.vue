@@ -432,10 +432,19 @@ onMounted(carregarTudo);
               "
             >
               <strong style="font-size: 15px">{{ r.parenteNome }}</strong>
-              <Tag
-                :value="r.tipoRelacionamento"
-                :severity="severityRelacionamento(r.tipoRelacionamento)"
-              />
+              <span style="display: inline-flex; gap: 6px; flex-wrap: wrap">
+                <Tag
+                  :value="r.tipoRelacionamento"
+                  :severity="severityRelacionamento(r.tipoRelacionamento)"
+                />
+                <!-- RNF 12.3: grau inverso registrado no cadastro do parente. -->
+                <Tag
+                  v-if="r.derivado"
+                  value="derivado"
+                  severity="secondary"
+                  data-testid="tag-derivado"
+                />
+              </span>
             </div>
 
             <div

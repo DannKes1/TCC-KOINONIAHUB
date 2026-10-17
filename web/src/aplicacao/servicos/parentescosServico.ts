@@ -13,6 +13,7 @@ function normalizarParentesco(bruto: any): ParentescoVM {
     parenteCelular: (bruto?.ParenteCelular ?? bruto?.parenteCelular ?? null) as
       | string
       | null,
+    derivado: Boolean(bruto?.Derivado ?? bruto?.derivado ?? false),
   };
 }
 

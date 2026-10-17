@@ -62,6 +62,9 @@ export type ParentescoVM = {
   tipoRelacionamento: string;
   parenteNome: string;
   parenteCelular: string | null;
+  // RNF 12.3: grau inverso de um vínculo registrado no cadastro do parente
+  // (id = registro de origem; só pode ser removido por lá).
+  derivado: boolean;
 };
 
 export type ParentescoCriarDTO = {

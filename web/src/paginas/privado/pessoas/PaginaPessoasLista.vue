@@ -34,6 +34,7 @@ import {
   resumirPresencas,
 } from "../../../aplicacao/dominio/indicadoresPresenca";
 import TagSituacaoAula from "../../../components/ui/TagSituacaoAula.vue";
+import TabelaParentescos from "../../../components/pessoas/TabelaParentescos.vue";
 
 import type {
   PessoaVM,
@@ -294,8 +295,12 @@ const pessoasDisponiveisParaParentesco = computed(() => {
   const pessoaBase = pessoaSelecionadaParentescos.value;
   if (!pessoaBase) return [];
 
+  // Só os vínculos registrados aqui excluem a pessoa do seletor: uma derivada não
+  // impede registrar o vínculo explícito (que então passa a valer no lugar dela).
   const idsJaRelacionados = new Set(
-    parentescos.value.map((item) => item.parenteId),
+    parentescos.value
+      .filter((item) => !item.derivado)
+      .map((item) => item.parenteId),
   );
 
   return [...pessoas.value]
@@ -790,28 +795,11 @@ onMounted(carregarLista);
         />
 
         <LoadingOverlay :loading="carregando" texto="Carregando parentescos...">
-          <DataTable
-            :value="parentescos"
-            dataKey="id"
-            responsiveLayout="scroll"
-          >
-            <template #empty>
-              <div style="padding: 14px; opacity: 0.7">Nenhum parentesco cadastrado.</div>
-            </template>
-            <Column field="parenteNome" header="Parente" />
-            <Column field="tipoRelacionamento" header="Relacionamento" />
-
-            <Column header="Ações" style="width: 110px">
-              <template #body="{ data }">
-                <Button
-                  icon="pi pi-trash"
-                  severity="danger"
-                  :disabled="carregando"
-                  @click="confirmarRemocaoParentesco(data)"
-                />
-              </template>
-            </Column>
-          </DataTable>
+          <TabelaParentescos
+            :itens="parentescos"
+            :carregando="carregando"
+            @remover="confirmarRemocaoParentesco"
+          />
         </LoadingOverlay>
       </div>
 
