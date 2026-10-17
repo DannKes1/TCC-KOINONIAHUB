@@ -1,4 +1,4 @@
-# KoinoniaHub · Plano de Desenvolvimento e Testes do TCC 2 · v1.5
+# KoinoniaHub · Plano de Desenvolvimento e Testes do TCC 2 · v1.6
 
 **KoinoniaHub — Plano de Desenvolvimento e Testes do TCC 2**
 
@@ -6,11 +6,11 @@
 
 Referência normativa: Monografia — versão de 10/10/2026 (RF1 a RF45, CSU01 a CSU24, com RF44, RF45, RNFs 12.3/12.4 e 21.3–21.5). Cópia de leitura em `docs/monografia.md`; a fonte oficial é o .docx do autor. Correções de redação ainda não aplicadas no .docx estão na seção 9.
 
-Estado do código analisado: repositório TCC-KOINONIAHUB, branch `main` após o fechamento da 6.5 (RF45, commitada em 16/10/2026). Última migration: PessoaEnxuta (26/09/2026) — nenhuma depois. Testes: **123 xUnit · 105 Vitest (20 arquivos) · 10 Playwright (3 desktop + 7 celular)**.
+Estado do código analisado: repositório TCC-KOINONIAHUB, branch `main` após o fechamento da 6.6 (RF12 parentesco derivado, 16–17/10/2026) — Etapa 6 concluída. Última migration: PessoaEnxuta (26/09/2026) — nenhuma depois. Testes: **136 xUnit · 111 Vitest (21 arquivos) · 10 Playwright (3 desktop + 7 celular)**.
 
 Autor: Daniel Rocha · IFRO Campus Ji-Paraná · CST-ADS
 
-**Versão 1.5 — 16 de outubro de 2026**
+**Versão 1.6 — 17 de outubro de 2026**
 
 | Versão | Data | Mudanças |
 | --- | --- | --- |
@@ -20,6 +20,7 @@ Autor: Daniel Rocha · IFRO Campus Ji-Paraná · CST-ADS
 | 1.3 | 10/10/2026 | Retrato do código após a 6.4-A. Aplicados os registros acumulados: avaliação pré-Etapa 7 (8.1–8.5), recorte da 6.4 (7.1–7.4), LEIA-ME da 6.3 (5.1–5.7) e da 6.4-A (4.1–4.5). Baseline RF1–RF45 / CSU01–CSU24. Seções 2.3, 2.4, 3 e 4 refeitas contra o código; seção 5 com as etapas 0–5 concluídas, Etapa 6 desdobrada (6.1 a 6.6) e Etapa 7 redefinida (7.1 a 7.3); seção 6 com as especificações concluídas marcadas e as novas (RF44, responsividade, Página da Turma, RF45, parentesco derivado, perfil × atribuição, cópia e restauração); seção 7 com o inventário real de testes e a configuração real do Playwright (http, ambiente E2E, PostgreSQL local, dois projetos); seção 9 sem os itens já aplicados na monografia. Cópia oficial passa a ser `docs/plano-de-desenvolvimento.md` no repositório. |
 | 1.4 | 14/10/2026 | Fechamento da Etapa 6.4 (6.4-B de 10/10, corretiva de 12/10, ajuste de 13/10 e 6.4-C de 14/10). Aplicados os registros dos quatro LEIA-MEs. Contrato: `DepartamentoId`/`NomeDepartamento` no `AulaRespostaDto` e `Registrado` no item da chamada. Seção 6.12 com a chamada nos dois layouts, barra `sticky`, confirmações no tema, "Sem registro" desde a carga e o CSU11 passo 2 novo. Seções 7.1–7.3 com os totais 114 / 102 / 3 + 7, E2E-M2 e o modo estrito. Seção 9 sem os itens resolvidos. A partir da 6.5 o código é desenvolvido no Claude Code, com este Plano e `docs/monografia.md` como contexto; o projeto do assistente web continua para monografia, Plano e decisões de requisito. |
 | 1.5 | 16/10/2026 | Fechamento da Etapa 6.5 (RF45, 15–16/10/2026; primeira entrega feita no Claude Code). Contrato: PUT e DELETE /api/aulas/{id}; `Conteudo` e `PossuiPresencas` no `AulaRespostaDto` (aditivos, decisão do autor em 15/10). Seção 6.14 atendida (9 casos; exclusão → 204). Seções 7.1–7.2 com os totais 123 / 105 (20 arquivos). Monografia revisada em 15/10 (CSU11 passos 2–6 reorganizados, CSU12 aba Alunos, maiúsculas das situações): seção 9 sem esses itens e com a proposta do CSU09 passo 4. Rastros "CSU11 passo 2" → "passos 2–4". |
+| 1.6 | 17/10/2026 | Fechamento da Etapa 6.6 (RF12 parentesco derivado na leitura, 16–17/10/2026) e da Etapa 6. Contrato: campo aditivo `Derivado` em `ParentescoRespostaDto` e no item de parentesco de `PessoaTurmaRespostaDto`; DELETE /api/pessoas/{id}/parentescos/{parentescoId} pelo lado derivado → 400. Seção 6.15 atendida (13 casos; microdecisões: Id da derivada = registro de origem; comparação do tipo exata com acento, sem maiúsculas). Front: DataTable do diálogo de Parentescos extraída para `TabelaParentescos.vue`; ⓘ como botão que abre a explicação na própria linha (duas corretivas dos testes manuais: balão órfão do `v-tooltip` e `title` inerte no toque). Seções 7.1–7.2 com os totais 136 / 111 (21 arquivos). Seção 9 sem a linha de reversão do RF12; trabalho futuro do formulário de Parentescos a 360 px. |
 
 ---
 
@@ -85,7 +86,7 @@ TCC-KOINONIAHUB/
     Program.cs (public partial class Program), appsettings.json, appsettings.Development.json,
     appsettings.E2E.json (local, nunca commitado com a string do autor), Properties/launchSettings.json (perfis https e e2e)
   api/KoinoniaHub.API.Tests/     (xUnit; Infraestrutura/ com KoinoniaHubWebApplicationFactory, ContextoDeTeste,
-                                  sementes; 21 classes — seção 7.1)
+                                  sementes; 23 classes — seção 7.1)
   web/
     src/aplicacao/               (rotas/ com guards; armazenamentos/ (store de autenticação); servicos/; dominio/
                                   (situacaoAula, indicadoresPresenca, chamada); composables/ (usarTelaCompacta,
@@ -121,7 +122,7 @@ Todos exigem autenticação, salvo os marcados como públicos. Restrições de p
 | api/usuarios, api/usuarios/{id}, api/usuarios/{id}/convite | POST/GET, GET/PATCH, POST | Admin (classe). Sem rota de reset com senha (removida; RNF 15.3, teste de 404). |
 | api/igrejas, api/igrejas/{id} | POST, GET/PUT | GET: autenticado, só a própria igreja. PUT: Admin e só a igreja do token (RF44); substitui os cinco campos (Nome, Cidade, Estado, Email, Telefone) — campo omitido vira nulo. POST: Admin, existente desde o início, sem uso pela SPA e sem RF (ver seção 9). |
 | api/pessoas, api/pessoas/importar, api/pessoas/{id} | POST/GET, POST, GET/PUT | Escrita e listagem: gestão. GET /{id}: gestão completo; Professor via GarantirAcessoPessoaAsync com DTO reduzido (11.3). |
-| api/pessoas/{id}/parentescos, .../{parentescoId} | POST/GET, DELETE | Escrita: gestão; GET: gestão e Professor (via GarantirAcessoPessoaAsync) |
+| api/pessoas/{id}/parentescos, .../{parentescoId} | POST/GET, DELETE | Escrita: gestão; GET: gestão e Professor (via GarantirAcessoPessoaAsync); devolve também o grau inverso dos vínculos registrados no cadastro de outras pessoas (`derivado: true`, Id do registro de origem; omitido quando há registro explícito inverso — 12.3). DELETE pelo lado derivado → 400 "Este vínculo foi registrado no cadastro de X e só pode ser removido por lá." |
 | api/pessoas/{id}/presencas | GET | Gestão; Professor limitado às turmas com atribuição ativa (34.3); próprio usuário |
 | api/departamentos, /{id} | POST/GET, GET/PUT | Escrita: gestão |
 | api/departamentos/{id}/matriculas, /alunos, /pessoas-disponiveis, /matriculas/{matriculaId} | POST, GET, GET, DELETE | Gestão ou atribuição ativa; pessoas-disponiveis com DTO reduzido para Professor (28.3) |
@@ -182,7 +183,7 @@ Legenda: **OK** = faz o que a monografia diz · **Parcial** = existe, falta regr
 | RF9 Inativar/Reativar | OK | — |
 | RF10 Pesquisar e listar | OK | Client-side (volume de ~200 pessoas). Celular: utilizável com rolagem (administrativa). |
 | RF11 Visualizar pessoa | OK | DTO reduzido para Professor (11.3); testes e evidências. |
-| RF12 Parentescos | Parcial | Adicionar, listar e remover OK. Falta o vínculo derivado na leitura (12.3) e a recusa de remover pelo lado derivado (12.4) — 6.6, seção 6.15. |
+| RF12 Parentescos | OK | Adicionar, listar e remover; vínculo derivado na leitura e recusa de remover pelo lado derivado (12.3), semântica do tipo (12.4) — 6.6, seção 6.15. Também no DTO reduzido do Professor (11.3). |
 | RF41 Importar CSV | OK | Sinalização para conferência (41.3) exibida (6.1). |
 
 ### 4.3 Usuários, acesso e igreja
@@ -249,8 +250,8 @@ Legenda: **OK** = faz o que a monografia diz · **Parcial** = existe, falta regr
 | 3. Regras de aula | **Concluída** (29/09/2026) — RF31–RF33 completos, Vitest instalado. |
 | 4. Relatórios | **Concluída** (30/09/2026) — só Consolidadas em cinco relatórios, pendentes, gate de exportação, painel do aluno corrigido. |
 | 5. Termo de uso | **Concluída** (5.1 em 01/10, 5.2 e 5.3 em 03/10/2026) — RF42/RF43, gates, filtro global na API (decisão do autor), Playwright E2E-01 a E2E-03. |
-| 6. Acabamento, RF44, responsividade e turma | **Em andamento** — 6.1 (06/10), 6.2 RF44 (07/10), 6.3 responsividade (08/10) **6.4 concluída em 14/10/2026** (A em 09/10, B em 10/10, corretiva de desktop em 12/10, ajuste em 13/10, C em 14/10: xUnit 114; Vitest 102; Playwright 3 + 7) e **6.5 concluída em 16/10/2026** (RF45, no Claude Code: xUnit 123; Vitest 105; Playwright 3 + 7); 6.6 aberta. A etapa foi reaberta em 08/10/2026 pela avaliação pré-Etapa 7 (`docs/decisoes/avaliacao-pre-etapa7.md`): responsividade e RF20 eram requisitos escritos e não atendidos; RF45 e RNF 12.3 entraram na monografia. |
-| 7. Autorização, E2E e Resultados | **Pendente** — 7.1, 7.2 e 7.3 abaixo. |
+| 6. Acabamento, RF44, responsividade e turma | **Concluída em 17/10/2026** — 6.1 (06/10), 6.2 RF44 (07/10), 6.3 responsividade (08/10) **6.4 concluída em 14/10/2026** (A em 09/10, B em 10/10, corretiva de desktop em 12/10, ajuste em 13/10, C em 14/10: xUnit 114; Vitest 102; Playwright 3 + 7) e **6.5 concluída em 16/10/2026** (RF45, no Claude Code: xUnit 123; Vitest 105; Playwright 3 + 7) e **6.6 concluída em 17/10/2026** (RF12 parentesco derivado: xUnit 136; Vitest 111; Playwright 3 + 7). **Etapa 6 concluída.** A etapa foi reaberta em 08/10/2026 pela avaliação pré-Etapa 7 (`docs/decisoes/avaliacao-pre-etapa7.md`): responsividade e RF20 eram requisitos escritos e não atendidos; RF45 e RNF 12.3 entraram na monografia. |
+| 7. Autorização, E2E e Resultados | **Pendente** — 7.1, 7.2 e 7.3 abaixo; próxima: 7.1. |
 
 | **Etapa** | **Conteúdo** | **Definição de pronto** |
 | --- | --- | --- |
@@ -265,7 +266,7 @@ Legenda: **OK** = faz o que a monografia diz · **Parcial** = existe, falta regr
 | 6.3 Responsividade | RNFs "interface responsiva"; critério: 768 px; fluxo do professor — Login, Termo, Painel, Minhas Turmas, Aulas, Chamada, Presenças, Minha Frequência, Meus Dados — a 360 px sem rolagem horizontal da página, alvos de toque ≥ 40 px, Aluno e Presente visíveis na chamada; menu em Drawer; telas administrativas apenas utilizáveis com rolagem; projeto mobile do Playwright com E2E-01, E2E-02 e E2E-M1. | Projeto mobile verde; prints RNF-responsividade-*.png. |
 | 6.4 Página da Turma e celular | Página da Turma (RF20: /departamentos/:id com cabeçalho, equipe e abas Alunos · Matérias · Aulas · Atribuições como rotas filhas, URLs preservadas) e fluxo operacional no celular (seção 6.12, critério estrito). Entregas: **6.4-A** peças reutilizáveis, Página da Turma, aba Aulas, Minhas Turmas e painel do professor em cartões; **6.4-B** chamada tocável com barra fixa Salvar · Consolidar (Consolidar salva as pendentes), chamada enxuta nos dois layouts, Presenças, painel do aluno e Minha Frequência em cartões, "voltar" hierárquico, "Minha frequência" só para o vínculo Aluno, mensagem de tabela vazia no painel; **corretiva (12/10)** Chamada e Presenças no desktop em grade de cartões, barra `sticky` sem cobrir o rodapé, severidade `warn`, clique duplo ignorado; **ajuste (13/10)** bloqueio de 500 ms após a gravação, `overflow` do `<main>` retirado só na rota da chamada, E2E-M2; **6.4-C** abas Alunos e Matérias em cartões, contadores do cabeçalho recontados a partir das abas, "Sem registro" visível desde a carga (campo `Registrado`), Consolidar nomeando quem será gravado como ausente (CSU11 passos 2–4), confirmação ao sair ou recarregar com alterações não salvas, confirmações e avisos globais no tema, E2E-M1 em modo estrito, prints, descrição da Tela de Turma para a figura do protótipo. | Critério da seção 6.12 a 360 × 640; desktop inalterado nas tabelas existentes, salvo Chamada e Presenças; Vitest dos componentes novos; E2E-M1 estrito e E2E-M2 verdes; prints regenerados. **Atendida em 14/10/2026** (`docs/testes.md`, Etapa 6.4). |
 | 6.5 RF45 Editar aula | Seção 6.14 (editar e excluir aula Em aberto; exclusão só sem registro de presença, RNF 45.5). Primeira entrega feita no Claude Code. | RF45_EditarAulaTests; Editar e Excluir no ⋮ da aba Aulas nos dois layouts; confirmação de exclusão pelo `confirm.require` comum (tema e encaixe em 360 px vêm do App.vue, sem `acceptClass`); E2E-M1 continua verde no modo estrito. **Atendida em 16/10/2026** (docs/testes.md, Etapa 6.5; docs/decisoes/etapa-6.md, 1.9). |
-| 6.6 Parentesco derivado | Seção 6.15, recorte mínimo (decisão 4a do recorte da 6.4). | Testes da tabela de inversos; tag "derivado" sem botão de remover. Se o calendário apertar: reverter 12.3/12.4 e o passo do CSU13 na monografia antes da defesa (nunca deixar texto sem implementação). |
+| 6.6 Parentesco derivado | Seção 6.15, recorte mínimo (decisão 4a do recorte da 6.4). | RF12_ParentescoDerivadoTests (13 casos); TabelaParentescos com tag "derivado", sem botão de remover e ⓘ que abre a explicação na linha; tag no diálogo Responsáveis do Professor. **Atendida em 17/10/2026** (docs/testes.md, Etapa 6.6; docs/decisoes/etapa-6.md, 1.10). |
 | 7.1 Autorização | FallbackPolicy; perfil × atribuição (RNF 21.4) em GarantirAcessoDepartamentoAsync; `perfilConta` na listagem de atribuições (21.5); inventário das evidências capturadas × faltantes; decisão sobre POST /api/igrejas; decisão sobre o GET /api/aulas/{id} de aula inexistente pelo Professor (hoje 400, porque `GarantirAcessoAulaAsync` lança antes do serviço; para a gestão é 404). | RF21_PerfilOperacionalTests; tag na tela de Atribuições; inventário em docs/testes.md. |
 | 7.2 E2E | E2E-04 a E2E-08 no desktop e E2E-04 também no projeto mobile (seção 7.3). | npm run test:e2e verde com os novos cenários. |
 | 7.3 Resultados | Tabela CSU → teste → resultado (CSU01–CSU24); procedimento de cópia e restauração executado uma vez com evidência (seção 6.17); teste `Atualizar_CampoOmitido_ViraNulo` do RF44; evidências de Segurança completas (2.6, 11.3, 14.3, 15.3, 21.4, 28.3, 33.5, 34.3, 35.4, 42.x); prints de responsividade. | Material pronto para o capítulo de Resultados (seção 7.5). |
@@ -394,7 +395,7 @@ A monografia não define medida; este é o critério operacional aprovado.
 | Testes `RF45_EditarAulaTests` | Editar Em aberto → 200 e GET reflete; Consolidada → 400; Não realizada → 400; matéria de outra turma → 400; professor sem atribuição de Professor → 400; Professor de outra turma → 403; Excluir sem presenças → 204 e some da listagem; Excluir com presenças → 400 e `possuiPresencas` verdadeiro na listagem; Excluir Consolidada → 400 (9 casos). |
 | Front | Editar e Excluir entram em `itensAcoes(aula)` (⋮ dos dois layouts), visíveis só em Em aberto (Excluir só sem presenças, pelo `possuiPresencas`; resposta sem o campo vale true); Editar reabre o diálogo de nova aula em modo edição, com o campo "Conteúdo (opcional)" nos dois modos (`aulasServico.atualizarAula`); Excluir com confirmação pelo `confirm.require` comum (o tema e o encaixe em 360 px vêm do App.vue; sem `acceptClass`). Nenhuma tabela nova nas telas operacionais: o E2E-M1 é estrito. |
 
-### 6.15 Parentesco derivado na leitura (RF12, RNFs 12.3/12.4) — PENDENTE (6.6, recorte mínimo)
+### 6.15 Parentesco derivado na leitura (RF12, RNFs 12.3/12.4) — ATENDIDA em 17/10/2026 (6.6, recorte mínimo)
 
 O vínculo é gravado uma vez; na leitura do cadastro do parente, o sistema apresenta o grau inverso, sem segundo registro, sem migration e sem mudar o DER. Semântica: o tipo descreve o parente em relação à pessoa ("Parente: Maria — Relacionamento: Mãe" = Maria é mãe da pessoa).
 
@@ -407,7 +408,7 @@ O vínculo é gravado uma vez; na leitura do cadastro do parente, o sistema apre
 | Responsável | Dependente | fixo (rótulo só derivado) |
 | Outro ou texto livre | mesmo texto, marcado "(informado no cadastro de X)" | sem inversão |
 
-A linha derivada vem com `derivado: true` e não pode ser removida por esse lado (12.4: remove-se no cadastro de origem; a tela esconde o botão e explica). Se já existir registro explícito no sentido inverso para o mesmo par, a derivada é omitida. Entra em `ParentescoRespostaDto` (gestão) e em `PessoaTurmaRespostaDto.Parentescos` (Professor, 11.3). Recorte mínimo: derivação e recusa na API + tag "derivado" e botão oculto no front.
+A linha derivada vem com `derivado: true` e não pode ser removida por esse lado (12.3, segunda frase: remove-se no cadastro de origem; DELETE → 400 "Este vínculo foi registrado no cadastro de X e só pode ser removido por lá."; a tela esconde o botão e, no lugar, um ⓘ (botão, 40 px, `aria-expanded`) mostra e esconde a explicação como texto na própria linha — sem tooltip nem Popover, nada montado fora da tabela — além de uma nota abaixo da tabela). Se já existir registro explícito no sentido inverso para o mesmo par (qualquer tipo), a derivada é omitida; por isso o seletor de parente exclui só os vínculos explícitos. Entra em `ParentescoRespostaDto` (gestão e Professor) e em `PessoaTurmaRespostaDto.Parentescos` (Professor, 11.3), pela regra única `Dominio/Regras/ParentescoInverso.Derivar(tipo, sexoOrigem, nomeOrigem)`. Microdecisões (etapa-6.md, 1.10): (1) a derivada devolve o Id do registro de origem — não há colisão com as explícitas, porque uma linha nunca aparece dos dois lados da mesma pessoa; (2) o tipo é comparado com os seis valores do seletor exatamente como escritos, com acento, sem diferenciar maiúsculas e ignorando espaços nas pontas; o que não coincide é texto livre e cai na regra do texto livre. Front: a DataTable do diálogo de Parentescos foi extraída para `components/pessoas/TabelaParentescos.vue` (mesma tabela, sem mudança visual além da tag e do botão); o diálogo Responsáveis do Professor ganhou só a tag.
 
 ### 6.16 Perfil × atribuição (RNFs 21.4, 21.5; seção 4.9) — PENDENTE (7.1)
 
@@ -437,7 +438,7 @@ Três ferramentas, três responsabilidades. Cada etapa da seção 5 só está pr
 
 Projeto KoinoniaHub.API.Tests (Microsoft.AspNetCore.Mvc.Testing 10.0.12, Microsoft.EntityFrameworkCore.Sqlite 10.0.12, xunit 2.9.3), ambiente `Testing`, **SQLite em memória** (conexão aberta durante o teste, EnsureCreated) — o provedor InMemory não aplica índices únicos nem chaves estrangeiras, e 27.2 e 32.3 são exatamente o que se quer provar. Sementes criam o aceite do termo por padrão (`aceitarTermo: false` para contas pendentes). Uma classe por RF ou regra, métodos Metodo_Cenario_ResultadoEsperado em português; testes de integração (login por cookie, asserção de status) preferidos quando a regra também é de Segurança.
 
-**Existentes — 21 classes, 114 casos verdes:**
+**Existentes — 23 classes, 136 casos verdes:**
 
 | **Classe** | **RNFs / foco** |
 | --- | --- |
@@ -461,12 +462,12 @@ Projeto KoinoniaHub.API.Tests (Microsoft.AspNetCore.Mvc.Testing 10.0.12, Microso
 | RF42_TermoTests | 1.5, 2.5, 40.5, 42.1–42.8 |
 | RF44_IgrejaTests | 44.1–44.3, 44.5 |
 | RF45_EditarAulaTests | 45.1, 45.2, 45.4, 45.5 (9 casos) |
+| RF12_ParentescoDerivadoTests | 12.3, 12.4, 11.3 (13 casos: Pai e Mãe → Filho(a); Filho(a) por sexo Masculino/Feminino/sem sexo; Irmão(ã) e Cônjuge simétricos; Responsável → Dependente; texto livre; omissão com registro inverso; DELETE pelo lado derivado → 400 e pelo de origem → 204; id inexistente → 404; derivada no DTO reduzido do Professor) |
 
 **A criar:**
 
 | **Classe** | **Casos** | **RNF** | **Etapa** |
 | --- | --- | --- | --- |
-| RF12_ParentescoDerivadoTests | Tabela de inversos (Pai/Mãe, Filho(a) por sexo, simétricos, Responsável, texto livre), omissão quando há registro inverso, recusa de remover derivado | 12.3, 12.4 | 6.6 |
 | RF21_PerfilOperacionalTests | Seção 6.16 (3 casos) + endpoint sem atributo exige autenticação (FallbackPolicy) | 21.4 | 7.1 |
 | RF21 (listagem) | `perfilConta` nulo sem conta e igual ao perfil com conta | 21.5 | 7.1 |
 | RF44_IgrejaTests | `Atualizar_CampoOmitido_ViraNulo` | 44.3 | 7.3 |
@@ -475,7 +476,7 @@ Projeto KoinoniaHub.API.Tests (Microsoft.AspNetCore.Mvc.Testing 10.0.12, Microso
 
 Instalado na etapa 3 (`vitest`, `@vue/test-utils`, `jsdom`, `@vitest/coverage-v8`; bloco `test` no vite.config.ts; scripts `test`, `test:watch`, `test:cov`). Arquivos `*.spec.ts` ao lado do código. Chamadas HTTP mockadas (`vi.mock`); nada de subir a API.
 
-**Existentes — 20 arquivos, 105 casos verdes:**
+**Existentes — 21 arquivos, 111 casos verdes:**
 
 | **Alvo (arquivo)** | **Casos** | **Etapa** |
 | --- | --- | --- |
@@ -499,13 +500,12 @@ Instalado na etapa 3 (`vitest`, `@vue/test-utils`, `jsdom`, `@vitest/coverage-v8
 | Aba Alunos em cartões (`PaginaMatriculasTurma.spec`) | ordem, chips, Responsáveis, ⋮ só com matrícula ativa; remover reconta o cabeçalho | 6.4-C |
 | Aba Matérias em cartões (`PaginaMateriasTurma.spec`) | ordem, chips, Editar, ⋮; criar e inativar recontam o cabeçalho | 6.4-C |
 | Aba Aulas — Editar e Excluir (`PaginaAulasTurma.spec`) | Editar só Em aberto e Excluir só sem presenças (três estados); Editar abre o diálogo preenchido e Salvar chama atualizarAula e reconta o cabeçalho; Excluir pela confirmação comum chama excluirAula e reconta | 6.5 |
+| Tabela de parentescos (`TabelaParentescos.spec`) | explícita com botão de remover; derivada com tag "derivado", sem botão, ⓘ fechado e nota; ⓘ abre a explicação na própria linha e fecha ao clicar de novo; recarga da lista fecha a explicação; remover emite o item; lista vazia (6 casos) | 6.6 |
 
 **A criar:**
 
 | **Alvo** | **Casos** | **Etapa** |
 | --- | --- | --- |
-| Ações da aula (`itensAcoes`) | Editar/Excluir só em Em aberto | 6.5 |
-| Parentesco derivado | tag "derivado" sem botão de remover | 6.6 |
 | Tag de conta na atribuição | "Sem conta" / "Conta com perfil Usuário" | 7.1 |
 
 ### 7.3 Playwright — fluxos ponta a ponta
@@ -536,10 +536,10 @@ Configuração real (etapa 5.3 e 6.3):
 
 ```powershell
 # API
-cd api; dotnet build; dotnet test                  # 123
+cd api; dotnet build; dotnet test                  # 136
 
 # Front
-cd web; npx vue-tsc -b; npm run test               # 105 (20 arquivos)
+cd web; npx vue-tsc -b; npm run test               # 111 (21 arquivos)
 cd web; npm run build
 
 # E2E (API no ar no perfil e2e e banco koinoniahub_e2e)
@@ -566,10 +566,10 @@ Convenções de evidência em `docs/evidencias/`: `RNF-<n.m>-<descricao>.png`, `
 
 | **Situação** | **Pedido** |
 | --- | --- |
-| Iniciar uma entrega (no Claude Code, a partir da 6.5) | "Etapa 6.6 do Plano. Implemente a seção 6.15 (RF12, RNFs 12.3/12.4) conforme docs/monografia.md (RF12, CSU13). Antes de codar, liste os arquivos e os testes. Ao final, validações da seção 7.4, testes manuais clique a clique, commits em blocos e registro para o Plano." |
+| Iniciar uma entrega (no Claude Code, a partir da 6.5) | "Etapa 7.1 do Plano. Implemente a seção 6.16 (RNFs 21.4/21.5, FallbackPolicy) conforme docs/monografia.md (RF21, seção 4.9). Antes de codar, liste os arquivos e os testes. Ao final, validações da seção 7.4, testes manuais clique a clique, commits em blocos e registro para o Plano." |
 | Revisar código existente contra a monografia | "Compare AulaServico com o RF45 e as RNFs 45.1 a 45.5. Liste divergências e proponha o diff mínimo." |
 | Escrever testes | "Escreva RF21_PerfilOperacionalTests conforme a seção 6.16, usando a KoinoniaHubWebApplicationFactory e login por cookie." |
-| Verificar antes de avançar | "Antes de eu iniciar a 6.6, confira se a 6.5 atende à definição de pronto da seção 5 e liste o que falta." |
+| Verificar antes de avançar | "Antes de eu iniciar a 7.1, confira se a 6.6 atende à definição de pronto da seção 5 e liste o que falta." |
 | Quando o código exigir mudar o texto | "Isto muda o que a monografia diz no RF/CSU X? Se sim, escreva a alteração no formato texto atual → texto novo e registre na seção 9." |
 
 ## 9. Pendências no texto da monografia
@@ -580,13 +580,12 @@ Itens decididos e ainda não aplicados no .docx, ou que só entram na conversão
 | --- | --- | --- |
 | CSU09, passo 4 | "O usuário informa a data, a matéria, o professor responsável e o tema." → "O usuário informa a data, a matéria, o professor responsável e, opcionalmente, o tema e o conteúdo." (RF45 e CSU09 FA1 declaram o conteúdo editável; a 6.5 o expôs no diálogo, nos dois modos) | Próxima revisão do .docx |
 | RF20 / protótipo | Figura "Tela de Turma" (abas) feita a partir da tela real (`RF20-pagina-turma-desktop.png`), com a descrição da seção 1.8 de `docs/decisoes/etapa-6.md`; renumeração das figuras seguintes | Antes da defesa |
-| RF12 | Se a 6.6 for cortada: reverter RNFs 12.3/12.4 e o passo do CSU13 ao texto anterior antes da defesa | Só se a 6.6 cair |
 | 4.5 / 4.7 / Apêndice | Versões resolvidas na etapa 0: .NET 10 (net10.0); JwtBearer, EF Core Tools e EF Core Design 10.0.12; Npgsql.EntityFrameworkCore.PostgreSQL 10.0.3; Swashbuckle.AspNetCore 10.2.3; BCrypt.Net-Next 4.0.3. | Pronto para entrar |
 | Implantação | IP do aceite = `RemoteIpAddress`; atrás de proxy reverso exige `ForwardedHeaders` (RNF 42.8). | Ao descrever a implantação |
 | API sem RF | `POST /api/igrejas` (Admin) existe desde o início, não é usado pela SPA e não corresponde a RF: decidir na 7.1 entre remover (com teste de 404) ou justificar. | 7.1 |
 | Todo o texto | Conversão para TCC 2: folha de rosto ("Trabalho de Conclusão de Curso"), verbos no passado, cronograma sai, Reuniões das Sprints com datas reais, 5.1 com o número real de participantes. | Após a 7.1 |
 | Novos capítulos | Resultados (arquitetura implementada, telas reais, tabela CSU → teste, avaliação ISO 25010 com os participantes, cópia e restauração), Considerações finais, Resumo/Abstract. | Após a 7.3 |
-| Trabalhos futuros | Fluxo guiado de configuração da turma (wizard); responsividade polida das telas administrativas (os filtros de Pessoas, Usuários e Atribuições são mais largos que 360 px e rolam dentro do conteúdo); "Limpar chamada" que remove os registros de presença de aula Em aberto (hoje uma chamada salva na aula errada só sai por consolidação ou reabertura). | Seção de trabalhos futuros do TCC 2 |
+| Trabalhos futuros | Fluxo guiado de configuração da turma (wizard); responsividade polida das telas administrativas (os filtros de Pessoas, Usuários e Atribuições são mais largos que 360 px e rolam dentro do conteúdo); "Limpar chamada" que remove os registros de presença de aula Em aberto (hoje uma chamada salva na aula errada só sai por consolidação ou reabertura); formulário do diálogo de Parentescos a 360 px (Parente, Relacionamento e Adicionar numa linha só; o botão fica cortado — empilhar os campos abaixo de 768 px). | Seção de trabalhos futuros do TCC 2 |
 | Capa e listas | Banca, processo SEI, data, Lista de Figuras. | Versão final |
 
 ## 10. Referências das ferramentas de teste
