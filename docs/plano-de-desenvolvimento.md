@@ -1,4 +1,4 @@
-# KoinoniaHub · Plano de Desenvolvimento e Testes do TCC 2 · v1.4
+# KoinoniaHub · Plano de Desenvolvimento e Testes do TCC 2 · v1.5
 
 **KoinoniaHub — Plano de Desenvolvimento e Testes do TCC 2**
 
@@ -6,11 +6,11 @@
 
 Referência normativa: Monografia — versão de 10/10/2026 (RF1 a RF45, CSU01 a CSU24, com RF44, RF45, RNFs 12.3/12.4 e 21.3–21.5). Cópia de leitura em `docs/monografia.md`; a fonte oficial é o .docx do autor. Correções de redação ainda não aplicadas no .docx estão na seção 9.
 
-Estado do código analisado: repositório TCC-KOINONIAHUB, branch `main` após o fechamento da 6.4 (6.4-C, 14/10/2026). Última migration: PessoaEnxuta (26/09/2026) — nenhuma depois. Testes: **114 xUnit · 102 Vitest (19 arquivos) · 10 Playwright (3 desktop + 7 celular)**.
+Estado do código analisado: repositório TCC-KOINONIAHUB, branch `main` após o fechamento da 6.5 (RF45, commitada em 16/10/2026). Última migration: PessoaEnxuta (26/09/2026) — nenhuma depois. Testes: **123 xUnit · 105 Vitest (20 arquivos) · 10 Playwright (3 desktop + 7 celular)**.
 
 Autor: Daniel Rocha · IFRO Campus Ji-Paraná · CST-ADS
 
-**Versão 1.4 — 14 de outubro de 2026**
+**Versão 1.5 — 16 de outubro de 2026**
 
 | Versão | Data | Mudanças |
 | --- | --- | --- |
@@ -19,6 +19,7 @@ Autor: Daniel Rocha · IFRO Campus Ji-Paraná · CST-ADS
 | 1.2 | 28/09/2026 | Matriz da seção 4 e estado das etapas (seção 5) atualizados após verificação do código: etapas 0 e 1 concluídas, etapa 2 em andamento. Versões de pacotes resolvidas registradas nas seções 2.2 e 9. |
 | 1.3 | 10/10/2026 | Retrato do código após a 6.4-A. Aplicados os registros acumulados: avaliação pré-Etapa 7 (8.1–8.5), recorte da 6.4 (7.1–7.4), LEIA-ME da 6.3 (5.1–5.7) e da 6.4-A (4.1–4.5). Baseline RF1–RF45 / CSU01–CSU24. Seções 2.3, 2.4, 3 e 4 refeitas contra o código; seção 5 com as etapas 0–5 concluídas, Etapa 6 desdobrada (6.1 a 6.6) e Etapa 7 redefinida (7.1 a 7.3); seção 6 com as especificações concluídas marcadas e as novas (RF44, responsividade, Página da Turma, RF45, parentesco derivado, perfil × atribuição, cópia e restauração); seção 7 com o inventário real de testes e a configuração real do Playwright (http, ambiente E2E, PostgreSQL local, dois projetos); seção 9 sem os itens já aplicados na monografia. Cópia oficial passa a ser `docs/plano-de-desenvolvimento.md` no repositório. |
 | 1.4 | 14/10/2026 | Fechamento da Etapa 6.4 (6.4-B de 10/10, corretiva de 12/10, ajuste de 13/10 e 6.4-C de 14/10). Aplicados os registros dos quatro LEIA-MEs. Contrato: `DepartamentoId`/`NomeDepartamento` no `AulaRespostaDto` e `Registrado` no item da chamada. Seção 6.12 com a chamada nos dois layouts, barra `sticky`, confirmações no tema, "Sem registro" desde a carga e o CSU11 passo 2 novo. Seções 7.1–7.3 com os totais 114 / 102 / 3 + 7, E2E-M2 e o modo estrito. Seção 9 sem os itens resolvidos. A partir da 6.5 o código é desenvolvido no Claude Code, com este Plano e `docs/monografia.md` como contexto; o projeto do assistente web continua para monografia, Plano e decisões de requisito. |
+| 1.5 | 16/10/2026 | Fechamento da Etapa 6.5 (RF45, 15–16/10/2026; primeira entrega feita no Claude Code). Contrato: PUT e DELETE /api/aulas/{id}; `Conteudo` e `PossuiPresencas` no `AulaRespostaDto` (aditivos, decisão do autor em 15/10). Seção 6.14 atendida (9 casos; exclusão → 204). Seções 7.1–7.2 com os totais 123 / 105 (20 arquivos). Monografia revisada em 15/10 (CSU11 passos 2–6 reorganizados, CSU12 aba Alunos, maiúsculas das situações): seção 9 sem esses itens e com a proposta do CSU09 passo 4. Rastros "CSU11 passo 2" → "passos 2–4". |
 
 ---
 
@@ -126,7 +127,7 @@ Todos exigem autenticação, salvo os marcados como públicos. Restrições de p
 | api/departamentos/{id}/matriculas, /alunos, /pessoas-disponiveis, /matriculas/{matriculaId} | POST, GET, GET, DELETE | Gestão ou atribuição ativa; pessoas-disponiveis com DTO reduzido para Professor (28.3) |
 | api/atribuicoes, /departamento/{id}, /{id}, /{id}/encerrar | POST/GET, GET, GET/PUT, PATCH | Escrita: gestão; leitura: autenticado (23.1) |
 | api/materias, /{id} | POST/GET, GET/PUT | Gestão ou atribuição ativa |
-| api/aulas, /{id}, /{id}/consolidar, /{id}/nao-realizada, /{id}/reabrir | POST/GET, GET, PATCH, PATCH, PATCH | Gestão ou atribuição ativa; reabrir: Admin. `AulaRespostaDto` traz `DepartamentoId` e `NomeDepartamento` (aditivo, 6.4-B) para o "voltar" da Chamada e das Presenças. PUT /{id} e DELETE /{id} entram na 6.5 (RF45, seção 6.14). |
+| api/aulas, /{id}, /{id}/consolidar, /{id}/nao-realizada, /{id}/reabrir | POST/GET, GET/PUT/DELETE, PATCH, PATCH, PATCH | Gestão ou atribuição ativa; reabrir: Admin. `AulaRespostaDto` traz `DepartamentoId` e `NomeDepartamento` (aditivo, 6.4-B) para o "voltar" da Chamada e das Presenças. PUT /{id} (200 com `AulaRespostaDto`) e DELETE /{id} (204) — RF45, 6.5. `AulaRespostaDto` traz também `Conteudo` e `PossuiPresencas` (aditivos, 6.5): o primeiro preenche o diálogo de edição, o segundo faz a tela não oferecer Excluir quando já há chamada (CSU09 FA3). |
 | api/aulas/{aulaId}/presencas, api/aulas/{aulaId}/chamada | POST/GET, GET | Gestão ou atribuição ativa na aula. Cada item da chamada traz `Registrado` (aditivo, 6.4-C): existe presença ou ausência lançada para a matrícula. |
 | api/relatorios/ebd/frequencia-turma, /acompanhamento, /ranking-faltas, /resumo-dia, /minha-frequencia | GET | Turma: gestão ou atribuição; resumo-dia: gestão; minha-frequencia: próprio usuário. Só aulas Consolidadas + `aulasPendentes[]` (seção 6.9). |
 | api/meus-dados, /minhas-turmas | GET/PUT, GET | Próprio usuário; GET inclui `aceiteTermo` (RF43) |
@@ -216,9 +217,9 @@ Legenda: **OK** = faz o que a monografia diz · **Parcial** = existe, falta regr
 | RF30 Cadastrar aula | OK | Professor responsável precisa de atribuição de Professor (21.3). |
 | RF31 Listar aulas | OK | Tags, filtro e "Pendente" (31.2/31.3); cartões no celular e ⋮ nos dois layouts (6.4-A). |
 | RF32 Lançar chamada | OK | Só Em aberto (32.2), índice único (32.3), dica de observação (32.5). Chamada tocável nos dois layouts com barra Salvar · Consolidar (6.4-B); grade de cartões no desktop (corretiva); "Sem registro" desde a carga (campo Registrado) e confirmação ao sair/recarregar com alterações não salvas (6.4-C). |
-| RF33 Consolidar e reabrir | OK | 32.6, 33.2–33.7 com testes; RNF-33.5 com evidência. Consolidar com alteração pendente ou aluno sem registro nomeia quem será gravado como ausente e grava antes de consolidar (CSU11 passo 2, 6.4-C); FA1 mantido para a API e o cancelamento; segundo toque ignorado. |
+| RF33 Consolidar e reabrir | OK | 32.6, 33.2–33.7 com testes; RNF-33.5 com evidência. Consolidar com alteração pendente ou aluno sem registro nomeia quem será gravado como ausente e grava antes de consolidar (CSU11 passos 2–4, 6.4-C); FA1 mantido para a API e o cancelamento; segundo toque ignorado. |
 | RF34 Presenças do aluno | OK | Restrição do Professor (34.3); `SituacaoAula` em cada registro. Presenças da aula em cartões nos dois layouts (6.4-B e corretiva). |
-| RF45 Editar aula | Falta | Texto na monografia (RF45, RNFs 45.1–45.5, CSU09 FA1–FA3). Implementação na 6.5, seção 6.14. |
+| RF45 Editar aula | OK | 45.1–45.5 com testes (RF45_EditarAulaTests, 9 casos). Editar e Excluir no ⋮ da aba Aulas, só Em aberto; Excluir só sem registro de presença (campo `PossuiPresencas`); diálogo em modo edição com Conteúdo. Atendido na 6.5 (16/10/2026). |
 
 ### 4.6 Relatórios
 
@@ -248,7 +249,7 @@ Legenda: **OK** = faz o que a monografia diz · **Parcial** = existe, falta regr
 | 3. Regras de aula | **Concluída** (29/09/2026) — RF31–RF33 completos, Vitest instalado. |
 | 4. Relatórios | **Concluída** (30/09/2026) — só Consolidadas em cinco relatórios, pendentes, gate de exportação, painel do aluno corrigido. |
 | 5. Termo de uso | **Concluída** (5.1 em 01/10, 5.2 e 5.3 em 03/10/2026) — RF42/RF43, gates, filtro global na API (decisão do autor), Playwright E2E-01 a E2E-03. |
-| 6. Acabamento, RF44, responsividade e turma | **Em andamento** — 6.1 (06/10), 6.2 RF44 (07/10), 6.3 responsividade (08/10) e **6.4 concluída em 14/10/2026** (A em 09/10, B em 10/10, corretiva de desktop em 12/10, ajuste em 13/10, C em 14/10: xUnit 114; Vitest 102; Playwright 3 + 7); 6.5 e 6.6 abertas — a partir da 6.5, no Claude Code. A etapa foi reaberta em 08/10/2026 pela avaliação pré-Etapa 7 (`docs/decisoes/avaliacao-pre-etapa7.md`): responsividade e RF20 eram requisitos escritos e não atendidos; RF45 e RNF 12.3 entraram na monografia. |
+| 6. Acabamento, RF44, responsividade e turma | **Em andamento** — 6.1 (06/10), 6.2 RF44 (07/10), 6.3 responsividade (08/10) **6.4 concluída em 14/10/2026** (A em 09/10, B em 10/10, corretiva de desktop em 12/10, ajuste em 13/10, C em 14/10: xUnit 114; Vitest 102; Playwright 3 + 7) e **6.5 concluída em 16/10/2026** (RF45, no Claude Code: xUnit 123; Vitest 105; Playwright 3 + 7); 6.6 aberta. A etapa foi reaberta em 08/10/2026 pela avaliação pré-Etapa 7 (`docs/decisoes/avaliacao-pre-etapa7.md`): responsividade e RF20 eram requisitos escritos e não atendidos; RF45 e RNF 12.3 entraram na monografia. |
 | 7. Autorização, E2E e Resultados | **Pendente** — 7.1, 7.2 e 7.3 abaixo. |
 
 | **Etapa** | **Conteúdo** | **Definição de pronto** |
@@ -262,10 +263,10 @@ Legenda: **OK** = faz o que a monografia diz · **Parcial** = existe, falta regr
 | 6.1 Acabamento | Dica na observação (32.5); conferência da importação (41.3); tela do termo (42.7). | Vitest dos componentes tocados; revisão visual. |
 | 6.2 RF44 | Editar dados da igreja (seção 6.11). | RF44_IgrejaTests; tela /igreja. |
 | 6.3 Responsividade | RNFs "interface responsiva"; critério: 768 px; fluxo do professor — Login, Termo, Painel, Minhas Turmas, Aulas, Chamada, Presenças, Minha Frequência, Meus Dados — a 360 px sem rolagem horizontal da página, alvos de toque ≥ 40 px, Aluno e Presente visíveis na chamada; menu em Drawer; telas administrativas apenas utilizáveis com rolagem; projeto mobile do Playwright com E2E-01, E2E-02 e E2E-M1. | Projeto mobile verde; prints RNF-responsividade-*.png. |
-| 6.4 Página da Turma e celular | Página da Turma (RF20: /departamentos/:id com cabeçalho, equipe e abas Alunos · Matérias · Aulas · Atribuições como rotas filhas, URLs preservadas) e fluxo operacional no celular (seção 6.12, critério estrito). Entregas: **6.4-A** peças reutilizáveis, Página da Turma, aba Aulas, Minhas Turmas e painel do professor em cartões; **6.4-B** chamada tocável com barra fixa Salvar · Consolidar (Consolidar salva as pendentes), chamada enxuta nos dois layouts, Presenças, painel do aluno e Minha Frequência em cartões, "voltar" hierárquico, "Minha frequência" só para o vínculo Aluno, mensagem de tabela vazia no painel; **corretiva (12/10)** Chamada e Presenças no desktop em grade de cartões, barra `sticky` sem cobrir o rodapé, severidade `warn`, clique duplo ignorado; **ajuste (13/10)** bloqueio de 500 ms após a gravação, `overflow` do `<main>` retirado só na rota da chamada, E2E-M2; **6.4-C** abas Alunos e Matérias em cartões, contadores do cabeçalho recontados a partir das abas, "Sem registro" visível desde a carga (campo `Registrado`), Consolidar nomeando quem será gravado como ausente (CSU11 passo 2), confirmação ao sair ou recarregar com alterações não salvas, confirmações e avisos globais no tema, E2E-M1 em modo estrito, prints, descrição da Tela de Turma para a figura do protótipo. | Critério da seção 6.12 a 360 × 640; desktop inalterado nas tabelas existentes, salvo Chamada e Presenças; Vitest dos componentes novos; E2E-M1 estrito e E2E-M2 verdes; prints regenerados. **Atendida em 14/10/2026** (`docs/testes.md`, Etapa 6.4). |
-| 6.5 RF45 Editar aula | Seção 6.14 (editar e excluir aula Em aberto; exclusão só sem registro de presença, RNF 45.5). Primeira entrega feita no Claude Code. | RF45_EditarAulaTests; Editar e Excluir no ⋮ da aba Aulas nos dois layouts; confirmação de exclusão pelo `confirm.require` comum (tema e encaixe em 360 px vêm do App.vue, sem `acceptClass`); E2E-M1 continua verde no modo estrito. |
+| 6.4 Página da Turma e celular | Página da Turma (RF20: /departamentos/:id com cabeçalho, equipe e abas Alunos · Matérias · Aulas · Atribuições como rotas filhas, URLs preservadas) e fluxo operacional no celular (seção 6.12, critério estrito). Entregas: **6.4-A** peças reutilizáveis, Página da Turma, aba Aulas, Minhas Turmas e painel do professor em cartões; **6.4-B** chamada tocável com barra fixa Salvar · Consolidar (Consolidar salva as pendentes), chamada enxuta nos dois layouts, Presenças, painel do aluno e Minha Frequência em cartões, "voltar" hierárquico, "Minha frequência" só para o vínculo Aluno, mensagem de tabela vazia no painel; **corretiva (12/10)** Chamada e Presenças no desktop em grade de cartões, barra `sticky` sem cobrir o rodapé, severidade `warn`, clique duplo ignorado; **ajuste (13/10)** bloqueio de 500 ms após a gravação, `overflow` do `<main>` retirado só na rota da chamada, E2E-M2; **6.4-C** abas Alunos e Matérias em cartões, contadores do cabeçalho recontados a partir das abas, "Sem registro" visível desde a carga (campo `Registrado`), Consolidar nomeando quem será gravado como ausente (CSU11 passos 2–4), confirmação ao sair ou recarregar com alterações não salvas, confirmações e avisos globais no tema, E2E-M1 em modo estrito, prints, descrição da Tela de Turma para a figura do protótipo. | Critério da seção 6.12 a 360 × 640; desktop inalterado nas tabelas existentes, salvo Chamada e Presenças; Vitest dos componentes novos; E2E-M1 estrito e E2E-M2 verdes; prints regenerados. **Atendida em 14/10/2026** (`docs/testes.md`, Etapa 6.4). |
+| 6.5 RF45 Editar aula | Seção 6.14 (editar e excluir aula Em aberto; exclusão só sem registro de presença, RNF 45.5). Primeira entrega feita no Claude Code. | RF45_EditarAulaTests; Editar e Excluir no ⋮ da aba Aulas nos dois layouts; confirmação de exclusão pelo `confirm.require` comum (tema e encaixe em 360 px vêm do App.vue, sem `acceptClass`); E2E-M1 continua verde no modo estrito. **Atendida em 16/10/2026** (docs/testes.md, Etapa 6.5; docs/decisoes/etapa-6.md, 1.9). |
 | 6.6 Parentesco derivado | Seção 6.15, recorte mínimo (decisão 4a do recorte da 6.4). | Testes da tabela de inversos; tag "derivado" sem botão de remover. Se o calendário apertar: reverter 12.3/12.4 e o passo do CSU13 na monografia antes da defesa (nunca deixar texto sem implementação). |
-| 7.1 Autorização | FallbackPolicy; perfil × atribuição (RNF 21.4) em GarantirAcessoDepartamentoAsync; `perfilConta` na listagem de atribuições (21.5); inventário das evidências capturadas × faltantes; decisão sobre POST /api/igrejas. | RF21_PerfilOperacionalTests; tag na tela de Atribuições; inventário em docs/testes.md. |
+| 7.1 Autorização | FallbackPolicy; perfil × atribuição (RNF 21.4) em GarantirAcessoDepartamentoAsync; `perfilConta` na listagem de atribuições (21.5); inventário das evidências capturadas × faltantes; decisão sobre POST /api/igrejas; decisão sobre o GET /api/aulas/{id} de aula inexistente pelo Professor (hoje 400, porque `GarantirAcessoAulaAsync` lança antes do serviço; para a gestão é 404). | RF21_PerfilOperacionalTests; tag na tela de Atribuições; inventário em docs/testes.md. |
 | 7.2 E2E | E2E-04 a E2E-08 no desktop e E2E-04 também no projeto mobile (seção 7.3). | npm run test:e2e verde com os novos cenários. |
 | 7.3 Resultados | Tabela CSU → teste → resultado (CSU01–CSU24); procedimento de cópia e restauração executado uma vez com evidência (seção 6.17); teste `Atualizar_CampoOmitido_ViraNulo` do RF44; evidências de Segurança completas (2.6, 11.3, 14.3, 15.3, 21.4, 28.3, 33.5, 34.3, 35.4, 42.x); prints de responsividade. | Material pronto para o capítulo de Resultados (seção 7.5). |
 
@@ -368,7 +369,7 @@ A monografia não define medida; este é o critério operacional aprovado.
 
 1. Nenhuma rolagem horizontal — nem da página, nem de qualquer container (só a faixa de abas pode rolar).
 2. Cada item de lista é um cartão (`CartaoItem`) com uma ação principal com rótulo, ≥ 44 px de altura, visível sem rolar para o lado; ações secundárias no ⋮ (`MenuAcoes`). O interruptor entre tabela e cartões é único: `usarTelaCompacta` (`matchMedia("(max-width: 768px)")`). Listas longas: dez cartões e "Mostrar mais (N restantes)" (`usarMostrarMais`), sem paginador numérico. Confirmações e avisos (`ConfirmDialog` e `Toast` globais no `App.vue`): dentro da tela a 360 px, botões empilhados, lista de itens com rolagem própria; botão de confirmação no verde do projeto; nenhuma página define `acceptClass`.
-3. Chamada: marcar presença = um toque na linha (linha de 56 px, caixa de 40 px, fundo indicando presente); contador "Presentes: N de M" correto antes de salvar; barra `Salvar chamada` · `Consolidar` visível em qualquer ponto da rolagem enquanto a aula está Em aberto, `sticky` no fim da página: nunca cobre o rodapé (com lista curta fica encostada nele); Salvar e Consolidar ignoram um segundo toque durante a requisição e por 500 ms depois; observação só quando o professor toca "+ observação"; Recarregar e Limpar no ⋮; visitantes numa linha; uma mensagem de cada vez. Alunos sem registro ficam destacados desde a carga (campo `Registrado` da API) e deixam de estar quando o professor os toca. **Consolidar com alteração pendente ou aluno sem registro nomeia quem será gravado como ausente, grava e só então consolida** (CSU11 passo 2); sem pendência, confirmação simples. Sair, recarregar a página ou "Recarregar" do ⋮ com alterações não salvas pede confirmação (alunos sem registro não contam como alteração).
+3. Chamada: marcar presença = um toque na linha (linha de 56 px, caixa de 40 px, fundo indicando presente); contador "Presentes: N de M" correto antes de salvar; barra `Salvar chamada` · `Consolidar` visível em qualquer ponto da rolagem enquanto a aula está Em aberto, `sticky` no fim da página: nunca cobre o rodapé (com lista curta fica encostada nele); Salvar e Consolidar ignoram um segundo toque durante a requisição e por 500 ms depois; observação só quando o professor toca "+ observação"; Recarregar e Limpar no ⋮; visitantes numa linha; uma mensagem de cada vez. Alunos sem registro ficam destacados desde a carga (campo `Registrado` da API) e deixam de estar quando o professor os toca. **Consolidar com alteração pendente ou aluno sem registro nomeia quem será gravado como ausente, grava e só então consolida** (CSU11 passos 2–4); sem pendência, confirmação simples. Sair, recarregar a página ou "Recarregar" do ⋮ com alterações não salvas pede confirmação (alunos sem registro não contam como alteração).
 4. Navegação de "voltar" hierárquica: Chamada e Presenças voltam para a aba Aulas da turma (`/departamentos/{id}/aulas`, com o nome da turma); Minha Frequência volta para Minhas Turmas.
 5. Desktop idêntico nas tabelas e cabeçalhos das telas existentes, salvo o ⋮ da aba Aulas (decisão 2) e a Chamada e as Presenças (6.4-B e corretiva: alunos em grade de cartões — 3 colunas a 1366, 5 a 1920 —, resumo "Presentes N de M" e "Alterações não salvas" na barra; Presenças em cartões com `CardIndicador`); a única tela nova no desktop é a Página da Turma.
 
@@ -382,16 +383,16 @@ A monografia não define medida; este é o critério operacional aprovado.
 
 `/departamentos/:id` → `PaginaTurma.vue` (layout) com cabeçalho — nome, chips de tipo e situação, contadores (alunos ativos, aulas em aberto; no desktop também matérias e equipe), linha de equipe ativa — e abas (`Tabs` do PrimeVue) ligadas às rotas filhas `…/matriculas` (Alunos), `…/materias`, `…/aulas`, `…/atribuicoes`. Sem aba na URL, redireciona para `…/aulas` (decisão 1). A aba e a rota Atribuições existem só para a gestão (`requerAdministrativo`; RNF 21.1); o professor vê a equipe no cabeçalho (RF20/RF23). As quatro páginas existentes viraram conteúdo das abas pela meta `abaDaTurma` (o `PageHeader` delas mostra só as ações); o cabeçalho da turma usa `modo="completo"`. Contadores vêm das listagens existentes (nenhum endpoint novo); as abas Alunos, Matérias e Aulas recarregam o cabeçalho por `provide("turmaRecarregarResumo")` depois de matricular, remover, criar, editar, ativar/inativar ou consolidar (6.4-C). "Abrir turma" (Painel, Minhas Turmas, ⋮ de Turmas EBD) leva à página; o aluno não tem acesso a ela (31.1). Voltar: gestão → Turmas EBD; professor → Minhas Turmas.
 
-### 6.14 RF45 — Editar e excluir aula Em aberto — PENDENTE (6.5)
+### 6.14 RF45 — Editar e excluir aula Em aberto — ATENDIDA (6.5, 16/10/2026)
 
 | Camada | Conteúdo |
 |---|---|
 | Endpoints | `PUT /api/aulas/{id}` e `DELETE /api/aulas/{id}` — mesma autorização do cadastro (`GarantirAcessoAulaAsync`: gestão ou atribuição ativa na turma). |
-| DTO | `AulaAtualizarRequisicaoDto { Data, MateriaId, ProfessorId (obrigatórios), Tema?, Conteudo? }` — os mesmos campos do cadastro; sem Situacao, QuantidadeVisitantes ou Observacoes. |
-| Regras de edição | (1) aula existe na igreja; (2) Situacao == EmAberto, senão 400 "Somente aulas Em aberto podem ser editadas." (45.2); (3) a matéria pertence à mesma turma da aula (45.4); (4) o professor tem atribuição ativa de Professor na turma (mesma regra do cadastro, 21.3); (5) AtualizadoEm automático. |
-| Regras de exclusão | Só Em aberto **e** sem nenhum registro de presença; senão 400 (45.5, mesma condição da 33.7). |
-| Testes `RF45_EditarAulaTests` | Editar Em aberto → 200 e GET reflete; Consolidada → 400; Não realizada → 400; matéria de outra turma → 400; professor sem atribuição de Professor → 400; Professor de outra turma → 403; Excluir sem presenças → 204/200 e some da listagem; Excluir com presenças → 400. |
-| Front | Editar e Excluir entram em `itensAcoes(aula)` (⋮ dos dois layouts), visíveis só em Em aberto (Excluir só sem presenças, quando a tela souber; a API recusa de qualquer jeito); Editar reabre o diálogo de nova aula em modo edição (`aulasServico.atualizarAula`); Excluir com confirmação pelo `confirm.require` comum (o tema e o encaixe em 360 px vêm do App.vue; sem `acceptClass`). Nenhuma tabela nova nas telas operacionais: o E2E-M1 é estrito. |
+| DTO | `AulaAtualizarRequisicaoDto { Data, MateriaId, ProfessorId (obrigatórios), Tema?, Conteudo? }` — os mesmos campos do cadastro; sem Situacao, QuantidadeVisitantes ou Observacoes. Resposta: `AulaRespostaDto` + `Conteudo` e `PossuiPresencas` (aditivos). |
+| Regras de edição | (1) aula existe na igreja; (2) Situacao == EmAberto, senão 400 "Somente aulas Em aberto podem ser editadas." (45.2); (3) a matéria pertence à mesma turma da aula, senão 400 "A matéria informada não pertence à turma desta aula." (45.4); (4) o professor tem atribuição ativa de Professor na turma (mesma regra do cadastro, 21.3); (5) AtualizadoEm automático; (6) retorno 200 com a aula atualizada. |
+| Regras de exclusão | Só Em aberto (400 "Somente aulas Em aberto podem ser excluídas.") **e** sem nenhum registro de presença (400 "Uma aula com registros de presença não pode ser excluída.", 45.5, mesma condição da 33.7); sucesso → 204; exclusão física (a 45.5 garante que não há presença dependente). |
+| Testes `RF45_EditarAulaTests` | Editar Em aberto → 200 e GET reflete; Consolidada → 400; Não realizada → 400; matéria de outra turma → 400; professor sem atribuição de Professor → 400; Professor de outra turma → 403; Excluir sem presenças → 204 e some da listagem; Excluir com presenças → 400 e `possuiPresencas` verdadeiro na listagem; Excluir Consolidada → 400 (9 casos). |
+| Front | Editar e Excluir entram em `itensAcoes(aula)` (⋮ dos dois layouts), visíveis só em Em aberto (Excluir só sem presenças, pelo `possuiPresencas`; resposta sem o campo vale true); Editar reabre o diálogo de nova aula em modo edição, com o campo "Conteúdo (opcional)" nos dois modos (`aulasServico.atualizarAula`); Excluir com confirmação pelo `confirm.require` comum (o tema e o encaixe em 360 px vêm do App.vue; sem `acceptClass`). Nenhuma tabela nova nas telas operacionais: o E2E-M1 é estrito. |
 
 ### 6.15 Parentesco derivado na leitura (RF12, RNFs 12.3/12.4) — PENDENTE (6.6, recorte mínimo)
 
@@ -459,12 +460,12 @@ Projeto KoinoniaHub.API.Tests (Microsoft.AspNetCore.Mvc.Testing 10.0.12, Microso
 | RF41_ImportacaoTests | 41.2–41.4 |
 | RF42_TermoTests | 1.5, 2.5, 40.5, 42.1–42.8 |
 | RF44_IgrejaTests | 44.1–44.3, 44.5 |
+| RF45_EditarAulaTests | 45.1, 45.2, 45.4, 45.5 (9 casos) |
 
 **A criar:**
 
 | **Classe** | **Casos** | **RNF** | **Etapa** |
 | --- | --- | --- | --- |
-| RF45_EditarAulaTests | Seção 6.14 (8 casos) | 45.1–45.5 | 6.5 |
 | RF12_ParentescoDerivadoTests | Tabela de inversos (Pai/Mãe, Filho(a) por sexo, simétricos, Responsável, texto livre), omissão quando há registro inverso, recusa de remover derivado | 12.3, 12.4 | 6.6 |
 | RF21_PerfilOperacionalTests | Seção 6.16 (3 casos) + endpoint sem atributo exige autenticação (FallbackPolicy) | 21.4 | 7.1 |
 | RF21 (listagem) | `perfilConta` nulo sem conta e igual ao perfil com conta | 21.5 | 7.1 |
@@ -474,7 +475,7 @@ Projeto KoinoniaHub.API.Tests (Microsoft.AspNetCore.Mvc.Testing 10.0.12, Microso
 
 Instalado na etapa 3 (`vitest`, `@vue/test-utils`, `jsdom`, `@vitest/coverage-v8`; bloco `test` no vite.config.ts; scripts `test`, `test:watch`, `test:cov`). Arquivos `*.spec.ts` ao lado do código. Chamadas HTTP mockadas (`vi.mock`); nada de subir a API.
 
-**Existentes — 19 arquivos, 102 casos verdes:**
+**Existentes — 20 arquivos, 105 casos verdes:**
 
 | **Alvo (arquivo)** | **Casos** | **Etapa** |
 | --- | --- | --- |
@@ -497,6 +498,7 @@ Instalado na etapa 3 (`vitest`, `@vue/test-utils`, `jsdom`, `@vitest/coverage-v8
 | Chamada — página (`PaginaChamadaAula.spec`) | dois acionamentos de Salvar no mesmo tick e toque duplo após gravação concluída → uma gravação, um aviso; sem registro desde a carga e baixa ao tocar; Consolidar com nomes (gravar → consolidar); confirmação simples sem gravar; sair pela rota (recusa/aceite); `beforeunload`; Recarregar com confirmação | 6.4 ajuste, 6.4-C |
 | Aba Alunos em cartões (`PaginaMatriculasTurma.spec`) | ordem, chips, Responsáveis, ⋮ só com matrícula ativa; remover reconta o cabeçalho | 6.4-C |
 | Aba Matérias em cartões (`PaginaMateriasTurma.spec`) | ordem, chips, Editar, ⋮; criar e inativar recontam o cabeçalho | 6.4-C |
+| Aba Aulas — Editar e Excluir (`PaginaAulasTurma.spec`) | Editar só Em aberto e Excluir só sem presenças (três estados); Editar abre o diálogo preenchido e Salvar chama atualizarAula e reconta o cabeçalho; Excluir pela confirmação comum chama excluirAula e reconta | 6.5 |
 
 **A criar:**
 
@@ -534,10 +536,10 @@ Configuração real (etapa 5.3 e 6.3):
 
 ```powershell
 # API
-cd api; dotnet build; dotnet test                  # 114
+cd api; dotnet build; dotnet test                  # 123
 
 # Front
-cd web; npx vue-tsc -b; npm run test               # 102 (19 arquivos)
+cd web; npx vue-tsc -b; npm run test               # 105 (20 arquivos)
 cd web; npm run build
 
 # E2E (API no ar no perfil e2e e banco koinoniahub_e2e)
@@ -558,28 +560,26 @@ A monografia avalia o sistema pelas características Adequação Funcional, Usab
 | Segurança | Testes de integração de 403/400, Origin, filtro do termo, perfil × atribuição; prints das respostas | Tabela RNF → teste → evidência |
 | Usabilidade | Não automatizada; prints a 360 px como evidência das RNFs de responsividade | Avaliação com o professor e o PO, conforme 5.1, feita no celular sobre as telas da 6.4 |
 
-Convenções de evidência em `docs/evidencias/`: `RNF-<n.m>-<descricao>.png`, `RF<n>-<descricao>.png`, `CSU<nn>-<descricao>.png`; responsividade: `RNF-responsividade-<tela>.png`. Já capturadas: RNF-2.6 (2), RNF-11.3 (2), RNF-14.3, RNF-15.3, RNF-28.3, RNF-33.5, RNF-34.3 (2), RNF-35.4, RNF-35.5 e 33.6 (antes/depois da reabertura), RNF-38.4, RNF-42.1, RNF-44.1/44.2/44.3, RF42 (registro de aceite), RF43 (2), RF44 (2), RF3, RF20, RF31/CSU09, RF32 (desktop 1920, alterações não salvas, toque duplo, recarregar), RF33 (consolidada), RF34 (presenças desktop), RNF-32.5, RNF-32.6 (2), CSU11-FA1 (2), CSU11 passo 2 (nomes a 360), RNF-dialogos-tema (2), RNF-responsividade usuarios/pessoas a 360 e os 15 RNF-responsividade gerados pelo projeto mobile na 6.4-C. `docs/testes.md` guarda a saída das validações de cada entrega; `docs/decisoes/` guarda os resumos por etapa. Todas as evidências usam a semente de teste (dados fictícios), nunca dados reais de membros.
+Convenções de evidência em `docs/evidencias/`: `RNF-<n.m>-<descricao>.png`, `RF<n>-<descricao>.png`, `CSU<nn>-<descricao>.png`; responsividade: `RNF-responsividade-<tela>.png`. Já capturadas: RNF-2.6 (2), RNF-11.3 (2), RNF-14.3, RNF-15.3, RNF-28.3, RNF-33.5, RNF-34.3 (2), RNF-35.4, RNF-35.5 e 33.6 (antes/depois da reabertura), RNF-38.4, RNF-42.1, RNF-44.1/44.2/44.3, RF42 (registro de aceite), RF43 (2), RF44 (2), RF3, RF20, RF31/CSU09, RF32 (desktop 1920, alterações não salvas, toque duplo, recarregar), RF33 (consolidada), RF34 (presenças desktop), RNF-32.5, RNF-32.6 (2), CSU11-FA1 (2), CSU11 passos 2–4 (nomes a 360), RNF-dialogos-tema (2), RF45 (nova aula com conteúdo, editar desktop e 360, confirmar excluir desktop e 360), RNF-45.2 (PUT e DELETE em Consolidada → 400), RNF-45.5 (sem Excluir com presença), RNF-responsividade usuarios/pessoas a 360 e os 15 RNF-responsividade gerados pelo projeto mobile na 6.4-C. `docs/testes.md` guarda a saída das validações de cada entrega; `docs/decisoes/` guarda os resumos por etapa. Todas as evidências usam a semente de teste (dados fictícios), nunca dados reais de membros.
 
 ## 8. Como pedir ajuda ao assistente do projeto
 
 | **Situação** | **Pedido** |
 | --- | --- |
-| Iniciar uma entrega (no Claude Code, a partir da 6.5) | "Etapa 6.5 do Plano. Implemente a seção 6.14 (RF45) conforme docs/monografia.md (RF45, RNFs 45.1–45.5, CSU09 FA1–FA3). Antes de codar, liste os arquivos e os testes. Ao final, validações da seção 7.4, testes manuais clique a clique, commits em blocos e registro para o Plano." |
+| Iniciar uma entrega (no Claude Code, a partir da 6.5) | "Etapa 6.6 do Plano. Implemente a seção 6.15 (RF12, RNFs 12.3/12.4) conforme docs/monografia.md (RF12, CSU13). Antes de codar, liste os arquivos e os testes. Ao final, validações da seção 7.4, testes manuais clique a clique, commits em blocos e registro para o Plano." |
 | Revisar código existente contra a monografia | "Compare AulaServico com o RF45 e as RNFs 45.1 a 45.5. Liste divergências e proponha o diff mínimo." |
 | Escrever testes | "Escreva RF21_PerfilOperacionalTests conforme a seção 6.16, usando a KoinoniaHubWebApplicationFactory e login por cookie." |
-| Verificar antes de avançar | "Antes de eu iniciar a 6.5, confira se a 6.4-C atende à definição de pronto da seção 5 e liste o que falta." |
+| Verificar antes de avançar | "Antes de eu iniciar a 6.6, confira se a 6.5 atende à definição de pronto da seção 5 e liste o que falta." |
 | Quando o código exigir mudar o texto | "Isto muda o que a monografia diz no RF/CSU X? Se sim, escreva a alteração no formato texto atual → texto novo e registre na seção 9." |
 
 ## 9. Pendências no texto da monografia
 
-Itens decididos e ainda não aplicados no .docx, ou que só entram na conversão para TCC 2. (Já aplicados e retirados desta lista: 4.8 com as duas medidas contra CSRF, RNF 2.6 e referência OWASP [2026]a; RF44/CSU24 e figuras; RF45 e CSU09; RNFs 12.3/12.4 e CSU13; RNFs 21.3–21.5 e a frase da 4.9.)
+Itens decididos e ainda não aplicados no .docx, ou que só entram na conversão para TCC 2. (Já aplicados e retirados desta lista: 4.8 com as duas medidas contra CSRF, RNF 2.6 e referência OWASP [2026]a; RF44/CSU24 e figuras; RF45 e CSU09, com as RNFs 45.2/45.4/45.5 em Confiabilidade; RNFs 12.3/12.4 e CSU13; RNFs 21.3–21.5 e a frase da 4.9; em 15/10/2026: CSU11 passos 2–6 reorganizados numa única confirmação (FA1 no passo 4), CSU12 passo 1 "abre a aba Alunos (matrículas da turma)" — ajuste de requisito decorrente da decisão da 6.4, figura 3.16 mantida como protótipo — e as situações com inicial maiúscula em CSU10/CSU11/CSU15 e "O Administrador" no CSU24.)
 
 | **Onde** | **O que** | **Quando** |
 | --- | --- | --- |
-| RF45 | RNFs 45.2, 45.4 e 45.5 com categoria **Confiabilidade**. RNF 45.5 com a redação: "A exclusão é permitida somente para aula sem nenhum registro de presença, mesma condição que a RNF 33.7 impõe à marcação como Não realizada; aula com registros permanece Em aberto até ser consolidada." | Antes da 6.5 |
-| CSU11, passo 2 | "…verifica se a aula está Em aberto; caso haja alterações não salvas ou alunos sem registro, o sistema informa quais alunos serão registrados como ausentes e, após a confirmação do usuário, grava a chamada antes de verificar." (decisão do autor em 13/10/2026; implementado na 6.4-C). O FA1 continua: recusa da API e cancelamento. | Antes da 6.5 |
-| CSU10 FA1, CSU11 FA2/FA3, CSU15, CSU24 passo 1 | Padronização: "Em aberto", "Consolidada", "Não realizada(s)" com inicial maiúscula; "O Administrador" no CSU24 | Junto com os itens acima |
-| RF20 / protótipo | Figura "Tela de Turma" (abas) feita a partir da tela real (`RF20-pagina-turma-desktop.png`), com a descrição da seção 1.8 de `docs/decisoes/etapa-6.md`; renumeração das figuras seguintes | Antes da 6.5 |
+| CSU09, passo 4 | "O usuário informa a data, a matéria, o professor responsável e o tema." → "O usuário informa a data, a matéria, o professor responsável e, opcionalmente, o tema e o conteúdo." (RF45 e CSU09 FA1 declaram o conteúdo editável; a 6.5 o expôs no diálogo, nos dois modos) | Próxima revisão do .docx |
+| RF20 / protótipo | Figura "Tela de Turma" (abas) feita a partir da tela real (`RF20-pagina-turma-desktop.png`), com a descrição da seção 1.8 de `docs/decisoes/etapa-6.md`; renumeração das figuras seguintes | Antes da defesa |
 | RF12 | Se a 6.6 for cortada: reverter RNFs 12.3/12.4 e o passo do CSU13 ao texto anterior antes da defesa | Só se a 6.6 cair |
 | 4.5 / 4.7 / Apêndice | Versões resolvidas na etapa 0: .NET 10 (net10.0); JwtBearer, EF Core Tools e EF Core Design 10.0.12; Npgsql.EntityFrameworkCore.PostgreSQL 10.0.3; Swashbuckle.AspNetCore 10.2.3; BCrypt.Net-Next 4.0.3. | Pronto para entrar |
 | Implantação | IP do aceite = `RemoteIpAddress`; atrás de proxy reverso exige `ForwardedHeaders` (RNF 42.8). | Ao descrever a implantação |
