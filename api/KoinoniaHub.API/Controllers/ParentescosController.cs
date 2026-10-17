@@ -68,8 +68,17 @@ namespace KoinoniaHub.API.Controllers
         public async Task<IActionResult> Remover([FromRoute] int pessoaId, [FromRoute] int parentescoId)
         {
             var igrejaId = UsuarioAutenticado.ObterIgrejaId(User);
-            var ok = await _servico.RemoverAsync(igrejaId, pessoaId, parentescoId);
-            return ok ? NoContent() : NotFound();
+
+            try
+            {
+                var ok = await _servico.RemoverAsync(igrejaId, pessoaId, parentescoId);
+                return ok ? NoContent() : NotFound();
+            }
+            catch (InvalidOperationException ex)
+            {
+                // RNF 12.3 / CSU13 FA1: vínculo derivado não é removido por este lado.
+                return BadRequest(new { mensagem = ex.Message });
+            }
         }
     }
 }

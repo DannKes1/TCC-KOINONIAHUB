@@ -33,6 +33,16 @@ namespace KoinoniaHub.API.Infraestrutura.Repositorios
                 .ToListAsync();
         }
 
+        public async Task<List<Parentesco>> ListarComoParenteAsync(int igrejaId, int pessoaId)
+        {
+            return await _db.Parentescos
+                .AsNoTracking()
+                .Include(p => p.Pessoa)
+                .Where(p => p.ParenteId == pessoaId && p.Pessoa.IgrejaId == igrejaId)
+                .OrderBy(p => p.Pessoa.Nome)
+                .ToListAsync();
+        }
+
         public async Task<Parentesco?> ObterPorIdAsync(int igrejaId, int pessoaId, int parentescoId)
         {
             return await _db.Parentescos
@@ -40,6 +50,17 @@ namespace KoinoniaHub.API.Infraestrutura.Repositorios
                 .FirstOrDefaultAsync(p =>
                     p.Id == parentescoId &&
                     p.PessoaId == pessoaId &&
+                    p.Pessoa.IgrejaId == igrejaId);
+        }
+
+        public async Task<Parentesco?> ObterComoParenteAsync(int igrejaId, int pessoaId, int parentescoId)
+        {
+            return await _db.Parentescos
+                .AsNoTracking()
+                .Include(p => p.Pessoa)
+                .FirstOrDefaultAsync(p =>
+                    p.Id == parentescoId &&
+                    p.ParenteId == pessoaId &&
                     p.Pessoa.IgrejaId == igrejaId);
         }
 

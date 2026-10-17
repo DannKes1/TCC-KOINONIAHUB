@@ -4,6 +4,7 @@ using KoinoniaHub.API.Aplicacao.DTOS.Requisicoes;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
 using KoinoniaHub.API.Dominio.Entidades;
 using KoinoniaHub.API.Dominio.Interfaces.Repositorios;
+using KoinoniaHub.API.Dominio.Regras;
 using KoinoniaHub.API.Infraestrutura.Dados;
 using Microsoft.EntityFrameworkCore;
 
@@ -72,9 +73,37 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             var pessoa = await _db.Pessoas.AsNoTracking()
                 .Include(p => p.Parentescos)
                     .ThenInclude(x => x.Parente)
+                .Include(p => p.ParentescosComoParente)
+                    .ThenInclude(x => x.Pessoa)
                 .FirstOrDefaultAsync(p => p.IgrejaId == igrejaId && p.Id == pessoaId);
 
             if (pessoa is null) return null;
+
+            var registrados = pessoa.Parentescos
+                .OrderBy(x => x.Parente.Nome)
+                .Select(x => new PessoaTurmaParentescoRespostaDto
+                {
+                    ParenteNome = x.Parente.Nome,
+                    TipoRelacionamento = x.TipoRelacionamento,
+                    ParenteCelular = x.Parente.Celular,
+                    Derivado = false
+                })
+                .ToList();
+
+            // RNF 12.3 (mesma regra de ParentescoServico.ListarAsync): grau inverso dos vínculos
+            // registrados no cadastro de outras pessoas, omitido quando há registro explícito inverso.
+            var paresExplicitos = pessoa.Parentescos.Select(x => x.ParenteId).ToHashSet();
+
+            registrados.AddRange(pessoa.ParentescosComoParente
+                .Where(x => !paresExplicitos.Contains(x.PessoaId))
+                .OrderBy(x => x.Pessoa.Nome)
+                .Select(x => new PessoaTurmaParentescoRespostaDto
+                {
+                    ParenteNome = x.Pessoa.Nome,
+                    TipoRelacionamento = ParentescoInverso.Derivar(x.TipoRelacionamento, x.Pessoa.Sexo, x.Pessoa.Nome),
+                    ParenteCelular = x.Pessoa.Celular,
+                    Derivado = true
+                }));
 
             return new PessoaTurmaRespostaDto
             {
@@ -82,15 +111,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 Nome = pessoa.Nome,
                 Situacao = pessoa.Situacao,
                 Celular = pessoa.Celular,
-                Parentescos = pessoa.Parentescos
-                    .OrderBy(x => x.Parente.Nome)
-                    .Select(x => new PessoaTurmaParentescoRespostaDto
-                    {
-                        ParenteNome = x.Parente.Nome,
-                        TipoRelacionamento = x.TipoRelacionamento,
-                        ParenteCelular = x.Parente.Celular
-                    })
-                    .ToList()
+                Parentescos = registrados
             };
         }
 

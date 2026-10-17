@@ -3,6 +3,7 @@ using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
 using KoinoniaHub.API.Dominio.Entidades;
 using KoinoniaHub.API.Dominio.Interfaces.Repositorios;
+using KoinoniaHub.API.Dominio.Regras;
 using KoinoniaHub.API.Infraestrutura.Dados;
 using Microsoft.EntityFrameworkCore;
 
@@ -65,29 +66,60 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 ParenteId = dto.ParenteId,
                 TipoRelacionamento = tipo,
                 ParenteNome = parente.Nome,
-                ParenteCelular = parente.Celular
+                ParenteCelular = parente.Celular,
+                Derivado = false
             };
         }
 
         public async Task<List<ParentescoRespostaDto>> ListarAsync(int igrejaId, int pessoaId)
         {
-            var lista = await _repositorio.ListarDaPessoaAsync(igrejaId, pessoaId);
+            var registrados = await _repositorio.ListarDaPessoaAsync(igrejaId, pessoaId);
+            var comoParente = await _repositorio.ListarComoParenteAsync(igrejaId, pessoaId);
 
-            return lista.Select(p => new ParentescoRespostaDto
+            var resposta = registrados.Select(p => new ParentescoRespostaDto
             {
                 Id = p.Id,
                 PessoaId = p.PessoaId,
                 ParenteId = p.ParenteId,
                 TipoRelacionamento = p.TipoRelacionamento,
                 ParenteNome = p.Parente?.Nome ?? string.Empty,
-                ParenteCelular = p.Parente?.Celular
+                ParenteCelular = p.Parente?.Celular,
+                Derivado = false
             }).ToList();
+
+            // RNF 12.3: grau inverso dos vínculos registrados no cadastro de outras pessoas,
+            // omitido quando esta pessoa já registrou explicitamente um vínculo com a origem.
+            var paresExplicitos = registrados.Select(p => p.ParenteId).ToHashSet();
+
+            resposta.AddRange(comoParente
+                .Where(p => !paresExplicitos.Contains(p.PessoaId))
+                .Select(p => new ParentescoRespostaDto
+                {
+                    Id = p.Id,
+                    PessoaId = pessoaId,
+                    ParenteId = p.PessoaId,
+                    TipoRelacionamento = ParentescoInverso.Derivar(p.TipoRelacionamento, p.Pessoa.Sexo, p.Pessoa.Nome),
+                    ParenteNome = p.Pessoa.Nome,
+                    ParenteCelular = p.Pessoa.Celular,
+                    Derivado = true
+                }));
+
+            return resposta;
         }
 
         public async Task<bool> RemoverAsync(int igrejaId, int pessoaId, int parentescoId)
         {
             var parentesco = await _repositorio.ObterPorIdAsync(igrejaId, pessoaId, parentescoId);
-            if (parentesco is null) return false;
+            if (parentesco is null)
+            {
+                // RNF 12.3: o vínculo derivado é removido somente no cadastro em que foi registrado.
+                var derivado = await _repositorio.ObterComoParenteAsync(igrejaId, pessoaId, parentescoId);
+                if (derivado is not null)
+                    throw new InvalidOperationException(
+                        $"Este vínculo foi registrado no cadastro de {derivado.Pessoa.Nome} e só pode ser removido por lá.");
+
+                return false;
+            }
 
             await _repositorio.RemoverAsync(parentesco);
             return true;

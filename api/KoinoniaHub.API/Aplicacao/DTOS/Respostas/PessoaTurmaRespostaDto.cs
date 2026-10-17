@@ -14,5 +14,7 @@
         public string ParenteNome { get; set; } = string.Empty;
         public string TipoRelacionamento { get; set; } = string.Empty;
         public string? ParenteCelular { get; set; }
+        // RNF 12.3: grau inverso de um vínculo registrado no cadastro do parente.
+        public bool Derivado { get; set; }
     }
 }
