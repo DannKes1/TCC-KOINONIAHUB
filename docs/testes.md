@@ -1158,3 +1158,76 @@ E2E-M1 em modo estrito sem alteração. O E2E rodou contra o PostgreSQL local no
 6.5 atendida em 15/10/2026), seção 6.14 (ATENDIDA; 9 casos; exclusão → 204), seção 7 (9 casos),
 seção 9 (retirar a linha RF45; acrescentar o CSU09 passo 4 com "e, opcionalmente, o tema e o
 conteúdo"). Texto completo no relato da entrega e em `docs/decisoes/etapa-6.md`, 1.9.
+
+## Etapa 6.6 — RF12: parentesco derivado na leitura (16 e 17/10/2026)
+
+**Escopo.** Seção 6.15 do Plano, recorte mínimo: o vínculo é gravado uma única vez; na leitura do
+cadastro do parente o sistema apresenta o grau inverso (Pai/Mãe → Filho(a); Filho(a) → Pai, Mãe ou
+"Pai ou mãe" pelo sexo da pessoa de origem; Irmão(ã) e Cônjuge simétricos; Responsável →
+Dependente; texto livre repetido com "(informado no cadastro de X)"), com `derivado: true`, sem
+segundo registro, sem migration e sem mudar o DER (RNFs 12.3/12.4; CSU13 passo 2). A derivada é
+omitida quando a pessoa já tem registro explícito com a origem. Pelo lado derivado o `DELETE`
+devolve 400 "Este vínculo foi registrado no cadastro de X e só pode ser removido por lá." (CSU13
+FA1); na tela a linha derivada tem a tag "derivado", não tem o botão de remover e traz um botão ⓘ
+que mostra e esconde a explicação na própria linha (sem tooltip nem Popover: nada montado fora da
+tabela; funciona no toque; área de toque de 40 px), além de uma nota abaixo da tabela. Vale para `GET /api/pessoas/{id}/parentescos`
+(gestão e Professor) e para o DTO reduzido do `GET /api/pessoas/{id}` (11.3). A `DataTable` do
+diálogo de Parentescos foi extraída para `TabelaParentescos.vue` (mesma tabela, sem mudança visual
+além da tag e do botão oculto); o diálogo "Responsáveis" do Professor ganhou só a tag.
+Decisões em `docs/decisoes/etapa-6.md`, 1.10.
+
+**Validação automatizada (16/10/2026, ambiente do autor):** `dotnet build` e `dotnet test` =
+**136 aprovados** (123 + `RF12_ParentescoDerivadoTests`, 13 casos: Pai e Mãe → Filho(a) com o
+`Id` da origem e um só registro no banco; Filho(a) por sexo Masculino → Pai, Feminino → Mãe, sem
+sexo → "Pai ou mãe"; Irmão(ã) e Cônjuge simétricos; Responsável → Dependente; texto livre
+"Padrinho" → "Padrinho (informado no cadastro de Origem …)"; registro explícito inverso omite a
+derivada nos dois cadastros; DELETE pelo lado derivado → 400 e registro preservado, pelo lado de
+origem → 204 e a derivada some; DELETE de id inexistente → 404; Professor vê a derivada no DTO
+reduzido) · `vue-tsc -b` limpo · `npm run test` = **21 arquivos, 111 casos** (105 +
+`TabelaParentescos.spec` 6: explícita com botão; derivada com tag "derivado", sem botão, com o ⓘ
+fechado e a nota; ⓘ abre a explicação na própria linha e fecha ao clicar de novo; recarga da
+lista fecha a explicação; `remover` emite o item; lista vazia) · `npm run build` ok · `npm run test:e2e` =
+**10 aprovados** (3 no projeto `chromium` + 7 no projeto `mobile`), E2E-M1 estrito e E2E-M2 sem
+alteração. O E2E rodou contra o PostgreSQL local no ambiente `E2E`.
+
+**Testes manuais (17/10/2026; Admin e professora; desktop e 360 × 640):**
+
+1. Pessoas → Parentescos de Maria (Feminino) → João como "Filho(a)" → Adicionar: "Parentesco
+   cadastrado com sucesso.", linha "João — Filho(a)" com botão de remover. ✔
+2. Parentescos de João: linha "Maria — Mãe" com a tag "derivado", sem botão de remover, ⓘ no
+   lugar e nota "Vínculos marcados como derivado foram registrados no cadastro do parente e só
+   podem ser removidos por lá." abaixo da tabela. Clicar no ⓘ mostra, abaixo do relacionamento,
+   "Vínculo registrado no cadastro de Maria. Para removê-lo, abra os parentescos dessa pessoa.";
+   clicar de novo esconde. Fechar o diálogo e navegar: nenhum balão fica na tela. ✔
+3. Origem Masculino (Carlos) → João "Filho(a)": em João, "Carlos — Pai" derivado. Origem sem sexo
+   (Ana) → João "Filho(a)": em João, "Ana — Pai ou mãe" derivado. ✔
+4. Em Maria: Carlos como "Cônjuge" → em Carlos "Maria — Cônjuge" derivado; Ana como
+   "Responsável" → em Ana "Maria — Dependente" derivado; "Padrinho" digitado para João → em João
+   "Padrinho (informado no cadastro de Maria)" derivado. ✔
+5. Em João, o seletor "Parente" ainda oferece Maria; registrar Maria como "Mãe" faz a derivada
+   desaparecer e fica só a linha explícita, com botão. ✔
+6. Em Maria, remover o "Filho(a)" com João pela lixeira: some em Maria; em João a linha explícita
+   "Mãe" permanece. ✔
+7. Swagger como Admin: `GET /api/pessoas/{idJoao}/parentescos` → linhas `derivado: true` com `id`
+   igual ao do registro de origem; `DELETE /api/pessoas/{idJoao}/parentescos/{esse id}` → 400
+   `{"mensagem":"Este vínculo foi registrado no cadastro de Carlos e só pode ser removido por lá."}`. ✔
+8. Professora, aba Alunos → Responsáveis de aluno registrado como parente em outro cadastro: tag
+   do tipo derivado seguida da tag "derivado"; `GET /api/pessoas/{idAluno}` →
+   `parentescos[].derivado` presente. ✔
+9. Celular 360 × 640 (passos 2 e 8): diálogos dentro da tela, sem rolagem horizontal da página;
+   tags visíveis; toque no ⓘ abre e fecha a explicação. ✔
+
+**Prints em `docs/evidencias/`:** `RF12-parentesco-origem-explicito.png`,
+`RNF-12.3-parentesco-derivado-tag.png`, `RNF-12.3-filho-sem-sexo-pai-ou-mae.png`,
+`RNF-12.3-delete-derivado-400.png`, `RNF-12.3-responsaveis-professor-derivado.png`,
+`RNF-12.3-parentescos-360.png`.
+
+**Corretivas dos testes manuais (17/10/2026):** (1) o balão do `v-tooltip` do ⓘ ficava preso na
+tela ao fechar o diálogo ou recarregar a lista com o mouse em cima (montado no `body`, sem
+`mouseleave`); (2) a troca por `title` nativo resolvia o balão, mas não funciona no toque. Solução
+final: ⓘ é um botão (`type="button"`, `aria-label`, `aria-expanded`, 40 px) que mostra e esconde a
+explicação como texto na própria linha. `TabelaParentescos.spec`: 4 → 6 casos; Vitest 109 → 111.
+
+**Registro para o Plano (v1.6):** seção 4 (linha `api/pessoas/{id}/parentescos` e RF12 → Atende),
+seção 5 (linha 6.6 atendida em 17/10/2026), seção 6.15 (ATENDIDA; microdecisões), seção 7.1
+(13 casos), seção 7.2 (`TabelaParentescos.spec`, 6). Texto completo em `docs/decisoes/etapa-6.md`, 1.10.
