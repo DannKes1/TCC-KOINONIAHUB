@@ -1231,3 +1231,138 @@ explicação como texto na própria linha. `TabelaParentescos.spec`: 4 → 6 cas
 **Registro para o Plano (v1.6):** seção 4 (linha `api/pessoas/{id}/parentescos` e RF12 → Atende),
 seção 5 (linha 6.6 atendida em 17/10/2026), seção 6.15 (ATENDIDA; microdecisões), seção 7.1
 (13 casos), seção 7.2 (`TabelaParentescos.spec`, 6). Texto completo em `docs/decisoes/etapa-6.md`, 1.10.
+
+---
+
+## Etapa 7.1 — Autorização: perfil × atribuição, FallbackPolicy, `perfilConta` e 404 uniforme (17 e 18/10/2026)
+
+**Escopo.** Seção 6.16 do Plano e decisões do autor: FallbackPolicy `RequireAuthenticatedUser()` em
+`Program.cs` (rota sem atributo nasce protegida; públicos com `[AllowAnonymous]`); RNF 21.4 em
+`AutorizacaoEbdServico` (ordem única nos três guardas: o recurso existe para a igreja → perfil
+administrativo passa → perfil Professor → atribuição ativa; conta de perfil Usuário com atribuição
+ativa → 403 "Esta operação exige perfil Professor ou administrativo."); `perfilConta` aditivo em
+`AtribuicaoRespostaDto` (null = sem conta) e tags "Sem conta" / "Conta com perfil Usuário — não
+acessa a turma" na coluna Pessoa da tela de Atribuições (RNF 21.5; texto curto "Perfil Usuário —
+não acessa a turma" abaixo de 768 px); `POST /api/igrejas` removido (a igreja nasce só pelo RF1);
+turma, matéria e aula inexistentes → 404 `{ mensagem }` para qualquer perfil
+(`RecursoNaoEncontradoException` + `RecursoNaoEncontradoFiltro`, filtro global como o do termo).
+Corretivas dos testes manuais (18/10): `GET /api/meus-dados/minhas-turmas` só devolve vínculos de
+atribuição para conta Professor ou administrativa (o vínculo Aluno continua) e a rota
+`/departamentos/:id` exige perfil gestor (`requerGestor`): perfil Usuário volta a Minhas Turmas com
+um único aviso, em vez de carregar a página e receber cinco 403. Decisões em
+`docs/decisoes/etapa-7.md`, 1.1.
+
+**Validação automatizada (18/10/2026, ambiente do autor):** `dotnet build` e `dotnet test` =
+**146 aprovados** (136 + `RF21_PerfilOperacionalTests`, 10 casos: Usuario com atribuição ativa →
+403 com a mensagem da 21.4 em `GET /api/aulas?departamentoId` e em `POST /api/aulas/{id}/presencas`
+sem gravar presença; Professor com atribuição → 200; minhas-turmas da conta Usuario só com o
+vínculo "Aluno" e do Professor com "Professor"; rota sem atributo → 401 sem sessão e 200 com
+sessão; `perfilConta` "Professor", "Usuario" e `null` na mesma listagem; `POST /api/igrejas` → 404
+sem gravar; aula, matéria e turma inexistentes → 404 com `mensagem` para Professor e Admin;
+`RF45_EditarAulaTests` passou a exigir 404 exato) · `vue-tsc -b` limpo · `npm run test` =
+**23 arquivos, 118 casos** (111 + `atribuicoes.spec` 4: sem conta; perfil Usuário; texto curto na
+tela compacta; Professor e administrativos sem aviso + `PaginaAtribuicoesDepartamento.spec` 1: tag
+só nas linhas sem conta e com perfil Usuário + `guardas.spec` +2: perfil Usuário entrando por uma
+aba vai para `/minhas-turmas` com um toast; Professor abre Aulas e continua barrado em Atribuições
+sem toast) · `npm run build` ok · `npm run test:e2e` = **10 aprovados** (3 no projeto `chromium` +
+7 no projeto `mobile`), E2E-M1 estrito e E2E-M2 sem alteração. O E2E rodou contra o PostgreSQL
+local no ambiente `E2E`.
+
+**Dados existentes (Plano 6.16, "antes de subir"):** consulta executada em 17/10/2026 no banco de
+desenvolvimento — 3 atribuições ativas de pessoas sem conta e 2 de conta com perfil Usuario (ambas
+da mesma pessoa); as duas foram encerradas na limpeza dos testes manuais.
+
+```sql
+SELECT i."Nome" AS igreja, d."Nome" AS turma, p."Id" AS pessoa_id, p."Nome" AS pessoa,
+       a."Funcao", u."Id" AS usuario_id, u."Email", u."Perfil", u."Ativo" AS usuario_ativo,
+       CASE WHEN u."Id" IS NULL THEN 'Sem conta' ELSE 'Conta com perfil Usuario' END AS situacao
+FROM "Atribuicoes" a
+JOIN "Pessoas"       p ON p."Id" = a."PessoaId"
+JOIN "Departamentos" d ON d."Id" = a."DepartamentoId"
+JOIN "Igrejas"       i ON i."Id" = d."IgrejaId"
+LEFT JOIN "Usuarios" u ON u."PessoaId" = p."Id"
+WHERE a."Ativo" = TRUE AND (u."Id" IS NULL OR u."Perfil" = 'Usuario')
+ORDER BY i."Nome", d."Nome", p."Nome";
+```
+
+**Testes manuais (17 e 18/10/2026; Admin, professora e conta Usuario X; desktop e 360 × 640):**
+
+1. Admin → turma → aba Atribuições → Nova Atribuição → pessoa X (conta de perfil Usuário),
+   Auxiliar → Salvar: "Atribuição criada com sucesso." e a linha de X com a tag âmbar "Conta com
+   perfil Usuário — não acessa a turma". ✔
+2. Nova Atribuição → pessoa sem usuário → Auxiliar: tag "Sem conta"; a linha da professora (conta
+   Professor) sem tag. ✔
+3. Celular 360 × 640, aba Atribuições: tabela utilizável com rolagem dentro da aba, página sem
+   deslizar; tag "Perfil Usuário — não acessa a turma" em no máximo duas linhas abaixo do nome
+   (corretiva 2). ✔
+4. Como X: painel do aluno abre; `GET /api/aulas?departamentoId=<turma>` → 403
+   `{"mensagem":"Esta operação exige perfil Professor ou administrativo."}`. ✔
+5. Como X: `POST /api/aulas/{aula Em aberto}/presencas` → 403 com a mesma mensagem; a chamada,
+   aberta pelo Admin, continua sem registro. ✔
+6. Professora → Minhas Turmas → Abrir turma → aba Aulas lista normalmente (200). ✔
+7. Como professora: `GET /api/aulas/999999`, `GET /api/materias/999999`,
+   `GET /api/aulas?departamentoId=999999` → 404 com "Aula não encontrada para esta igreja.",
+   "Matéria não encontrada para esta igreja." e "Departamento não encontrado para esta igreja.";
+   como Admin, também 404. ✔
+8. Aba anônima (sem cookie): `GET /api/atribuicoes` → 401. ✔
+9. Admin: `POST /api/igrejas` → 404; a rota não aparece mais no Swagger. ✔
+10. Como X, após a corretiva 1: Minhas Turmas mostra a turma só como "Aluno" (sem "Abrir
+    turma"); digitar `/departamentos/<id>/aulas` devolve a Minhas Turmas com um único aviso "Sem
+    permissão". Limpeza: as duas atribuições de teste encerradas. ✔
+
+**Prints em `docs/evidencias/`:** `RNF-21.5-tag-conta-usuario.png`, `RNF-21.5-tag-sem-conta.png`,
+`RNF-21.5-atribuicoes-360.png`, `RNF-21.4-403-post-presencas.png`,
+`RNF-21.4-minhas-turmas-usuario.png`, `RNF-21.4-404-aula-inexistente.png`,
+`RNF-21.4-404-materia-inexistente.png`, `RNF-2.1-401-sem-sessao.png`,
+`RF1-404-post-igrejas-removido.png`. O 403 do `GET /api/aulas?departamentoId` (passo 4) não tem
+print próprio: a mesma mensagem está no print do passo 5 e no teste
+`ListarAulas_UsuarioComAtribuicaoAtiva_Retorna403`.
+
+**Corretivas dos testes manuais (18/10/2026):** (1) conta Usuário com atribuição abria a Página da
+Turma por Minhas Turmas e recebia cinco toasts "Sem permissão" — `ListarMinhasTurmasAsync` filtra os
+vínculos de atribuição pelo perfil e a guarda `requerGestor` da rota da turma devolve a Minhas
+Turmas com um aviso só; xUnit +1, `guardas.spec` +2. (2) a tag a 360 px quebrava uma palavra por
+linha — coluna Pessoa com `min-width: 240px`, tag com `white-space: normal` e texto curto abaixo de
+768 px; `atribuicoes.spec` +1. Totais: xUnit 145 → 146; Vitest 115 → 118.
+
+**Inventário das evidências de Segurança (capturadas × faltantes), para a tabela RNF → teste →
+evidência do capítulo de Resultados (Plano 7.5):**
+
+| RNF | Teste automatizado | Evidência |
+| --- | --- | --- |
+| 2.1 e x.1 "autenticado" (3.1, 4.1, 5.1, 6.1, 9.2, 19.1, 20.1, 23.1, 26.1, 34.1) | RF21 (401 da FallbackPolicy) | ✔ `RNF-2.1-401-sem-sessao.png` |
+| 2.2 / 13.2 / 15.4 / 40.3 BCrypt | RF39_RF40 (hash no banco) | faltante: print da coluna `SenhaHash` (sem e-mail real) |
+| 2.3 / 40.4 / 42.4 / 44.4 HTTPS | `UseHttpsRedirection` | faltante: print do redirecionamento de `http://localhost:5054` |
+| 2.5 gate do termo | RF2_GateTermoTests | ✔ `RNF-2.5-403-termo-pendente.png`, `RNF-2.5-redirecionamento-termo.png` |
+| 2.6 Origin | RF2_OrigemTests | ✔ `RNF-2.6-*.png` (2) |
+| 4.2 / 5.2 / 6.2 / 34.3 próprios dados | RF34 | ✔ `RNF-34.3-*.png` (2) |
+| 8.1, 9.1, 10.1, 12.1, 17.1, 18.1, 21.1, 22.1, 38.1, 41.1 gestão | `[Authorize(Roles)]`; RF44 (403) | ✔ `RNF-44.1-403-perfil-sem-permissao.png` (exemplo da família) |
+| 8.2 perfil **e** atribuição; 21.4 | RF21 (403 em leitura e escrita; minhas-turmas) | ✔ `RNF-21.4-403-post-presencas.png`, `RNF-21.4-minhas-turmas-usuario.png` |
+| 21.5 sinalização | RF21 (`perfilConta`); Vitest | ✔ `RNF-21.5-*.png` (3) |
+| 11.3 | RF11 | ✔ `RNF-11.3-*.png` (2) |
+| 13.1, 14.1, 15.1, 16.1, 39.1 só Admin | `[Authorize(Roles="Admin")]` | faltante: um 403 de Professor em `/api/usuarios` (um print para a família) |
+| 14.3 | RF14 | ✔ `RNF-14.3-400-ultimo-admin.png` |
+| 15.2 / 39.4 | RF39_RF40 | faltante: convite anterior → 404 após gerar o novo |
+| 15.3 | RF39_RF40 (404 da rota) | ✔ `RNF-15.3-404-resetar-senha.png` |
+| 17.3 / 44.2 isolamento | RF44 (403); RF33 (reabrir de outra igreja, 404) | ✔ `RNF-44.2-403-outra-igreja.png` |
+| 21.3 só Professor como responsável | AulaServico; RF45 | faltante: 400 ao criar aula com auxiliar como professor |
+| 24.1 a 33.1, 35.1, 37.1, 45.1 "gestão ou atribuição" | RF11/RF34 (Professor fora da turma); RF21 | ✔ `RNF-11.3-403-fora-da-turma.png`, `RNF-34.3-403-fora-da-turma.png` |
+| 404 uniforme (turma, matéria, aula) | RF21 | ✔ `RNF-21.4-404-aula-inexistente.png`, `RNF-21.4-404-materia-inexistente.png` |
+| 28.3 | RF28 | ✔ `RNF-28.3-disponiveis-dto-reduzido.png` |
+| 33.5 | RF33 | ✔ `RNF-33.5-403-reabrir-professor.png` |
+| 35.4 / 36.4 / 37.4 exportação | front | ✔ `RNF-35.4-professor-sem-exportacao.png` |
+| 39.2 / 39.3 / 40.1 / 40.2 convite | RF39_RF40 | faltante: token exibido uma vez, hash no banco, mensagem de convite já usado |
+| 42.1, 42.3, 43.2 | RF42 | ✔ `RNF-42.1-*.png` (2), `RF42-registro-aceite-hash-meio-ip.png`, `RF43-*.png` (2) |
+| 44.1 / 44.2 / 44.3 | RF44 | ✔ `RNF-44.1-*`, `RNF-44.2-*`, `RNF-44.3-*.png` |
+| 45.2 / 45.5 | RF45 | ✔ `RNF-45.2-*.png` (2) |
+| RF1: `POST /api/igrejas` removido | RF21 (404) | ✔ `RF1-404-post-igrejas-removido.png` |
+
+Faltantes (um print cada, opcionais para a banca, a capturar na 7.3 junto com a tabela CSU →
+teste): BCrypt no banco; HTTPS; 403 de Professor em `/api/usuarios`; convite anterior invalidado;
+21.3; token exibido uma vez e convite já usado (40.2).
+
+**Registro para o Plano (v1.7):** seção 4 (linhas `api/igrejas`, `api/atribuicoes`,
+`api/meus-dados/minhas-turmas` e nota do 404 uniforme; RF21 → Atende), seção 5 (linha 7.1 atendida
+em 18/10/2026), seção 6.16 (ATENDIDA; decisões e microdecisões), seção 7.1 (10 casos), seção 7.2
+(`atribuicoes.spec` 4, `PaginaAtribuicoesDepartamento.spec` 1, `guardas.spec` 7), seção 9 (POST
+igrejas resolvido). Texto completo em `docs/decisoes/etapa-7.md`, 1.1.
