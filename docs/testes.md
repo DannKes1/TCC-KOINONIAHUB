@@ -1366,3 +1366,60 @@ teste): BCrypt no banco; HTTPS; 403 de Professor em `/api/usuarios`; convite ant
 em 18/10/2026), seção 6.16 (ATENDIDA; decisões e microdecisões), seção 7.1 (10 casos), seção 7.2
 (`atribuicoes.spec` 4, `PaginaAtribuicoesDepartamento.spec` 1, `guardas.spec` 7), seção 9 (POST
 igrejas resolvido). Texto completo em `docs/decisoes/etapa-7.md`, 1.1.
+
+---
+
+## Etapa 7.2 — Fluxos E2E-04 a E2E-08 e corretiva do dia civil da igreja (18 e 19/10/2026)
+
+**Escopo.** Seção 7.3 do Plano: E2E-04 (chamada até relatório, desktop e projeto `mobile`), E2E-05
+(restrições do Professor e conta Usuario com atribuição, RNF 21.4), E2E-06 (reabertura pelo Admin),
+E2E-07 (importação CSV, RNF 41.3) e E2E-08 (último administrador, RNF 14.3). A semente cria uma
+turma própria por cenário que grava aula; o front só ganhou `data-testid`. **Corretiva descoberta
+pelo E2E-04** (18/10, 21h38 locais): a Frequência da turma contava a aula, mas 0 alunos — o período
+era lido como dia UTC e a matrícula do próprio dia, depois das 20h, caía no dia seguinte. Correção
+(opção A do autor): `RelogioIgreja` lê `Igreja:FusoHorario` (padrão America/Porto_Velho) e converte
+dias civis em instantes UTC nos relatórios RF35–RF38 (e RF6) e no "hoje" da pendência de
+fechamento; armazenamento continua em UTC. Decisões em `docs/decisoes/etapa-7.md`, 1.2.
+
+**Validação automatizada (18/10/2026, 22h14 locais, ambiente do autor):** `dotnet build` limpo e
+`dotnet test` = **151 aprovados** (146 + `RF35_FusoHorarioTests`, 5 casos: instantes UTC do dia
+local e `HojeLocal` às 21h; `DataCivil` com id Windows; matrícula às 23h locais do dia D entra no
+relatório com fim = D; aula de hoje às 21h locais não é pendente na aula, na Frequência e no
+Resumo do dia; aula de ontem é — relógio fixo por `FabricaComRelogioFixo`) · `vue-tsc -b` limpo ·
+`npm run test` = **23 arquivos, 119 casos** (`situacaoAula.spec` +1: aula de hoje às 21h locais não
+é pendente, a de ontem é) · `npm run build` ok · `npm run test:e2e` = **18 aprovados** (10 no
+projeto `chromium`: E2E-01 a E2E-03, E2E-04, E2E-05 ×3, E2E-06, E2E-07, E2E-08; 8 no `mobile`:
+E2E-01, E2E-02, E2E-04, E2E-M1 ×3, E2E-M2 ×2), contra o PostgreSQL local no ambiente `E2E`.
+
+**O que cada fluxo afirma.** E2E-04: a confirmação de Consolidar nomeia os alunos sem registro e
+oferece "Salvar e consolidar" (CSU11 passos 2–4); depois de completar e salvar, consolida e a
+Frequência mostra 1 aula consolidada e 2 presenças; no celular, critério estrito em Aulas e Chamada
+e largura do documento em Relatórios. E2E-05: menu do Professor sem Pessoas/Usuários/Igreja;
+`GET /api/pessoas/{id}` de pessoa fora das turmas → 403 (aluno da turma → 200); sem CSV/Imprimir em
+Frequência, Acompanhamento e Ranking; conta Usuario com Auxiliar ativa → 403 em
+`GET /api/aulas?departamentoId`, turma só como "Aluno" em Minhas Turmas, sem "Abrir turma", e a
+Página da Turma digitada volta a Minhas Turmas com aviso. E2E-06: reabrir preserva as presenças;
+corrigir uma e consolidar de novo grava as três como presentes. E2E-07: Criadas 2, Ignoradas 2,
+Para conferência 1; reimportar o mesmo arquivo não cria nada. E2E-08: inativar a própria conta →
+"Você não pode desativar o seu próprio usuário."; trocar o próprio perfil → mensagem da 14.3; a
+conta segue Admin e Ativa (também conferido por PATCH direto → 400).
+
+**Testes manuais (perfil `https`, banco de desenvolvimento):** T1 corretiva do dia civil, após 20h
+locais de 18/10 ✔ · T2 chamada até relatório, desktop e 360 px ✔ · T3 restrições do Professor e
+conta Usuario ✔ · T4 reabertura ✔ · T5 importação ✔ · T6 último Admin ✔ (a troca de perfil foi para
+Pastor; a mensagem da 14.3 é a mesma para qualquer perfil diferente de Admin). As aulas de T2 a T6
+têm data 19/10/2026 (testes concluídos na madrugada de 19/10).
+
+**Prints (`docs/evidencias/`):** Playwright, projeto `mobile`: `RNF-responsividade-e2e04-aula-nova.png`,
+`-aulas-turma.png`, `-chamada-incompleta-confirmacao.png`, `-chamada-completa.png`,
+`-chamada-consolidada.png`, `-relatorio-frequencia.png`. Manuais: `RF35-relatorio-matricula-noite.png`,
+`RNF-31.3-aula-hoje-nao-pendente.png`, `CSU11-confirmacao-sem-registro.png`,
+`CSU12-frequencia-apos-consolidar.png`, `RNF-21.4-usuario-com-atribuicao-minhas-turmas.png`,
+`RNF-35.4-professor-sem-exportacao.png`, `CSU11-reabrir-preserva.png`, `CSU11-reconsolidada.png`,
+`RNF-41.3-importacao-conferencia.png`, `RNF-14.3-perfil-ultimo-admin.png`.
+
+**Registro para o Plano:** seção 7.3 (linha do E2E-04 reescrita para o comportamento atual do
+CSU11; E2E-05 a E2E-08 ✔ 7.2), critério de data (linha 285: "hoje (UTC)" → dia civil da igreja,
+fuso configurável, armazenamento em UTC), seção 5 (linha 7.2 atendida em 18/10/2026), seções 7.1 a
+7.3 (`RF35_FusoHorarioTests` 5; `situacaoAula.spec` +1; projeto `mobile` com E2E-04) e totais
+(151 · 119 · 18). Texto completo no relato da entrega e em `docs/decisoes/etapa-7.md`, 1.2.
