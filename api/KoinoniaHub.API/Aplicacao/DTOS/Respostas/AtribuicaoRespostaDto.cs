@@ -16,5 +16,12 @@
         public DateTime? DataFim { get; set; }
 
         public bool Ativo { get; set; }
+
+        // RNF 21.5 (7.1): perfil da conta de acesso da pessoa; null = sem conta. A tela
+        // de Atribuições sinaliza "Sem conta" e "Conta com perfil Usuário", que não
+        // acessam a turma (RNF 21.4). Pela API porque Pastor e Superintendente gerem
+        // atribuições mas não listam usuários (RF16 é Admin). Conta inativa também
+        // devolve o perfil: ter conta e estar ativa são assuntos distintos.
+        public string? PerfilConta { get; set; }
     }
 }

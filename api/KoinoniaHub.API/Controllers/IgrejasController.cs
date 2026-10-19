@@ -7,6 +7,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace KoinoniaHub.API.Controllers
 {
+    // A igreja nasce só pelo cadastro inicial (POST /api/auth/registrar-admin, RF1):
+    // o antigo POST /api/igrejas foi removido na 7.1, porque um Admin criaria uma
+    // segunda igreja fora do fluxo e sem o aceite do termo (RF42). Teste de 404 em
+    // RF21_PerfilOperacionalTests, como o da RNF 15.3.
     [ApiController]
     [Route("api/igrejas")]
     public class IgrejasController : ControllerBase
@@ -16,15 +20,6 @@ namespace KoinoniaHub.API.Controllers
         public IgrejasController(IIgrejaServico igrejaServico)
         {
             _igrejaServico = igrejaServico;
-        }
-
- 
-        [Authorize(Roles = "Admin")]
-        [HttpPost]
-        public async Task<IActionResult> Criar([FromBody] IgrejaCriarRequisicaoDto dto)
-        {
-            var resposta = await _igrejaServico.CriarAsync(dto);
-            return CreatedAtAction(nameof(ObterPorId), new { id = resposta.Id }, resposta);
         }
 
         [Authorize]

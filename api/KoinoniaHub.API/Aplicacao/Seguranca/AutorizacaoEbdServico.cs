@@ -1,11 +1,20 @@
-﻿using KoinoniaHub.API.Dominio.Entidades;
+﻿using KoinoniaHub.API.Aplicacao.Excecoes;
+using KoinoniaHub.API.Dominio.Entidades;
 using KoinoniaHub.API.Infraestrutura.Dados;
 using Microsoft.EntityFrameworkCore;
 
 namespace KoinoniaHub.API.Aplicacao.Seguranca
 {
+    // Autorização da operação da EBD (seção 4.9 da monografia; Plano 6.16): perfil
+    // administrativo alcança toda a igreja; o perfil Professor habilita a área de
+    // operação e a atribuição ativa (Professor ou Auxiliar) define as turmas (RNF 21.4);
+    // contas de perfil Usuario não operam turma alguma, ainda que a pessoa tenha
+    // atribuição. Ordem em cada guarda: o recurso existe para a igreja (senão 404,
+    // RecursoNaoEncontradoException) → perfil → atribuição.
     public class AutorizacaoEbdServico : IAutorizacaoEbdServico
     {
+        public const string MensagemPerfilOperacional = "Esta operação exige perfil Professor ou administrativo.";
+
         private static readonly string[] FuncoesDeAtribuicao = { "Professor", "Auxiliar" };
 
         private readonly KoinoniaHubDbContext _db;
@@ -17,57 +26,38 @@ namespace KoinoniaHub.API.Aplicacao.Seguranca
 
         public async Task GarantirAcessoDepartamentoAsync(int igrejaId, int usuarioId, string perfil, int departamentoId)
         {
-            if (Perfis.EhAdministrativo(perfil))
-                return;
-
             var depExiste = await _db.Departamentos.AsNoTracking()
                 .AnyAsync(d => d.IgrejaId == igrejaId && d.Id == departamentoId);
 
             if (!depExiste)
-                throw new InvalidOperationException("Departamento não encontrado para esta igreja.");
+                throw new RecursoNaoEncontradoException("Departamento não encontrado para esta igreja.");
 
-            var pessoaId = await ObterPessoaIdDoUsuarioAsync(igrejaId, usuarioId);
-
-            var possuiAtribuicao = await _db.Atribuicoes.AsNoTracking()
-                .AnyAsync(a =>
-                    a.Ativo &&
-                    a.DepartamentoId == departamentoId &&
-                    a.PessoaId == pessoaId &&
-                    FuncoesDeAtribuicao.Contains(a.Funcao));
-
-            if (!possuiAtribuicao)
-                throw new UnauthorizedAccessException("Você não tem permissão para operar esta turma (sem atribuição ativa).");
+            await GarantirOperacaoNaTurmaAsync(igrejaId, usuarioId, perfil, departamentoId);
         }
 
         public async Task GarantirAcessoMateriaAsync(int igrejaId, int usuarioId, string perfil, int materiaId)
         {
-            if (Perfis.EhAdministrativo(perfil))
-                return;
-
             var materia = await _db.Materias.AsNoTracking()
                 .Include(m => m.Departamento)
                 .FirstOrDefaultAsync(m => m.Id == materiaId && m.Departamento.IgrejaId == igrejaId);
 
             if (materia is null)
-                throw new InvalidOperationException("Matéria não encontrada para esta igreja.");
+                throw new RecursoNaoEncontradoException("Matéria não encontrada para esta igreja.");
 
-            await GarantirAcessoDepartamentoAsync(igrejaId, usuarioId, perfil, materia.DepartamentoId);
+            await GarantirOperacaoNaTurmaAsync(igrejaId, usuarioId, perfil, materia.DepartamentoId);
         }
 
         public async Task GarantirAcessoAulaAsync(int igrejaId, int usuarioId, string perfil, int aulaId)
         {
-            if (Perfis.EhAdministrativo(perfil))
-                return;
-
             var aula = await _db.Aulas.AsNoTracking()
                 .Include(a => a.Materia)
                 .ThenInclude(m => m.Departamento)
                 .FirstOrDefaultAsync(a => a.Id == aulaId && a.Materia.Departamento.IgrejaId == igrejaId);
 
             if (aula is null)
-                throw new InvalidOperationException("Aula não encontrada para esta igreja.");
+                throw new RecursoNaoEncontradoException("Aula não encontrada para esta igreja.");
 
-            await GarantirAcessoDepartamentoAsync(igrejaId, usuarioId, perfil, aula.Materia.DepartamentoId);
+            await GarantirOperacaoNaTurmaAsync(igrejaId, usuarioId, perfil, aula.Materia.DepartamentoId);
         }
 
         public async Task GarantirAcessoPessoaAsync(int igrejaId, int usuarioId, string perfil, int pessoaId)
@@ -105,6 +95,29 @@ namespace KoinoniaHub.API.Aplicacao.Seguranca
         {
             var pessoaId = await ObterPessoaIdDoUsuarioAsync(igrejaId, usuarioId);
             return await ListarDepartamentosDaPessoaAsync(igrejaId, pessoaId);
+        }
+
+        // Turma já conferida como existente na igreja. Administrativo passa; depois a
+        // RNF 21.4 (perfil Professor) e, só então, a atribuição ativa na turma.
+        private async Task GarantirOperacaoNaTurmaAsync(int igrejaId, int usuarioId, string perfil, int departamentoId)
+        {
+            if (Perfis.EhAdministrativo(perfil))
+                return;
+
+            if (!Perfis.EhProfessor(perfil))
+                throw new UnauthorizedAccessException(MensagemPerfilOperacional);
+
+            var pessoaId = await ObterPessoaIdDoUsuarioAsync(igrejaId, usuarioId);
+
+            var possuiAtribuicao = await _db.Atribuicoes.AsNoTracking()
+                .AnyAsync(a =>
+                    a.Ativo &&
+                    a.DepartamentoId == departamentoId &&
+                    a.PessoaId == pessoaId &&
+                    FuncoesDeAtribuicao.Contains(a.Funcao));
+
+            if (!possuiAtribuicao)
+                throw new UnauthorizedAccessException("Você não tem permissão para operar esta turma (sem atribuição ativa).");
         }
 
         private async Task<List<int>> ListarDepartamentosDaPessoaAsync(int igrejaId, int pessoaId)

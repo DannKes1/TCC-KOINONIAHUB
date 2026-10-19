@@ -147,7 +147,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 Funcao = a.Funcao,
                 DataInicio = a.DataInicio,
                 DataFim = a.DataFim,
-                Ativo = a.Ativo
+                Ativo = a.Ativo,
+                PerfilConta = a.Pessoa?.Usuario?.Perfil
             };
         }
     }

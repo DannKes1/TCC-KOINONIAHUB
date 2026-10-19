@@ -1,3 +1,4 @@
+using KoinoniaHub.API.Aplicacao.Excecoes;
 using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Aplicacao.Servicos.Implementacoes;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
@@ -5,6 +6,7 @@ using KoinoniaHub.API.Infraestrutura.Dados;
 using KoinoniaHub.API.Infraestrutura.Repositorios;
 using KoinoniaHub.API.Dominio.Interfaces.Repositorios;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -15,10 +17,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Controllers + JSON. O filtro global exige o aceite da versão vigente do Termo de
 // Uso e Sigilo em toda rota autenticada não marcada com [PermitirSemAceiteTermo]
-// (RNF 2.5 / 42.1; decisão registrada na etapa 5.1).
+// (RNF 2.5 / 42.1; decisão registrada na etapa 5.1). O segundo traduz
+// RecursoNaoEncontradoException (turma, matéria ou aula inexistente para a igreja,
+// lançada pelos guardas de autorização) em 404 { mensagem } para qualquer perfil (7.1).
 builder.Services.AddControllers(opcoes =>
 {
     opcoes.Filters.Add<ExigeAceiteTermoFiltro>();
+    opcoes.Filters.Add<RecursoNaoEncontradoFiltro>();
 })
     .AddJsonOptions(x =>
     {
@@ -102,7 +107,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+// Política padrão (Plano 6.16, 7.1): qualquer endpoint sem atributo de autorização exige
+// usuário autenticado, para que uma rota nova nasça protegida. Os públicos (login,
+// cadastro inicial, primeiro acesso, termo vigente) estão marcados com [AllowAnonymous].
+builder.Services.AddAuthorization(opcoes =>
+{
+    opcoes.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
 
 // Repositórios
 builder.Services.AddScoped<IIgrejaRepositorio, IgrejaRepositorio>();

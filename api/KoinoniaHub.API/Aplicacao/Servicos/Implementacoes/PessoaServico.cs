@@ -1,6 +1,7 @@
 ﻿using KoinoniaHub.API.Aplicacao.DTOs.Requisicoes;
 using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
 using KoinoniaHub.API.Aplicacao.DTOS.Requisicoes;
+using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
 using KoinoniaHub.API.Dominio.Entidades;
 using KoinoniaHub.API.Dominio.Interfaces.Repositorios;
@@ -293,10 +294,18 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             }
 
 
-            var atribuicoes = await _db.Atribuicoes.AsNoTracking()
-                .Where(a => a.PessoaId == pessoaId && a.Ativo)
-                .Include(a => a.Departamento)
-                .ToListAsync();
+            // RNF 21.4 (7.1): a atribuição só produz efeito para conta de perfil Professor
+            // ou administrativo. Para o perfil Usuario, os vínculos de atribuição ficam fora
+            // da lista (o de Aluno continua), para a tela não oferecer "Abrir turma" a quem
+            // receberia 403 em todas as ações.
+            var operaTurmas = Perfis.EhAdministrativo(usuario.Perfil) || Perfis.EhProfessor(usuario.Perfil);
+
+            var atribuicoes = operaTurmas
+                ? await _db.Atribuicoes.AsNoTracking()
+                    .Where(a => a.PessoaId == pessoaId && a.Ativo)
+                    .Include(a => a.Departamento)
+                    .ToListAsync()
+                : new List<Atribuicao>();
 
             foreach (var a in atribuicoes)
             {

@@ -13,6 +13,9 @@
         public static bool EhAdministrativo(string? perfil) =>
             Administrativos.Contains(perfil ?? string.Empty, StringComparer.OrdinalIgnoreCase);
 
+        public static bool EhProfessor(string? perfil) =>
+            string.Equals(perfil, Professor, StringComparison.OrdinalIgnoreCase);
+
         public static bool EhUsuarioComum(string? perfil) =>
             string.Equals(perfil, Usuario, StringComparison.OrdinalIgnoreCase);
     }

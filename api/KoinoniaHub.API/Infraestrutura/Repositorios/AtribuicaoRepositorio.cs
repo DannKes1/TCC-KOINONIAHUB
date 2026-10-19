@@ -25,7 +25,7 @@ namespace KoinoniaHub.API.Infraestrutura.Repositorios
         {
             return await _db.Atribuicoes
                 .AsNoTracking()
-                .Include(a => a.Pessoa)
+                .Include(a => a.Pessoa).ThenInclude(p => p.Usuario)
                 .Include(a => a.Departamento)
                 .Where(a => a.Departamento.IgrejaId == igrejaId)
                 .OrderByDescending(a => a.Ativo)
@@ -36,9 +36,10 @@ namespace KoinoniaHub.API.Infraestrutura.Repositorios
 
         public async Task<List<Atribuicao>> ListarPorDepartamentoAsync(int igrejaId, int departamentoId, string? funcao = null, bool? ativo = null)
         {
+            // Pessoa.Usuario alimenta PerfilConta (RNF 21.5): um JOIN a mais, nenhuma consulta extra.
             var query = _db.Atribuicoes
                 .AsNoTracking()
-                .Include(a => a.Pessoa)
+                .Include(a => a.Pessoa).ThenInclude(p => p.Usuario)
                 .Include(a => a.Departamento)
                 .Where(a => a.Departamento.IgrejaId == igrejaId && a.DepartamentoId == departamentoId);
 
@@ -62,7 +63,7 @@ namespace KoinoniaHub.API.Infraestrutura.Repositorios
         {
             return await _db.Atribuicoes
                 .AsNoTracking()
-                .Include(a => a.Pessoa)
+                .Include(a => a.Pessoa).ThenInclude(p => p.Usuario)
                 .Include(a => a.Departamento)
                 .FirstOrDefaultAsync(a => a.Id == atribuicaoId && a.Departamento.IgrejaId == igrejaId);
         }
