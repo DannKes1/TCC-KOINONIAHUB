@@ -604,7 +604,12 @@ onMounted(carregarTudo);
       <div class="page-container">
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label>Data</label>
-          <Calendar v-model="form.data" dateFormat="dd/mm/yy" showIcon />
+          <Calendar
+            v-model="form.data"
+            dateFormat="dd/mm/yy"
+            showIcon
+            inputId="aula-data"
+          />
           <FieldError
             :texto="
               firstFieldError(fieldErrors, 'Data') ||
@@ -622,6 +627,7 @@ onMounted(carregarTudo);
             optionValue="id"
             filter
             placeholder="Selecione a matéria."
+            data-testid="aula-materia"
           />
           <FieldError
             :texto="
@@ -640,6 +646,7 @@ onMounted(carregarTudo);
             optionValue="id"
             filter
             placeholder="Selecione o professor."
+            data-testid="aula-professor"
           />
           <FieldError
             :texto="
@@ -651,7 +658,11 @@ onMounted(carregarTudo);
 
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label>Tema (opcional)</label>
-          <InputText v-model="form.tema" placeholder="Ex.: Fé, Salvação." />
+          <InputText
+            v-model="form.tema"
+            placeholder="Ex.: Fé, Salvação."
+            data-testid="aula-tema"
+          />
           <FieldError
             :texto="
               firstFieldError(fieldErrors, 'Tema') ||

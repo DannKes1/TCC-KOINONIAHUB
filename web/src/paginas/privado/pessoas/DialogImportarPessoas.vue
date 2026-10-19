@@ -152,6 +152,7 @@ const itensOrdenados = computed(() => {
           type="file"
           accept=".csv,.txt"
           :disabled="enviando"
+          data-testid="importacao-arquivo"
           @change="aoSelecionarArquivo"
         />
         <Button
@@ -174,12 +175,21 @@ const itensOrdenados = computed(() => {
             severity="info"
             :value="`Linhas lidas: ${resultado.totalLinhas}`"
           />
-          <Tag severity="success" :value="`Criadas: ${resultado.criados}`" />
+          <Tag
+            severity="success"
+            :value="`Criadas: ${resultado.criados}`"
+            data-testid="importacao-criadas"
+          />
           <Tag
             severity="warn"
             :value="`Ignoradas: ${resultado.ignorados}`"
+            data-testid="importacao-ignoradas"
           />
-          <Tag severity="danger" :value="`Erros: ${resultado.erros}`" />
+          <Tag
+            severity="danger"
+            :value="`Erros: ${resultado.erros}`"
+            data-testid="importacao-erros"
+          />
           <Tag
             v-if="resultado.paraConferencia > 0"
             severity="warn"
@@ -238,6 +248,7 @@ const itensOrdenados = computed(() => {
         icon="pi pi-upload"
         :loading="enviando"
         :disabled="!arquivo"
+        data-testid="importacao-enviar"
         @click="enviar"
       />
     </template>

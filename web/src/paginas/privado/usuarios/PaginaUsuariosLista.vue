@@ -524,6 +524,7 @@ onMounted(carregarDados);
                 size="small"
                 v-tooltip.top="'Editar'"
                 :disabled="carregando"
+                data-testid="usuario-editar"
                 @click="abrirEdicao(data)"
               />
               <Button
@@ -702,6 +703,7 @@ onMounted(carregarDados);
               :options="opcoesPerfil"
               optionLabel="label"
               optionValue="value"
+              data-testid="usuario-perfil"
             />
           </div>
 
@@ -715,6 +717,7 @@ onMounted(carregarDados);
               ]"
               optionLabel="label"
               optionValue="value"
+              data-testid="usuario-status"
             />
           </div>
         </div>
@@ -741,6 +744,7 @@ onMounted(carregarDados);
           label="Salvar"
           icon="pi pi-check"
           :loading="carregando"
+          data-testid="usuario-salvar"
           @click="salvarEdicao"
         />
       </template>

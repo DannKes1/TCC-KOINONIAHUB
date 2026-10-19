@@ -44,6 +44,16 @@ describe("ehPendenteFechamento (RNF 31.3)", () => {
   it("data inválida não é pendente", () => {
     expect(ehPendenteFechamento("EmAberto", "", hoje)).toBe(false);
   });
+
+  // Corretiva da 7.2: dia civil, não dia UTC. Aula gravada à meia-noite local e
+  // consulta às 21h locais do mesmo dia (em UTC−4, já o dia seguinte em UTC).
+  it("aula de hoje às 21h locais não é pendente; a de ontem é", () => {
+    const meiaNoiteDeHoje = new Date(2026, 9, 18, 0, 0).toISOString();
+    const ontem = new Date(2026, 9, 17, 0, 0).toISOString();
+    const as21h = new Date(2026, 9, 18, 21, 0);
+    expect(ehPendenteFechamento("EmAberto", meiaNoiteDeHoje, as21h)).toBe(false);
+    expect(ehPendenteFechamento("EmAberto", ontem, as21h)).toBe(true);
+  });
 });
 
 describe("rótulo e cor da situação (RF31)", () => {

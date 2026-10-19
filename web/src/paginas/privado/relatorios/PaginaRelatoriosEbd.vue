@@ -430,6 +430,7 @@ onMounted(async () => {
             optionValue="id"
             placeholder="Selecione..."
             filter
+            data-testid="relatorio-turma"
           />
         </div>
 
@@ -492,6 +493,7 @@ onMounted(async () => {
                   rotulo="Aulas consolidadas"
                   :valor="frequencia.totalAulas"
                   icone="pi pi-calendar"
+                  data-testid="relatorio-total-aulas"
                 />
                 <CardIndicador
                   rotulo="Alunos"
@@ -503,6 +505,7 @@ onMounted(async () => {
                   :valor="frequencia.totalPresentes"
                   icone="pi pi-check-circle"
                   tom="sucesso"
+                  data-testid="relatorio-total-presentes"
                 />
                 <CardIndicador
                   rotulo="% Presença geral"
@@ -597,6 +600,7 @@ onMounted(async () => {
                   dataKey="aulaId"
                   responsiveLayout="scroll"
                   :exportFilename="nomeArquivo('frequencia-aulas')"
+                  data-testid="relatorio-frequencia-aulas"
                 >
                   <Column
                     field="data"

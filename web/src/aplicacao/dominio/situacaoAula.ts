@@ -2,8 +2,9 @@ import type { SituacaoAula } from "../modelos/dtos";
 
 // Regras de exibição da situação da aula (RF31 / RNF 31.3; Plano 6.2).
 // A API é a fonte da verdade para `pendenteFechamento`; a função abaixo aplica
-// a mesma regra (Em aberto e data já ocorrida, comparando datas em UTC) para os
-// casos em que o valor não vier na resposta e para o filtro da tela.
+// a mesma regra (Em aberto e data já ocorrida, comparando dias civis — na API, o
+// dia no fuso da igreja; aqui, o dia local do navegador, que é o mesmo; corretiva
+// da 7.2) para os casos em que o valor não vier na resposta e para o filtro da tela.
 
 export const SITUACOES_AULA: SituacaoAula[] = [
   "EmAberto",
@@ -26,8 +27,8 @@ export function normalizarSituacaoAula(valor: unknown): SituacaoAula {
     : "EmAberto";
 }
 
-function diaUtc(data: Date): number {
-  return Date.UTC(data.getUTCFullYear(), data.getUTCMonth(), data.getUTCDate());
+function diaLocal(data: Date): number {
+  return new Date(data.getFullYear(), data.getMonth(), data.getDate()).getTime();
 }
 
 // Em aberto com data anterior a hoje (uma aula do próprio dia não é pendente).
@@ -41,7 +42,7 @@ export function ehPendenteFechamento(
   const data = new Date(dataIso);
   if (Number.isNaN(data.getTime())) return false;
 
-  return diaUtc(data) < diaUtc(hoje);
+  return diaLocal(data) < diaLocal(hoje);
 }
 
 export function rotuloSituacaoAula(situacao: SituacaoAula): string {
