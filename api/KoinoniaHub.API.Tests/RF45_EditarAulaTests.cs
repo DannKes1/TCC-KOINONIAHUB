@@ -153,9 +153,8 @@ namespace KoinoniaHub.API.Tests
             var resposta = await professor.DeleteAsync($"/api/aulas/{aulaId}");
 
             Assert.Equal(HttpStatusCode.NoContent, resposta.StatusCode);
-            // Para o professor, aula inexistente cai no guarda de acesso (400); para a
-            // gestão seria 404. Aqui basta que a aula não exista mais.
-            Assert.False((await professor.GetAsync($"/api/aulas/{aulaId}")).IsSuccessStatusCode);
+            // Desde a 7.1, aula inexistente é 404 para qualquer perfil (RecursoNaoEncontradoFiltro).
+            Assert.Equal(HttpStatusCode.NotFound, (await professor.GetAsync($"/api/aulas/{aulaId}")).StatusCode);
             Assert.Null(await CenarioAula.LerAulaOuNuloAsync(_fabrica, aulaId));
 
             var lista = await professor.GetAsync($"/api/aulas?departamentoId={cenario.TurmaId}");

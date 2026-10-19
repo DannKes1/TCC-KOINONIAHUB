@@ -61,6 +61,12 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
                 _conexao = conexao;
 
                 services.AddDbContext<KoinoniaHubDbContext>(opcoes => opcoes.UseSqlite(conexao));
+
+                // Expõe o EndpointSemAtributoController (só deste projeto) para o teste
+                // da FallbackPolicy; a configuração do AddControllers do Program.cs
+                // (filtros, JSON) permanece — aqui só se acrescenta a assembly.
+                services.AddControllers()
+                    .AddApplicationPart(typeof(KoinoniaHubWebApplicationFactory).Assembly);
             });
         }
 
