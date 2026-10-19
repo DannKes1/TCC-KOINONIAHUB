@@ -1,5 +1,6 @@
 ﻿using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
+using KoinoniaHub.API.Aplicacao.Tempo;
 using KoinoniaHub.API.Dominio.Entidades;
 using KoinoniaHub.API.Infraestrutura.Dados;
 using Microsoft.EntityFrameworkCore;
@@ -10,13 +11,17 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
     // CSU07/CSU15/CSU21; Plano 6.9): só aulas Consolidadas entram nos cálculos;
     // aulas Não realizadas ficam de fora e aulas Em aberto com data já ocorrida são
     // devolvidas à parte como pendentes de fechamento (AulasPendentes).
+    // Dias (período, resumo do dia, "hoje") são dias civis da igreja (RelogioIgreja);
+    // o banco continua em UTC e cada dia vira o intervalo de instantes UTC dele.
     public class RelatorioEbdServico : IRelatorioEbdServico
     {
         private readonly KoinoniaHubDbContext _db;
+        private readonly RelogioIgreja _relogio;
 
-        public RelatorioEbdServico(KoinoniaHubDbContext db)
+        public RelatorioEbdServico(KoinoniaHubDbContext db, RelogioIgreja relogio)
         {
             _db = db;
+            _relogio = relogio;
         }
 
         private static DateTime ToUtc(DateTime dt) =>
@@ -27,15 +32,19 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc)
             };
 
-        // Início do dia de hoje em UTC: aula Em aberto com Data anterior a este
-        // instante já ocorreu (mesma regra de AulaServico.CalcularPendenteFechamento).
-        private static DateTime HojeUtc() => DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
+        // Primeiro instante (UTC) de hoje no dia civil da igreja: aula Em aberto com Data
+        // anterior a ele já ocorreu (mesma regra de AulaServico.CalcularPendenteFechamento).
+        private DateTime InicioDeHojeUtc() => _relogio.InicioDoDiaUtc(_relogio.HojeLocal());
+
+        // Período de entrada (dias locais, inclusivos) → instantes UTC [início, fim].
+        private (DateTime inicio, DateTime fim) PeriodoUtc(DateOnly dataInicio, DateOnly dataFim) =>
+            (_relogio.InicioDoDiaUtc(dataInicio), _relogio.FimDoDiaUtc(dataFim));
 
         // Aulas Em aberto de data já ocorrida no intervalo; departamentoId null = todas as turmas da igreja.
         private async Task<List<AulaResumidaRespostaDto>> ListarAulasPendentesAsync(
             int igrejaId, int? departamentoId, DateTime inicio, DateTime fim)
         {
-            var hoje = HojeUtc();
+            var hoje = InicioDeHojeUtc();
 
             return await _db.Aulas
                 .AsNoTracking()
@@ -58,11 +67,11 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 .ToListAsync();
         }
 
-        public async Task<ResumoDiaRespostaDto> ObterResumoDoDiaAsync(int igrejaId, DateTime data)
+        public async Task<ResumoDiaRespostaDto> ObterResumoDoDiaAsync(int igrejaId, DateOnly data)
         {
-            var inicio = DateTime.SpecifyKind(ToUtc(data).Date, DateTimeKind.Utc);
-            var fim = inicio.AddDays(1);
-            var hoje = HojeUtc();
+            var inicio = _relogio.InicioDoDiaUtc(data);
+            var fim = _relogio.InicioDoDiaUtc(data.AddDays(1));
+            var hoje = InicioDeHojeUtc();
 
             var aulasDoDia = await (
                 from a in _db.Aulas.AsNoTracking()
@@ -107,7 +116,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 .Select(d => new { d.Id, d.Nome })
                 .ToListAsync();
 
-            var resposta = new ResumoDiaRespostaDto { Data = inicio };
+            // Data devolvida como antes: o dia pedido, à meia-noite UTC.
+            var resposta = new ResumoDiaRespostaDto { Data = data.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc) };
 
             foreach (var dep in departamentos)
             {
@@ -178,10 +188,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
         }
 
         public async Task<FrequenciaTurmaRespostaDto> ObterFrequenciaTurmaAsync(
-            int igrejaId, int departamentoId, DateTime dataInicio, DateTime dataFim)
+            int igrejaId, int departamentoId, DateOnly dataInicio, DateOnly dataFim)
         {
-            var inicio = ToUtc(dataInicio.Date);
-            var fim = ToUtc(dataFim.Date.AddDays(1).AddTicks(-1));
+            var (inicio, fim) = PeriodoUtc(dataInicio, dataFim);
 
             var departamento = await _db.Departamentos
                 .AsNoTracking()
@@ -383,7 +392,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
         }
 
         public async Task<RankingFaltasRespostaDto> ObterRankingFaltasAsync(
-            int igrejaId, int departamentoId, DateTime dataInicio, DateTime dataFim, int top)
+            int igrejaId, int departamentoId, DateOnly dataInicio, DateOnly dataFim, int top)
         {
             if (top <= 0) top = 10;
 
@@ -421,8 +430,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
         public async Task<PainelAcompanhamentoRespostaDto> ObterPainelAcompanhamentoAsync(
             int igrejaId,
             int departamentoId,
-            DateTime dataInicio,
-            DateTime dataFim,
+            DateOnly dataInicio,
+            DateOnly dataFim,
             decimal limiarAtencao,
             decimal limiarCritico,
             int faltasConsecutivasCritico)
@@ -434,8 +443,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             const int faltasConsecutivasAtencao = 2; // 2 faltas seguidas já entram como atenção
 
-            var inicio = ToUtc(dataInicio.Date);
-            var fim = ToUtc(dataFim.Date.AddDays(1).AddTicks(-1));
+            var (inicio, fim) = PeriodoUtc(dataInicio, dataFim);
 
             var departamento = await _db.Departamentos
                 .AsNoTracking()
@@ -611,11 +619,10 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             int igrejaId,
             int usuarioId,
             int departamentoId,
-            DateTime dataInicio,
-            DateTime dataFim)
+            DateOnly dataInicio,
+            DateOnly dataFim)
         {
-            var inicio = ToUtc(dataInicio.Date);
-            var fim = ToUtc(dataFim.Date.AddDays(1).AddTicks(-1));
+            var (inicio, fim) = PeriodoUtc(dataInicio, dataFim);
 
             var usuario = await _db.Usuarios
                 .AsNoTracking()

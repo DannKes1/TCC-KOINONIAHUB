@@ -1,5 +1,6 @@
 ﻿using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
+using KoinoniaHub.API.Aplicacao.Tempo;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,20 +14,24 @@ namespace KoinoniaHub.API.Controllers
     {
         private readonly IRelatorioEbdServico _servico;
         private readonly IAutorizacaoEbdServico _autorizacao;
+        private readonly RelogioIgreja _relogio;
 
-        public RelatoriosController(IRelatorioEbdServico servico, IAutorizacaoEbdServico autorizacao)
+        public RelatoriosController(IRelatorioEbdServico servico, IAutorizacaoEbdServico autorizacao, RelogioIgreja relogio)
         {
             _servico = servico;
             _autorizacao = autorizacao;
+            _relogio = relogio;
         }
 
-        private static DateTime ToUtc(DateTime dt) =>
-            dt.Kind switch
-            {
-                DateTimeKind.Utc => dt,
-                DateTimeKind.Local => dt.ToUniversalTime(),
-                _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc) 
-            };
+        // Período em dias civis da igreja (RelogioIgreja); sem data, termina hoje e
+        // começa `diasPadrao` antes.
+        private (DateOnly inicio, DateOnly fim) Periodo(DateTime? dataInicio, DateTime? dataFim, int diasPadrao)
+        {
+            var hoje = _relogio.HojeLocal();
+            var inicio = dataInicio.HasValue ? _relogio.DataCivil(dataInicio.Value) : hoje.AddDays(-diasPadrao);
+            var fim = dataFim.HasValue ? _relogio.DataCivil(dataFim.Value) : hoje;
+            return (inicio, fim);
+        }
 
         [HttpGet("frequencia-turma")]
         public async Task<IActionResult> FrequenciaTurma(
@@ -38,10 +43,9 @@ namespace KoinoniaHub.API.Controllers
             var usuarioId = UsuarioAutenticado.ObterUsuarioId(User);
             var perfil = UsuarioAutenticado.ObterPerfil(User);
 
-            var inicio = ToUtc((dataInicio ?? DateTime.UtcNow.AddDays(-30)));
-            var fim = ToUtc((dataFim ?? DateTime.UtcNow));
+            var (inicio, fim) = Periodo(dataInicio, dataFim, 30);
 
-            if (fim.Date < inicio.Date)
+            if (fim < inicio)
                 return BadRequest(new { mensagem = "dataFim não pode ser menor que dataInicio." });
 
             try
@@ -74,11 +78,9 @@ namespace KoinoniaHub.API.Controllers
             var usuarioId = UsuarioAutenticado.ObterUsuarioId(User);
             var perfil = UsuarioAutenticado.ObterPerfil(User);
 
-            
-            var inicio = ToUtc((dataInicio ?? DateTime.UtcNow.AddDays(-60)));
-            var fim = ToUtc((dataFim ?? DateTime.UtcNow));
+            var (inicio, fim) = Periodo(dataInicio, dataFim, 60);
 
-            if (fim.Date < inicio.Date)
+            if (fim < inicio)
                 return BadRequest(new { mensagem = "dataFim não pode ser menor que dataInicio." });
 
             try
@@ -113,10 +115,9 @@ namespace KoinoniaHub.API.Controllers
             var usuarioId = UsuarioAutenticado.ObterUsuarioId(User);
             var perfil = UsuarioAutenticado.ObterPerfil(User);
 
-            var inicio = ToUtc((dataInicio ?? DateTime.UtcNow.AddDays(-30)));
-            var fim = ToUtc((dataFim ?? DateTime.UtcNow));
+            var (inicio, fim) = Periodo(dataInicio, dataFim, 30);
 
-            if (fim.Date < inicio.Date)
+            if (fim < inicio)
                 return BadRequest(new { mensagem = "dataFim não pode ser menor que dataInicio." });
 
             try
@@ -148,7 +149,7 @@ namespace KoinoniaHub.API.Controllers
                 return StatusCode(StatusCodes.Status403Forbidden,
                     new { mensagem = "Acesso restrito aos perfis de gestão." });
 
-            var dia = ToUtc(data ?? DateTime.UtcNow);
+            var dia = data.HasValue ? _relogio.DataCivil(data.Value) : _relogio.HojeLocal();
             var resposta = await _servico.ObterResumoDoDiaAsync(igrejaId, dia);
             return Ok(resposta);
         }
@@ -164,10 +165,9 @@ namespace KoinoniaHub.API.Controllers
             var usuarioId = UsuarioAutenticado.ObterUsuarioId(User);
 
             // Janela padrão: últimos 90 dias
-            var inicio = ToUtc((dataInicio ?? DateTime.UtcNow.AddDays(-90)));
-            var fim = ToUtc((dataFim ?? DateTime.UtcNow));
+            var (inicio, fim) = Periodo(dataInicio, dataFim, 90);
 
-            if (fim.Date < inicio.Date)
+            if (fim < inicio)
                 return BadRequest(new { mensagem = "dataFim não pode ser menor que dataInicio." });
 
             try

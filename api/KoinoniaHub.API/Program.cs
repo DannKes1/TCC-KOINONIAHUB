@@ -2,6 +2,7 @@ using KoinoniaHub.API.Aplicacao.Excecoes;
 using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Aplicacao.Servicos.Implementacoes;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
+using KoinoniaHub.API.Aplicacao.Tempo;
 using KoinoniaHub.API.Infraestrutura.Dados;
 using KoinoniaHub.API.Infraestrutura.Repositorios;
 using KoinoniaHub.API.Dominio.Interfaces.Repositorios;
@@ -152,6 +153,10 @@ builder.Services.AddScoped<IAceiteTermoServico, AceiteTermoServico>();
 
 // Segurança por atribuição
 builder.Services.AddScoped<IAutorizacaoEbdServico, AutorizacaoEbdServico>();
+
+// Dia civil da igreja (Igreja:FusoHorario): períodos dos relatórios e pendência de fechamento.
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<RelogioIgreja>();
 
 var app = builder.Build();
 

@@ -2,6 +2,7 @@
 using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
 using KoinoniaHub.API.Aplicacao.Excecoes;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
+using KoinoniaHub.API.Aplicacao.Tempo;
 using KoinoniaHub.API.Dominio.Entidades;
 using KoinoniaHub.API.Dominio.Interfaces.Repositorios;
 using KoinoniaHub.API.Infraestrutura.Dados;
@@ -13,11 +14,13 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
     {
         private readonly IAulaRepositorio _repositorio;
         private readonly KoinoniaHubDbContext _db;
+        private readonly RelogioIgreja _relogio;
 
-        public AulaServico(IAulaRepositorio repositorio, KoinoniaHubDbContext db)
+        public AulaServico(IAulaRepositorio repositorio, KoinoniaHubDbContext db, RelogioIgreja relogio)
         {
             _repositorio = repositorio;
             _db = db;
+            _relogio = relogio;
         }
 
         public async Task<AulaRespostaDto> CriarAsync(int igrejaId, AulaCriarRequisicaoDto dto)
@@ -236,11 +239,13 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             return true;
         }
 
-        private static bool CalcularPendenteFechamento(Aula aula) =>
-            aula.Situacao == SituacaoAula.EmAberto && aula.Data.Date < DateTime.UtcNow.Date;
+        // RNF 31.3: Em aberto com data anterior a hoje, ambos no dia civil da igreja
+        // (RelogioIgreja); a aula do próprio dia não é pendente, a qualquer hora.
+        private bool CalcularPendenteFechamento(Aula aula) =>
+            aula.Situacao == SituacaoAula.EmAberto && _relogio.DataLocal(aula.Data) < _relogio.HojeLocal();
 
         // Exige Materia (com Departamento) e Professor carregados.
-        private static AulaRespostaDto Mapear(Aula aula, bool possuiPresencas) => new()
+        private AulaRespostaDto Mapear(Aula aula, bool possuiPresencas) => new()
         {
             Id = aula.Id,
             Data = aula.Data,
