@@ -1,5 +1,13 @@
 import type { Router } from "vue-router";
 import { usarAutenticacaoStore } from "../armazenamentos/autenticacaoStore";
+import { toastWarn } from "../servicos/notificacoes";
+
+// RNF 21.4 (7.1): a Página da Turma e suas abas são a área de operação da EBD; uma
+// conta de perfil Usuário não a alcança, ainda que a pessoa tenha atribuição. A
+// guarda devolve a Minhas Turmas com um único aviso, em vez de carregar a página
+// e deixar cada consulta responder 403.
+export const AVISO_SEM_PERFIL_OPERACIONAL =
+  "Sua conta não tem perfil para operar turmas. Se você é professor(a) ou auxiliar, peça a um Admin para ajustar o perfil da sua conta.";
 
 export function aplicarGuardas(router: Router) {
   router.beforeEach((to) => {
@@ -35,8 +43,10 @@ export function aplicarGuardas(router: Router) {
       return "/";
     }
 
+    // Gestor = administrativo ou Professor (a área de operação da EBD).
     if (requerGestor && !autenticacao.isGestor) {
-      return "/";
+      toastWarn(AVISO_SEM_PERFIL_OPERACIONAL, "Sem permissão");
+      return "/minhas-turmas";
     }
 
     if (requerAdministrativo && !autenticacao.isAdministrativo) {

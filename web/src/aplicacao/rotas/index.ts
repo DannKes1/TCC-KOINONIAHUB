@@ -81,8 +81,11 @@ const rotas: RouteRecordRaw[] = [
         // que já existiam (…/matriculas, …/materias, …/aulas, …/atribuicoes);
         // `abaDaTurma` faz o PageHeader de cada aba mostrar só as ações. A aba
         // Atribuições é da gestão (CSU18, RNF 21.1). Sem aba na URL, abre Aulas.
+        // `requerGestor` (RNF 21.4, 7.1): perfil Usuário volta para Minhas Turmas com
+        // um aviso, em vez de carregar a página e receber 403 em cada aba.
         path: "departamentos/:departamentoId",
         component: PaginaTurma,
+        meta: { requerGestor: true },
         children: [
           {
             path: "",

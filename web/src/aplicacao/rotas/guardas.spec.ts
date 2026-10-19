@@ -1,11 +1,14 @@
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 
-import { aplicarGuardas } from "./guardas";
+import { AVISO_SEM_PERFIL_OPERACIONAL, aplicarGuardas } from "./guardas";
 import { usarAutenticacaoStore } from "../armazenamentos/autenticacaoStore";
+import { setToastHandler, type ToastPayload } from "../servicos/notificacoes";
 
 // Plano 7.2 (RNF 2.5 / 13.4): com o aceite do Termo de Uso e Sigilo pendente, a
 // única rota da sessão é /termo; o destino original volta pela query.
+// Etapa 7.1 (RNF 21.4): a Página da Turma exige perfil gestor (administrativo ou
+// Professor); o perfil Usuário volta a Minhas Turmas com um único aviso.
 const Vazio = { template: "<div />" };
 
 function criarRouter() {
@@ -26,6 +29,16 @@ function criarRouter() {
           { path: "", component: Vazio },
           { path: "pessoas", component: Vazio, meta: { requerAdministrativo: true } },
           { path: "meus-dados", component: Vazio },
+          { path: "minhas-turmas", component: Vazio },
+          {
+            path: "departamentos/:departamentoId",
+            component: Vazio,
+            meta: { requerGestor: true },
+            children: [
+              { path: "aulas", component: Vazio },
+              { path: "atribuicoes", component: Vazio, meta: { requerAdministrativo: true } },
+            ],
+          },
         ],
       },
     ],
@@ -104,5 +117,41 @@ describe("guardas de rota — termo pendente", () => {
 
     expect(router.currentRoute.value.path).toBe("/login");
     expect(router.currentRoute.value.query.redirecionar).toBe("/meus-dados");
+  });
+});
+
+describe("guardas de rota — Página da Turma exige perfil gestor (RNF 21.4)", () => {
+  const toasts: ToastPayload[] = [];
+
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+    toasts.length = 0;
+    setToastHandler((payload) => toasts.push(payload));
+  });
+
+  it("perfil Usuário vai para /minhas-turmas com um único aviso, mesmo entrando por uma aba", async () => {
+    entrarComo("Usuario", false);
+    const router = criarRouter();
+
+    await router.push("/departamentos/7/aulas");
+    await router.isReady();
+
+    expect(router.currentRoute.value.path).toBe("/minhas-turmas");
+    expect(toasts).toHaveLength(1);
+    expect(toasts[0]).toMatchObject({ severity: "warn", summary: "Sem permissão", detail: AVISO_SEM_PERFIL_OPERACIONAL });
+  });
+
+  it("Professor abre a aba Aulas; a aba Atribuições continua só da gestão", async () => {
+    entrarComo("Professor", false);
+    const router = criarRouter();
+
+    await router.push("/departamentos/7/aulas");
+    await router.isReady();
+    expect(router.currentRoute.value.path).toBe("/departamentos/7/aulas");
+
+    await router.push("/departamentos/7/atribuicoes");
+    expect(router.currentRoute.value.path).toBe("/");
+    expect(toasts).toHaveLength(0);
   });
 });

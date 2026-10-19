@@ -18,6 +18,12 @@ import {
 
 import { firstFieldError } from "../../../aplicacao/servicos/apiError";
 
+// RNF 21.5 (7.1): tag "Sem conta" / "Conta com perfil Usuário — não acessa a turma"
+// ao lado da pessoa, só na coluna Pessoa desta tela (decisão do autor). Abaixo de
+// 768 px usa o texto curto, para a tag caber em duas linhas.
+import { avisoConta } from "../../../aplicacao/dominio/atribuicoes";
+import { usarTelaCompacta } from "../../../aplicacao/composables/usarTelaCompacta";
+
 import { obterDepartamento } from "../../../aplicacao/servicos/departamentosServico";
 import { listarPessoas } from "../../../aplicacao/servicos/pessoasServico";
 import {
@@ -50,6 +56,7 @@ const route = useRoute();
 const confirm = useConfirm();
 
 const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
+const compacta = usarTelaCompacta();
 
 const podeGerenciarAtribuicao = computed(() => {
   const perfil = (autenticacao.perfil || "").trim().toLowerCase();
@@ -416,7 +423,20 @@ onMounted(carregarTela);
         dataKey="id"
         responsiveLayout="scroll"
       >
-        <Column field="pessoaNome" header="Pessoa" sortable />
+        <Column field="pessoaNome" header="Pessoa" sortable style="min-width: 240px">
+          <template #body="{ data }">
+            <div class="atribuicao-pessoa">
+              <span>{{ data.pessoaNome }}</span>
+              <Tag
+                v-if="avisoConta(data, compacta)"
+                :value="avisoConta(data, compacta)"
+                severity="warn"
+                icon="pi pi-exclamation-circle"
+                data-testid="atribuicao-aviso-conta"
+              />
+            </div>
+          </template>
+        </Column>
 
         <Column header="Função" style="width: 160px">
           <template #body="{ data }">
@@ -651,3 +671,21 @@ onMounted(carregarTela);
     </Dialog>
   </div>
 </template>
+
+<style scoped>
+.atribuicao-pessoa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+/* A tag ocupa a largura da coluna e quebra o texto em linhas inteiras (no máximo
+   duas a 360 px, com o texto curto), em vez de uma palavra por linha. */
+.atribuicao-pessoa :deep(.p-tag) {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+}
+</style>

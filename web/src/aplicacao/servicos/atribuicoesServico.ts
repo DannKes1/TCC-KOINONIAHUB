@@ -18,6 +18,7 @@ function normalizarAtribuicao(bruto: any): AtribuicaoVM {
     dataInicio: String(bruto?.DataInicio ?? bruto?.dataInicio ?? ""),
     dataFim: (bruto?.DataFim ?? bruto?.dataFim ?? null) as string | null,
     ativo: Boolean(bruto?.Ativo ?? bruto?.ativo ?? false),
+    perfilConta: (bruto?.PerfilConta ?? bruto?.perfilConta ?? null) as string | null,
   };
 }
 

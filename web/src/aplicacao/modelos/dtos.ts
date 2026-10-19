@@ -144,6 +144,8 @@ export type AtribuicaoVM = {
   dataInicio: string;
   dataFim: string | null;
   ativo: boolean;
+  /** RNF 21.5: perfil da conta de acesso da pessoa; null = sem conta. */
+  perfilConta: string | null;
 };
 
 export type AtribuicaoCriarDTO = {
