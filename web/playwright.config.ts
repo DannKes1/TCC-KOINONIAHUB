@@ -20,10 +20,12 @@ import { apiURL, baseURL, executavelChromium } from "./e2e/apoio/ambiente";
 //   chromium  desktop; todos os fluxos E2E-NN.
 //   mobile    emulação de celular (Pixel 7: toque, user agent móvel) com a viewport
 //             reduzida a 360×640, o menor tamanho do critério da Etapa 6.3; roda os
-//             fluxos E2E-01 e E2E-02 e os específicos de celular (e2e-mN-*). O E2E-02 usa
-//             uma conta pendente própria por projeto, porque cada conta só pode
-//             aceitar o termo uma vez por semente; o E2E-03 fica fora porque o
-//             convite da pessoa semeada só pode ser gerado uma vez.
+//             fluxos E2E-01, E2E-02 e E2E-04 e os específicos de celular (e2e-mN-*).
+//             O E2E-02 usa uma conta pendente própria por projeto, porque cada conta
+//             só pode aceitar o termo uma vez por semente, e o E2E-04 uma turma
+//             própria por projeto; o E2E-03 fica fora porque o convite da pessoa
+//             semeada só pode ser gerado uma vez, e os E2E-05 a E2E-08 são de
+//             desktop (Plano 7.3).
 //   `npx playwright test --project=mobile` roda só o celular.
 
 type ServidorWeb = Exclude<
@@ -85,7 +87,7 @@ export default defineConfig({
     },
     {
       name: "mobile",
-      testMatch: /(e2e-0[12]-|e2e-m\d+-).*\.spec\.ts/,
+      testMatch: /(e2e-0[124]-|e2e-m\d+-).*\.spec\.ts/,
       use: { ...devices["Pixel 7"], viewport: { width: 360, height: 640 } },
     },
   ],

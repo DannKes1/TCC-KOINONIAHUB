@@ -106,10 +106,15 @@ export async function criarDepartamento(api: APIRequestContext, nome: string): P
   return { id: Number(r.id), nome: String(r.nome) };
 }
 
-export async function criarAtribuicao(api: APIRequestContext, pessoaId: number, departamentoId: number) {
+export async function criarAtribuicao(
+  api: APIRequestContext,
+  pessoaId: number,
+  departamentoId: number,
+  funcao: "Professor" | "Auxiliar" = "Professor",
+) {
   await corpoOk(
     await api.post("/api/atribuicoes", {
-      data: { PessoaId: pessoaId, DepartamentoId: departamentoId, Funcao: "Professor", Ativo: true },
+      data: { PessoaId: pessoaId, DepartamentoId: departamentoId, Funcao: funcao, Ativo: true },
     }),
     "POST atribuicoes",
   );
@@ -172,4 +177,40 @@ export async function criarAula(
     "POST aulas",
   );
   return { id: Number(r.id) };
+}
+
+// Lista da chamada (RF32): uma linha por matrícula ativa, com o estado gravado.
+export async function obterChamada(
+  api: APIRequestContext,
+  aulaId: number,
+): Promise<{ alunoDepartamentoId: number; pessoaId: number; nomeAluno: string; presente: boolean; registrado: boolean }[]> {
+  const r = await corpoOk<any[]>(await api.get(`/api/aulas/${aulaId}/chamada`), `GET aulas/${aulaId}/chamada`);
+  return (r ?? []).map((i) => ({
+    alunoDepartamentoId: Number(i.alunoDepartamentoId),
+    pessoaId: Number(i.pessoaId),
+    nomeAluno: String(i.nomeAluno),
+    presente: Boolean(i.presente),
+    registrado: Boolean(i.registrado ?? true),
+  }));
+}
+
+// Lote da chamada (RF32), o mesmo que a tela envia: presença explícita por matrícula.
+export async function registrarChamada(
+  api: APIRequestContext,
+  aulaId: number,
+  itens: { alunoDepartamentoId: number; presente: boolean }[],
+) {
+  await corpoOk(
+    await api.post(`/api/aulas/${aulaId}/presencas`, {
+      data: {
+        QuantidadeVisitantes: 0,
+        Itens: itens.map((i) => ({ AlunoDepartamentoId: i.alunoDepartamentoId, Presente: i.presente, Observacao: null })),
+      },
+    }),
+    `POST aulas/${aulaId}/presencas`,
+  );
+}
+
+export async function consolidarAula(api: APIRequestContext, aulaId: number) {
+  await corpoOk(await api.patch(`/api/aulas/${aulaId}/consolidar`), `PATCH aulas/${aulaId}/consolidar`);
 }
