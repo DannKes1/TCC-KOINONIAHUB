@@ -2,6 +2,7 @@
 using System.Net.Http.Json;
 using KoinoniaHub.API.Dominio.Entidades;
 using KoinoniaHub.API.Infraestrutura.Dados;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace KoinoniaHub.API.Tests.Infraestrutura
@@ -98,6 +99,42 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
                 EmailProfessor = emailProfessor,
                 EmailUsuarioComum = emailUsuarioComum
             };
+        }
+
+        // Conta extra numa igreja já semeada (perfil à escolha, termo aceito), com atribuição
+        // opcional numa turma. Usada para provar regras "só o Administrador" contra Pastor e
+        // Superintendente e a RNF 21.3 com uma conta Professor de função Auxiliar (7.3).
+        public static async Task<(string email, int pessoaId)> CriarContaAsync(
+            KoinoniaHubWebApplicationFactory fabrica,
+            int igrejaId,
+            string perfil,
+            string sufixo,
+            int? departamentoId = null,
+            string funcao = "Professor")
+        {
+            using var escopo = fabrica.Services.CreateScope();
+            var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+
+            // A igreja carregada (e não só o id): o aceite do termo usa a navegação.
+            var igreja = await db.Igrejas.SingleAsync(i => i.Id == igrejaId);
+            var email = $"{perfil.ToLowerInvariant()}.{sufixo}@teste.com";
+            var pessoa = new Pessoa { Nome = $"{perfil} {sufixo}", Igreja = igreja };
+            var usuario = new Usuario
+            {
+                Email = email,
+                SenhaHash = BCrypt.Net.BCrypt.HashPassword(Senha),
+                Perfil = perfil,
+                Igreja = igreja,
+                Pessoa = pessoa
+            };
+            db.Add(usuario);
+            db.Add(SementeTermo.AceiteDe(usuario));
+
+            if (departamentoId.HasValue)
+                db.Add(new Atribuicao { Funcao = funcao, Pessoa = pessoa, DepartamentoId = departamentoId.Value });
+
+            await db.SaveChangesAsync();
+            return (email, pessoa.Id);
         }
 
         public static async Task<HttpClient> ClienteAutenticadoAsync(KoinoniaHubWebApplicationFactory fabrica, string email)

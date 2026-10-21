@@ -32,6 +32,26 @@ namespace KoinoniaHub.API.Tests
             Assert.Equal(SituacaoAula.Consolidada, (await CenarioAula.LerAulaAsync(_fabrica, aulaId)).Situacao);
         }
 
+        [Theory]
+        [InlineData("Pastor")]
+        [InlineData("Superintendente")]
+        public async Task Reabrir_ComoPastorOuSuperintendente_Retorna403(string perfil)
+        {
+            // RNF 33.5: "exclusivamente ao Administrador" — os outros perfis administrativos
+            // também não reabrem.
+            var sufixo = $"rf33rf{perfil.ToLowerInvariant()}";
+            var cenario = await CenarioAula.CriarAsync(_fabrica, sufixo);
+            var aulaId = await cenario.CriarAulaAsync(_fabrica, SituacaoAula.Consolidada,
+                (cenario.MatriculaAId, true), (cenario.MatriculaBId, false));
+            var (email, _) = await CenarioAcessoPessoa.CriarContaAsync(_fabrica, cenario.IgrejaId, perfil, sufixo);
+            var cliente = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, email);
+
+            var resposta = await cliente.PatchAsync($"/api/aulas/{aulaId}/reabrir", content: null);
+
+            Assert.Equal(HttpStatusCode.Forbidden, resposta.StatusCode);
+            Assert.Equal(SituacaoAula.Consolidada, (await CenarioAula.LerAulaAsync(_fabrica, aulaId)).Situacao);
+        }
+
         [Fact]
         public async Task Reabrir_ComoAdmin_VoltaParaEmAbertoEPreservaPresencas()
         {

@@ -14,8 +14,9 @@ namespace KoinoniaHub.API.Tests
     // Convite de primeiro acesso como único caminho de definição e redefinição de
     // senha (RF39, RF40, RF15/CSU20): só o hash SHA-256 do token vai ao banco
     // (39.3), validade de 7 dias e um convite novo invalida o anterior (39.4/15.2),
-    // uso único (40.1), convite expirado ou já usado é recusado (40.2), a senha é
-    // definida pelo próprio usuário (15.3) e a senha atual vale até o uso (CSU20).
+    // uso único (40.1), convite expirado, já usado ou de conta inativa é recusado (40.2),
+    // o token sai em claro só na geração (39.2), a senha é definida pelo próprio usuário
+    // (15.3) e a senha atual vale até o uso (CSU20).
     public class RF39_RF40_ConviteTests : IClassFixture<KoinoniaHubWebApplicationFactory>
     {
         private const string SenhaNova = "NovaSenha@456";
@@ -164,6 +165,62 @@ namespace KoinoniaHub.API.Tests
             Assert.Equal(HttpStatusCode.BadRequest, await LoginAsync(cenario.EmailAlvo, CenarioAcessoPessoa.Senha));
             Assert.Equal(HttpStatusCode.OK, await LoginAsync(cenario.EmailAlvo, SenhaNova));
             Assert.False(await LerConvitePendenteAsync(admin, cenario.AlvoId));
+        }
+
+        [Fact]
+        public async Task ListarEObter_AposGerarConvite_NaoDevolvemToken()
+        {
+            var cenario = await CenarioConvite.CriarAsync(_fabrica, "rf39d");
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+            var (_, token) = await GerarConviteAsync(admin, cenario.AlvoId);
+            Assert.False(string.IsNullOrWhiteSpace(token));
+
+            // RNF 39.2: o token sai em claro só na resposta da geração; as leituras não o devolvem.
+            var lista = await admin.GetAsync("/api/usuarios");
+            var item = await admin.GetAsync($"/api/usuarios/{cenario.AlvoId}");
+            Assert.Equal(HttpStatusCode.OK, lista.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, item.StatusCode);
+
+            var corpoLista = await lista.Content.ReadAsStringAsync();
+            var corpoItem = await item.Content.ReadAsStringAsync();
+            Assert.DoesNotContain(token, corpoLista);
+            Assert.DoesNotContain(token, corpoItem);
+
+            using var json = JsonDocument.Parse(corpoItem);
+            Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("conviteToken").ValueKind);
+            Assert.True(json.RootElement.GetProperty("convitePendente").GetBoolean());
+        }
+
+        [Fact]
+        public async Task Ativar_ContaInativa_Retorna400()
+        {
+            const string mensagemInativo = "Este usuário está inativo. Procure o administrador.";
+            var cenario = await CenarioConvite.CriarAsync(_fabrica, "rf40c");
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+            var (_, token) = await GerarConviteAsync(admin, cenario.AlvoId);
+            var hashAntes = (await LerUsuarioAsync(cenario.AlvoId)).SenhaHash;
+
+            var inativar = await admin.PatchAsJsonAsync($"/api/usuarios/{cenario.AlvoId}", new { Ativo = false });
+            Assert.Equal(HttpStatusCode.NoContent, inativar.StatusCode);
+
+            var publico = _fabrica.CreateClient();
+            var validar = await publico.GetAsync($"/api/auth/primeiro-acesso/{token}");
+            var ativar = await publico.PostAsJsonAsync("/api/auth/primeiro-acesso", new { Token = token, NovaSenha = SenhaNova, AceiteTermoVersao = TermosDeUso.Vigente.Versao });
+
+            // RNF 40.2: convite de conta inativa é recusado com mensagem clara, na validação e na ativação.
+            Assert.Equal(HttpStatusCode.BadRequest, validar.StatusCode);
+            Assert.Equal(mensagemInativo, await LerMensagemAsync(validar));
+            Assert.Equal(HttpStatusCode.BadRequest, ativar.StatusCode);
+            Assert.Equal(mensagemInativo, await LerMensagemAsync(ativar));
+
+            // Nada foi consumido nem gravado: mesma senha, convite intacto, nenhum aceite do termo.
+            var usuario = await LerUsuarioAsync(cenario.AlvoId);
+            Assert.Equal(hashAntes, usuario.SenhaHash);
+            Assert.NotNull(usuario.ConviteTokenHash);
+
+            using var escopo = _fabrica.Services.CreateScope();
+            var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+            Assert.False(await db.AceitesTermo.AnyAsync(a => a.UsuarioId == cenario.AlvoId));
         }
 
         [Fact]

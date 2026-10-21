@@ -143,6 +143,65 @@ namespace KoinoniaHub.API.Tests
         }
 
         [Fact]
+        public async Task OperarTurma_ContaProfessorComAtribuicaoDeAuxiliar_Permitido()
+        {
+            // RNF 21.3, primeira parte: Professor e Auxiliar concedem as mesmas permissões
+            // operacionais. Uma conta de perfil Professor cuja atribuição na turma é Auxiliar
+            // lista as aulas e cadastra aula (com o Professor da turma como responsável).
+            var cenario = await CenarioAula.CriarAsync(_fabrica, "rf21l");
+            var (emailAuxiliar, _) = await CenarioAcessoPessoa.CriarContaAsync(
+                _fabrica, cenario.IgrejaId, "Professor", "rf21l.auxiliar", cenario.TurmaId, "Auxiliar");
+            var auxiliar = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, emailAuxiliar);
+
+            var listar = await auxiliar.GetAsync($"/api/aulas?departamentoId={cenario.TurmaId}");
+            var criar = await auxiliar.PostAsJsonAsync("/api/aulas", new
+            {
+                Data = DateTime.UtcNow.Date,
+                MateriaId = cenario.MateriaId,
+                ProfessorId = cenario.ProfessorPessoaId,
+                Tema = "Aula do Auxiliar"
+            });
+
+            Assert.Equal(HttpStatusCode.OK, listar.StatusCode);
+            Assert.Equal(HttpStatusCode.Created, criar.StatusCode);
+        }
+
+        [Fact]
+        public async Task CriarAula_ResponsavelComAtribuicaoDeAuxiliar_Retorna400()
+        {
+            // RNF 21.3: Professor e Auxiliar operam a turma igualmente, mas só quem tem
+            // atribuição de Professor pode constar como professor responsável da aula (RF30).
+            var cenario = await CenarioAula.CriarAsync(_fabrica, "rf21k");
+            var auxiliarPessoaId = await CriarPessoaSemContaComAtribuicaoAsync(cenario, "rf21k");
+            var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
+            var aulasAntes = await ContarAulasDaMateriaAsync(cenario.MateriaId);
+
+            var comAuxiliar = await professor.PostAsJsonAsync("/api/aulas", new
+            {
+                Data = DateTime.UtcNow.Date,
+                MateriaId = cenario.MateriaId,
+                ProfessorId = auxiliarPessoaId,
+                Tema = "Aula 21.3"
+            });
+
+            Assert.Equal(HttpStatusCode.BadRequest, comAuxiliar.StatusCode);
+            Assert.Equal("Professor não encontrado ou sem atribuição ativa de Professor neste departamento.", await LerMensagemAsync(comAuxiliar));
+            Assert.Equal(aulasAntes, await ContarAulasDaMateriaAsync(cenario.MateriaId));
+
+            // Controle: com o Professor da turma como responsável, a mesma aula é criada.
+            var comProfessor = await professor.PostAsJsonAsync("/api/aulas", new
+            {
+                Data = DateTime.UtcNow.Date,
+                MateriaId = cenario.MateriaId,
+                ProfessorId = cenario.ProfessorPessoaId,
+                Tema = "Aula 21.3"
+            });
+
+            Assert.Equal(HttpStatusCode.Created, comProfessor.StatusCode);
+            Assert.Equal(aulasAntes + 1, await ContarAulasDaMateriaAsync(cenario.MateriaId));
+        }
+
+        [Fact]
         public async Task CriarIgreja_RotaRemovida_Retorna404()
         {
             // Decisão do autor (7.1): a igreja nasce só pelo cadastro inicial (RF1). Como na
@@ -240,6 +299,13 @@ namespace KoinoniaHub.API.Tests
                 .Where(m => m.Id == matriculaId)
                 .Select(m => m.PessoaId)
                 .SingleAsync();
+        }
+
+        private async Task<int> ContarAulasDaMateriaAsync(int materiaId)
+        {
+            using var escopo = _fabrica.Services.CreateScope();
+            var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+            return await db.Aulas.CountAsync(a => a.MateriaId == materiaId);
         }
 
         private async Task<int> ContarIgrejasAsync()

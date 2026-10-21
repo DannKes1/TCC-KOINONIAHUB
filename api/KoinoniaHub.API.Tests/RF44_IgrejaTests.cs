@@ -85,6 +85,26 @@ namespace KoinoniaHub.API.Tests
             Assert.NotEqual("Tentativa", json.RootElement.GetProperty("nome").GetString());
         }
 
+        [Theory]
+        [InlineData("Pastor")]
+        [InlineData("Superintendente")]
+        public async Task Atualizar_ComoPastorOuSuperintendente_Retorna403(string perfil)
+        {
+            // RNF 44.1: restrita ao Administrador — os outros perfis administrativos também não.
+            var sufixo = $"rf44g{perfil.ToLowerInvariant()}";
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, sufixo);
+            var (email, _) = await CenarioAcessoPessoa.CriarContaAsync(_fabrica, cenario.IgrejaId, perfil, sufixo);
+            var cliente = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, email);
+
+            var resposta = await cliente.PutAsJsonAsync($"/api/igrejas/{cenario.IgrejaId}", new { Nome = "Tentativa" });
+
+            Assert.Equal(HttpStatusCode.Forbidden, resposta.StatusCode);
+
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+            using var json = JsonDocument.Parse(await (await admin.GetAsync($"/api/igrejas/{cenario.IgrejaId}")).Content.ReadAsStringAsync());
+            Assert.NotEqual("Tentativa", json.RootElement.GetProperty("nome").GetString());
+        }
+
         [Fact]
         public async Task Atualizar_OutraIgreja_Retorna403()
         {
@@ -125,6 +145,36 @@ namespace KoinoniaHub.API.Tests
             Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode); // RNF 44.3
             using var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
             Assert.True(json.RootElement.GetProperty("errors").TryGetProperty("Email", out _));
+        }
+
+        [Fact]
+        public async Task Atualizar_CampoOmitido_ViraNulo()
+        {
+            // Plano 6.11: o PUT substitui os cinco campos; o que não vier no corpo vira nulo
+            // (a tela sempre envia os cinco). Só o Nome é obrigatório (RNF 44.3).
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf44f");
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+
+            var completo = await admin.PutAsJsonAsync($"/api/igrejas/{cenario.IgrejaId}", new
+            {
+                Nome = "Igreja Completa RF44",
+                Cidade = "Ji-Paraná",
+                Estado = "RO",
+                Email = "contato.rf44f@igreja.teste",
+                Telefone = "(69) 98888-0000"
+            });
+            Assert.Equal(HttpStatusCode.OK, completo.StatusCode);
+
+            var soNome = await admin.PutAsJsonAsync($"/api/igrejas/{cenario.IgrejaId}", new { Nome = "Igreja Só Nome RF44" });
+            Assert.Equal(HttpStatusCode.OK, soNome.StatusCode);
+
+            using var json = JsonDocument.Parse(await (await admin.GetAsync($"/api/igrejas/{cenario.IgrejaId}")).Content.ReadAsStringAsync());
+            var raiz = json.RootElement;
+            Assert.Equal("Igreja Só Nome RF44", raiz.GetProperty("nome").GetString());
+            Assert.Equal(JsonValueKind.Null, raiz.GetProperty("cidade").ValueKind);
+            Assert.Equal(JsonValueKind.Null, raiz.GetProperty("estado").ValueKind);
+            Assert.Equal(JsonValueKind.Null, raiz.GetProperty("email").ValueKind);
+            Assert.Equal(JsonValueKind.Null, raiz.GetProperty("telefone").ValueKind);
         }
     }
 }
