@@ -1414,7 +1414,7 @@ têm data 19/10/2026 (testes concluídos na madrugada de 19/10).
 `-aulas-turma.png`, `-chamada-incompleta-confirmacao.png`, `-chamada-completa.png`,
 `-chamada-consolidada.png`, `-relatorio-frequencia.png`. Manuais: `RF35-relatorio-matricula-noite.png`,
 `RNF-31.3-aula-hoje-nao-pendente.png`, `CSU11-confirmacao-sem-registro.png`,
-`CSU12-frequencia-apos-consolidar.png`, `RNF-21.4-usuario-com-atribuicao-minhas-turmas.png`,
+`CSU15-frequencia-apos-consolidar.png` (gravado na 7.2 como `CSU12-…`; renomeado na 7.3, porque a Frequência da turma é o CSU15), `RNF-21.4-usuario-com-atribuicao-minhas-turmas.png`,
 `RNF-35.4-professor-sem-exportacao.png`, `CSU11-reabrir-preserva.png`, `CSU11-reconsolidada.png`,
 `RNF-41.3-importacao-conferencia.png`, `RNF-14.3-perfil-ultimo-admin.png`.
 
@@ -1423,3 +1423,313 @@ CSU11; E2E-05 a E2E-08 ✔ 7.2), critério de data (linha 285: "hoje (UTC)" → 
 fuso configurável, armazenamento em UTC), seção 5 (linha 7.2 atendida em 18/10/2026), seções 7.1 a
 7.3 (`RF35_FusoHorarioTests` 5; `situacaoAula.spec` +1; projeto `mobile` com E2E-04) e totais
 (151 · 119 · 18). Texto completo no relato da entrega e em `docs/decisoes/etapa-7.md`, 1.2.
+
+---
+
+## Etapa 7.3 — Resultados: tabela CSU → teste, testes de Segurança e roteiros de evidência (19/10/2026)
+
+**Escopo.** Plano v1.8, seção 5 (linha 7.3), 6.17 e 7.5: (a) `docs/resultados.md` com a tabela
+CSU → teste → resultado (CSU01–CSU24) e as tabelas RNF → teste → evidência de Segurança e de
+Confiabilidade; (b) `RF44_IgrejaTests.Atualizar_CampoOmitido_ViraNulo` e os xUnit que as evidências
+faltantes do inventário da 7.1 exigiam (a regra existia, o teste não); (c) roteiro de cópia e
+restauração (seção 6.17); (d) roteiros das evidências de Segurança faltantes. Nenhuma regra de
+negócio, rota ou tela mudou. Levantamento: inventário dos 151 xUnit, 119 Vitest e 18 Playwright,
+dos testes manuais e dos 104 prints, com verificação cética de cada citação.
+
+**Validação automatizada (19/10/2026, ambiente do autor):** `dotnet build` limpo e `dotnet test` =
+**168 aprovados** (151 + 17: `RF44_IgrejaTests.Atualizar_CampoOmitido_ViraNulo` — PUT só com o Nome
+deixa Cidade, Estado, Email e Telefone nulos; `RF1_CadastroInicialTests.RegistrarAdmin_GravaSenhaSoComoHashBCrypt`
+— 1.2/2.2; `RF13_UsuarioTests.Criar_ComSenhaInformada_GravaSoHashBCrypt` — 13.2, hash `$2x$`, 60
+caracteres, custo ≥ 10, sem a senha, `Verify` e login; `RF13_UsuarioTests.RotasDeUsuarios_ComoProfessor_Retorna403`
+— GET, POST e PATCH de `/api/usuarios` como Professor → 403 sem gravar (13.1/14.1/16.1);
+`RF2_HttpsTests.RequisicaoHttp_RedirecionaParaHttps_Retorna307` — http → 307 com `Location`
+https (1.4/2.3/40.4/42.4/44.4); `RF21_PerfilOperacionalTests.CriarAula_ResponsavelComAtribuicaoDeAuxiliar_Retorna400`
+— Auxiliar como responsável → 400 sem gravar, Professor → 201 (21.3);
+`RF39_RF40_ConviteTests.ListarEObter_AposGerarConvite_NaoDevolvemToken` — 39.2;
+`RF39_RF40_ConviteTests.Ativar_ContaInativa_Retorna400` — 40.2, nada consumido nem gravado; e,
+apontados pela verificação do `resultados.md`: `RF13_UsuarioTests.ListarUsuarios_ComoPastorOuSuperintendente_Retorna403`,
+`RF33_ReabrirAulaTests.Reabrir_ComoPastorOuSuperintendente_Retorna403` e
+`RF44_IgrejaTests.Atualizar_ComoPastorOuSuperintendente_Retorna403` (2 casos cada: "restrita ao
+Administrador" vale também contra os outros perfis administrativos — 13.1/16.1, 33.5, 44.1) e
+`RF21_PerfilOperacionalTests.OperarTurma_ContaProfessorComAtribuicaoDeAuxiliar_Permitido` — conta
+Professor de função Auxiliar lista e cadastra aula, primeira parte da 21.3). Todos verdes na
+primeira execução: nenhum revelou defeito.
+
+**Corretiva de 20/10/2026 (decisões do autor sobre as divergências da tabela CSU → teste):**
+Histórico de presenças do aluno na aba Alunos da Página da Turma (CSU14), aviso "Este recurso é
+restrito a administradores." na guarda `requerAdmin` (CSU24 FA2), convite pendente descartado ao
+inativar a conta (RNF 40.2) e 403 por perfil com corpo `{ mensagem }` ("Você não tem permissão para
+esta operação."). Validação: `dotnet build` limpo e `dotnet test` = **169 aprovados** (170 após a revisão, abaixo; 168 + 1:
+`Ativar_ContaInativa_Retorna400` deu lugar a `Inativar_DescartaConvitePendente_EReativarNaoORecria`
+— gera convite → inativa → hash e validade nulos, tag some → reativa → link antigo recusado como
+inválido → convite novo funciona — e a `Ativar_ContaInativadaForaDaApi_Retorna400`, conta inativada
+direto no banco, defesa em profundidade; `RF13_UsuarioTests` passou a conferir a mensagem do 403)
+· `vue-tsc -b` limpo · `npm run test` = **24 arquivos, 126 casos** (119 + `DialogHistoricoPresencas.spec`
+4: carrega ao abrir e conta só Consolidadas; cartões no celular do mais recente ao mais antigo;
+tabela no desktop; fechado não carrega + `PaginaMatriculasTurma.spec` +1: Histórico pelo ⋮ abre o
+diálogo e carrega pela pessoa do aluno, inclusive matrícula inativa + `guardas.spec` +2: Professor
+em `/igreja` volta ao Painel com um único aviso; Admin abre sem aviso) · `npm run build` ok ·
+`npm run test:e2e` = **18 aprovados** (10 `chromium` + 8 `mobile`). Revisão adversarial da corretiva
+(22 revisores sobre o diff) apontou dois defeitos, corrigidos antes do fechamento: reativar uma conta
+inativada por outro caminho (ou antes da corretiva) revivia o convite antigo — agora o convite só
+sobrevive quando a conta estava ativa e continua ativa (`Reativar_ContaInativadaForaDaApi_DescartaConviteAntigo`,
+xUnit **170**); e Esc fechava o diálogo do histórico durante o carregamento, deixando a resposta em
+voo preencher o histórico da próxima pessoa — agora `closeOnEscape` acompanha o carregamento e uma
+resposta atrasada é descartada.
+
+### Roteiro C — Cópia e restauração dos dados (seção 6.17; monografia 5.1, Confiabilidade)
+
+Faz uma cópia do banco de desenvolvimento `koinoniahub` no formato custom do `pg_dump`, restaura
+num banco novo `koinoniahub_restaurado`, sobe a API apontada para ele e confere login, listagem e
+escrita. **Nenhuma senha vai para arquivo**: ela é digitada uma vez por terminal e fica só na
+variável de ambiente da sessão. **O arquivo da cópia fica fora do repositório e fora do OneDrive**
+(`%LOCALAPPDATA%`), porque contém dados pessoais e os hashes das senhas.
+
+**Preparação.** Feche a API e o front se estiverem rodando (a API restaurada usa a mesma porta).
+Se o banco de desenvolvimento tiver nomes reais de membros, borre-os nos prints 5 e 6 (o Plano
+pede evidência só com dados fictícios).
+
+**C1 — Terminal A (PowerShell): variáveis, senha e contagens na origem.**
+
+```powershell
+$pg    = "C:\Program Files\PostgreSQL\18\bin"
+$pasta = Join-Path $env:LOCALAPPDATA "koinoniahub-copia"
+New-Item -ItemType Directory -Force $pasta | Out-Null
+$dump  = Join-Path $pasta ("koinoniahub-" + (Get-Date -Format "yyyyMMdd-HHmm") + ".dump")
+$sql   = Join-Path $pasta "contagens.sql"
+$seg   = Read-Host "Senha do usuario postgres" -AsSecureString
+$env:PGPASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($seg))
+@'
+SELECT current_database() AS banco,
+       (SELECT count(*) FROM "Igrejas")       AS igrejas,
+       (SELECT count(*) FROM "Pessoas")       AS pessoas,
+       (SELECT count(*) FROM "Usuarios")      AS usuarios,
+       (SELECT count(*) FROM "Departamentos") AS turmas,
+       (SELECT count(*) FROM "Aulas")         AS aulas,
+       (SELECT count(*) FROM "Presencas")     AS presencas,
+       (SELECT count(*) FROM "AceitesTermo")  AS aceites;
+SELECT max("MigrationId") AS ultima_migration FROM "__EFMigrationsHistory";
+SELECT count(*) AS pessoa_restauracao_73 FROM "Pessoas" WHERE "Nome" = 'Restauracao 7.3';
+'@ | Set-Content -Encoding ascii $sql
+& "$pg\psql.exe" -h localhost -p 5432 -U postgres -d koinoniahub -f $sql
+```
+
+Esperado: `banco = koinoniahub`, as sete contagens, a última migration aplicada e
+`pessoa_restauracao_73 = 0`. **Print 1:** `Confiabilidade-restauracao-1-contagens-origem.png`.
+
+**C2 — Cópia (`pg_dump`, formato custom).**
+
+```powershell
+& "$pg\pg_dump.exe" -h localhost -p 5432 -U postgres -d koinoniahub -F c -f $dump
+"pg_dump terminou com codigo $LASTEXITCODE"
+Get-Item $dump | Select-Object Name, Length, LastWriteTime
+& "$pg\pg_restore.exe" --list $dump | Select-Object -First 12
+```
+
+Esperado: código `0`; o arquivo `.dump` com tamanho maior que zero; no cabeçalho da listagem,
+`Format: CUSTOM` e `dbname: koinoniahub`. **Print 2:** `Confiabilidade-restauracao-2-pg-dump-custom.png`.
+
+**C3 — Banco novo e restauração (`pg_restore`).**
+
+```powershell
+& "$pg\dropdb.exe"   -h localhost -p 5432 -U postgres --if-exists koinoniahub_restaurado
+& "$pg\createdb.exe" -h localhost -p 5432 -U postgres koinoniahub_restaurado
+& "$pg\pg_restore.exe" -h localhost -p 5432 -U postgres -d koinoniahub_restaurado --no-owner --exit-on-error $dump
+"pg_restore terminou com codigo $LASTEXITCODE"
+```
+
+Esperado: nenhuma mensagem de erro e código `0`. **Print 3:** `Confiabilidade-restauracao-3-pg-restore.png`.
+
+**C4 — Contagens no banco restaurado.**
+
+```powershell
+& "$pg\psql.exe" -h localhost -p 5432 -U postgres -d koinoniahub_restaurado -f $sql
+```
+
+Esperado: `banco = koinoniahub_restaurado` e **os mesmos números do C1**, a mesma última migration
+e `pessoa_restauracao_73 = 0`. **Print 4:** `Confiabilidade-restauracao-4-contagens-restaurado.png`
+(de preferência ao lado do print 1).
+
+**C5 — Terminal B: API apontada para o banco restaurado.** A variável de ambiente
+`ConnectionStrings__Postgres` vale só neste terminal e tem precedência sobre os *user-secrets* do
+ambiente Development; nenhum `appsettings` é tocado.
+
+```powershell
+cd C:\Users\burst\OneDrive\Desktop\TCC-KOINONIAHUB\api\KoinoniaHub.API
+$seg = Read-Host "Senha do usuario postgres" -AsSecureString
+$s   = [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($seg))
+$env:ConnectionStrings__Postgres = "Host=localhost;Port=5432;Database=koinoniahub_restaurado;Username=postgres;Password=$s"
+Remove-Variable s, seg
+dotnet run --launch-profile https
+```
+
+Esperado: `Now listening on: https://localhost:7054`.
+
+**C6 — Terminal C: front, login e listagem.** `cd web; npm run dev`. No navegador,
+http://localhost:5173 → entrar com o Admin de desenvolvimento (o mesmo de sempre). Esperado: o
+Painel abre. Menu **Pessoas**. Esperado: a mesma lista do sistema antes da cópia. **Print 5:**
+`Confiabilidade-restauracao-5-login-listagem.png` (Pessoas com o usuário logado no topo).
+
+**C7 — Escrita vai para o banco restaurado.** Pessoas → **Nova Pessoa** → Nome
+`Restauracao 7.3` (sem acento) → **Salvar**. Esperado: aviso de sucesso e a linha na lista. No
+Terminal A:
+
+```powershell
+& "$pg\psql.exe" -h localhost -p 5432 -U postgres -d koinoniahub_restaurado -f $sql
+& "$pg\psql.exe" -h localhost -p 5432 -U postgres -d koinoniahub -f $sql
+```
+
+Esperado: no restaurado, `pessoas` = C4 + 1 e `pessoa_restauracao_73 = 1`; no original, os números
+do C1 e `pessoa_restauracao_73 = 0`. Prova que a API lê e grava no banco restaurado. **Print 6:**
+`Confiabilidade-restauracao-6-escrita-no-restaurado.png` (as duas saídas).
+
+**C8 — Limpeza.** Terminal B: Ctrl+C e `Remove-Item Env:ConnectionStrings__Postgres`. Terminal A:
+`Remove-Item Env:PGPASSWORD`; opcional `& "$pg\dropdb.exe" -h localhost -U postgres koinoniahub_restaurado`.
+Apague o `.dump` quando os prints estiverem salvos (`Remove-Item $dump`), ou guarde-o fora de
+pastas sincronizadas. Nunca coloque o `.dump` no repositório.
+
+### Roteiros D1 a D10 — Evidências faltantes (Segurança, D1–D8, do inventário da 7.1; corretiva de 20/10, D9–D10)
+
+**Preparação comum.** API: `cd api/KoinoniaHub.API; dotnet run --launch-profile https` (banco de
+desenvolvimento). Front: `cd web; npm run dev`. Contas: o Admin de desenvolvimento e um Professor
+com o termo já aceito. pgAdmin → Query Tool no banco `koinoniahub` (ou `psql`). Os links de
+convite são abertos numa **janela anônima** (Ctrl+Shift+N), porque `/primeiro-acesso` não abre
+com sessão. Os links levam o token em claro: **borre o trecho depois de `token=`** em todo print.
+Os roteiros reaproveitam contas uns dos outros; execute na ordem.
+
+**D1 — Conta por convite e token exibido uma vez (CSU19; RNFs 39.2 e 39.3).**
+1. Admin → **Pessoas** → **Nova Pessoa** → Nome `Teste 7.3 Convite`, E-mail
+   `teste73.convite@exemplo.test` → **Salvar**. Esperado: a pessoa na lista.
+2. **Usuários** → **Novo Usuário** → Pessoa `Teste 7.3 Convite`; E-mail em branco (usa o da
+   pessoa); Perfil `Usuario`; **sem** marcar "Definir a senha manualmente" → **Salvar**. Esperado:
+   aviso "Usuário criado. Envie o link de convite para a pessoa definir a senha." e o diálogo
+   **Convite de primeiro acesso** com o link, o botão de copiar, **Enviar pelo WhatsApp** e o aviso
+   "…Por segurança, ele é exibido apenas agora…". Copie o link (ícone de copiar) para o Bloco de
+   Notas como **Link 1**. **Print:** `RNF-39.2-token-exibido-uma-vez.png`.
+3. **Fechar** → **Recarregar**. Esperado: a linha com as tags "Ativo" e "Convite pendente"; o link
+   não aparece em lugar nenhum da tela.
+4. F12 → **Console**:
+   `console.table((await (await fetch('/api/usuarios')).json()).map(u => ({ id: u.id, perfil: u.perfil, convitePendente: u.convitePendente, conviteToken: u.conviteToken })))`
+   Esperado: `conviteToken` = `null` em todas as linhas; `convitePendente` = `true` na conta nova.
+   **Print:** `RNF-39.2-listagem-sem-token.png`.
+5. pgAdmin:
+   `SELECT "Id", left("ConviteTokenHash", 8) AS inicio_hash, length("ConviteTokenHash") AS tamanho, "ConviteTokenHash" ~ '^[0-9a-f]{64}$' AS sha256_hex, "ConviteExpiraEm" - now() AS validade FROM "Usuarios" WHERE "ConviteTokenHash" IS NOT NULL ORDER BY "Id";`
+   Esperado: `tamanho = 64`, `sha256_hex = true`, validade de cerca de 7 dias; o início do hash não
+   aparece no link. **Print:** `RNF-39.3-hash-convite-no-banco.png`.
+
+**D2 — Convite novo invalida o anterior (CSU20; RNFs 15.2 e 39.4).**
+1. Usuários → linha `Teste 7.3 Convite` → botão de convite (ícone de envio). Esperado: diálogo com
+   um link **diferente** do Link 1. Copie como **Link 2** → Fechar.
+2. Janela anônima → cole o **Link 1**. Esperado: "Convite inválido ou já utilizado. Solicite um
+   novo link ao administrador." e o botão **Ir para o login**. **Print:**
+   `RNF-39.4-convite-anterior-invalidado.png`.
+3. Na mesma janela, cole o **Link 2**. Esperado: "Olá, Teste 7.3 Convite!" com os campos de senha
+   e o termo. Não conclua (é o D3).
+
+**D3 — Convite já utilizado e convite de conta inativa (RNFs 40.1 e 40.2).**
+1. Na janela anônima, com o Link 2: Nova senha `Teste@2026`, confirmação `Teste@2026`, marque o
+   aceite do termo → **Definir senha e concluir**. Esperado: "Senha definida com sucesso!".
+2. Cole o **Link 2** de novo. Esperado: "Convite inválido ou já utilizado. Solicite um novo link
+   ao administrador.". **Print:** `RNF-40.2-convite-ja-utilizado.png`.
+3. Admin → Usuários → botão de convite da conta `Teste 7.3 Convite` → copie como **Link 3** →
+   Fechar.
+4. Lápis (Editar) da mesma conta → Status **Inativo** → **Salvar**. Esperado: "Usuário atualizado
+   com sucesso." e a tag "Inativo".
+5. Janela anônima → cole o **Link 3**. Esperado (corretiva de 20/10: inativar descarta o convite):
+   "Convite inválido ou já utilizado. Solicite um novo link ao administrador.". **Print:**
+   `RNF-40.2-convite-conta-inativa.png`. Em Usuários, a linha da conta ficou sem a tag "Convite
+   pendente" e com o botão de convite desabilitado.
+6. Editar → Status **Ativo** → Salvar. Esperado: a conta volta a Ativo **sem** a tag "Convite
+   pendente"; o Link 3 continua recusado (cole-o de novo na janela anônima). Para a pessoa definir a
+   senha, o Admin gera um convite novo pelo botão de convite.
+
+**D4 — Senha só como hash BCrypt (RNFs 1.2, 2.2, 13.2, 15.4, 40.3; seção 4.8).**
+1. Pessoas → Nova Pessoa → `Teste 7.3 Senha`, E-mail `teste73.senha@exemplo.test` → Salvar.
+2. Usuários → Novo Usuário → Pessoa `Teste 7.3 Senha`; Perfil `Usuario`; **marque** "Definir a
+   senha manualmente (em vez de gerar link de convite)"; Senha inicial `Teste@2026` → **Salvar**.
+   Esperado: "Usuário criado com sucesso.".
+3. pgAdmin, consulta A (sem e-mail e sem o hash inteiro):
+   `SELECT "Id", "Perfil", left("SenhaHash", 7) AS prefixo, split_part("SenhaHash", '$', 3) AS custo, length("SenhaHash") AS tamanho FROM "Usuarios" ORDER BY "Id";`
+   Esperado em todas as linhas — inclusive o Admin do cadastro inicial (1.2/2.2), a conta do passo
+   2 (13.2) e a conta do D3, que definiu a senha pelo convite (15.4/40.3): prefixo `$2a$11$` (ou
+   `$2b$11$`), custo `11` (≥ 10) e tamanho `60`.
+   Consulta B:
+   `SELECT count(*) FILTER (WHERE "SenhaHash" !~ '^\$2[aby]\$[0-9]{2}\$.{53}$') AS fora_do_formato_bcrypt, count(*) FILTER (WHERE position('Teste@2026' in "SenhaHash") > 0) AS contem_a_senha FROM "Usuarios";`
+   Esperado: `0` e `0`. **Print:** `RNF-2.2-senhahash-bcrypt-no-banco.png` (as duas saídas).
+4. Sair → entrar com `teste73.senha@exemplo.test` / `Teste@2026`. Esperado: abre a tela do termo
+   (aceite pendente, RNF 13.4) — o hash confere a senha. Sair.
+
+**D5 — 403 de Professor em `/api/usuarios` (RNFs 13.1, 14.1, 16.1).**
+1. Entrar como Professor. Esperado: menu sem "Usuários".
+2. F12 → **Network** (limpar) → **Console**:
+   `const r = await fetch('/api/usuarios'); console.log(r.status, await r.json())`
+   Esperado: `403 {mensagem: 'Você não tem permissão para esta operação.'}` (corretiva de 20/10:
+   o 403 por perfil traz `{ mensagem }`) e a linha `usuarios` com Status 403 na aba Network.
+   **Print:** `RNF-13.1-403-professor-api-usuarios.png` (Console e Network visíveis).
+3. Opcional (14.1):
+   `const p = await fetch('/api/usuarios/1', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Perfil: 'Admin' }) }); console.log(p.status, await p.json())`
+   Esperado: `403` com a mesma mensagem. Sair.
+
+**D6 — Auxiliar não pode ser o professor responsável (RNF 21.3).**
+1. Admin → Pessoas → Nova Pessoa `Teste 7.3 Auxiliar` (sem e-mail) → Salvar.
+2. **Turmas EBD** → abrir uma turma de teste que tenha Professor e matéria ativa → aba
+   **Atribuições** → **Nova Atribuição** → Pessoa `Teste 7.3 Auxiliar`, Função `Auxiliar` →
+   **Salvar**. Esperado: a linha com a função Auxiliar (e a tag "Sem conta", RNF 21.5). Anote o id
+   da turma na URL (`/departamentos/<id>/atribuicoes`).
+3. Aba **Aulas** → **Nova Aula** → abra o seletor **Professor**. Esperado: só pessoas com
+   atribuição de Professor; o Auxiliar não aparece. **Print:** `RNF-21.3-seletor-so-professores.png`
+   (seletor aberto). Cancelar.
+4. Console (troque `<id>` pelo id da turma):
+   `const t = <id>; console.table((await (await fetch('/api/materias?departamentoId=' + t)).json()).map(m => ({ id: m.id, nome: m.nome }))); console.table((await (await fetch('/api/atribuicoes/departamento/' + t)).json()).map(a => ({ pessoaId: a.pessoaId, nome: a.pessoaNome, funcao: a.funcao })))`
+   Anote o id da matéria e o `pessoaId` do Auxiliar.
+5. Console:
+   `const r = await fetch('/api/aulas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Data: new Date().toISOString(), MateriaId: <id da matéria>, ProfessorId: <pessoaId do Auxiliar>, Tema: 'Teste RNF 21.3' }) }); console.log(r.status, await r.json())`
+   Esperado: `400 {mensagem: 'Professor não encontrado ou sem atribuição ativa de Professor neste departamento.'}`.
+   **Print:** `RNF-21.3-400-auxiliar-responsavel.png` (Console e Network).
+6. Aba Aulas → **Recarregar**. Esperado: nenhuma aula "Teste RNF 21.3". Limpeza: aba Atribuições
+   → encerrar a atribuição de Auxiliar.
+
+**D7 — Redirecionamento para HTTPS (RNFs 1.4, 2.3, 40.4, 42.4, 44.4).**
+1. Com a API no perfil `https` (escuta em `https://localhost:7054` e `http://localhost:5202`), num
+   PowerShell: `curl.exe -i http://localhost:5202/api/termo/vigente` (use `curl.exe`, não o alias
+   `curl`, e sem `-L`). Esperado: primeira linha `HTTP/1.1 307 Temporary Redirect` e o cabeçalho
+   `Location: https://localhost:7054/api/termo/vigente`. **Print:** `RNF-2.3-redirecionamento-https.png`.
+2. Opcional: logado no front, F12 → **Application** → Cookies → `http://localhost:5173` →
+   `kh_token`: HttpOnly e Secure marcados (borre a coluna Value, que é o JWT). **Print:**
+   `RNF-2.3-cookie-secure-httponly.png`.
+
+**D8 — Sem "Excluir aula" quando há presença (RNF 45.5; print citado na 6.5 e ausente da pasta).**
+1. Professor ou Admin → turma de teste → aba Aulas → **Nova Aula** (data de hoje, matéria,
+   professor) → Salvar → **Fazer chamada** → marque um aluno → **Salvar chamada**.
+2. Voltar à aba Aulas → ⋮ da aula. Esperado: "Ver presenças registradas", "Editar aula",
+   "Consolidar chamada" e "Marcar como Não realizada", **sem** "Excluir aula". **Print:**
+   `RNF-45.5-sem-excluir-com-presenca.png` (menu aberto).
+
+**D9 — Histórico de presenças do aluno pelo Professor, na aba Alunos (CSU14; corretiva de 20/10).**
+1. Entrar como Professor → Minhas Turmas → **Abrir turma** → aba **Alunos**. Na linha de um aluno
+   que tenha presenças em aula Consolidada, clique no botão de calendário ("Histórico de
+   presenças"). Esperado: diálogo "Histórico de Presenças - <nome>" com os cinco indicadores
+   (Aulas consolidadas, Presenças, Faltas, Frequência, Registros no histórico), a nota do CSU07 e
+   a tabela com Data, Turma, Matéria, Presença, Aula e Observação; só aulas das turmas do
+   Professor aparecem (RNF 34.3). **Print:** `CSU14-historico-aluno-professor-desktop.png`.
+2. Fechar. F12 → Ctrl+Shift+M → Responsive 360×640 → recarregue a aba Alunos. No cartão do mesmo
+   aluno, ⋮ → **Histórico de presenças**. Esperado: o mesmo diálogo com os registros em cartões
+   (data · turma no título; tags Presente/Ausente e situação da aula; matéria e observação),
+   "Mostrar mais" quando houver mais de dez, e nada rolando para o lado. **Print:**
+   `CSU14-historico-aluno-professor-360.png`.
+3. Opcional: num cartão de matrícula inativa, o ⋮ oferece só o histórico, sem "Remover matrícula".
+
+**D10 — Rota só do Admin digitada por outro perfil (CSU24 FA2; corretiva de 20/10).**
+1. Logado como Professor (desktop), digite `http://localhost:5173/igreja` na barra de endereço e
+   dê Enter. Esperado: volta ao Painel e aparece um único aviso "Sem permissão — Este recurso é
+   restrito a administradores.". **Print:** `CSU24-FA2-aviso-restrito-admin.png` (com o aviso
+   visível).
+2. Repita com `/usuarios`. Esperado: o mesmo aviso. Entre como Admin e abra Igreja pelo menu.
+   Esperado: abre sem aviso.
+
+### Resultado dos roteiros (preencher após a execução)
+
+C ☐ · D1 ☐ · D2 ☐ · D3 ☐ · D4 ☐ · D5 ☐ · D6 ☐ · D7 ☐ · D8 ☐ · D9 ☐ · D10 ☐ — prints em
+`docs/evidencias/` com os nomes acima. Depois da execução, a coluna Evidência de
+`docs/resultados.md` passa de "Roteiro D*n*" para ✔, o CSU19 passa a Aprovado (15 Aprovados e 9
+Parciais) e a linha de cópia e restauração, a Aprovado.
