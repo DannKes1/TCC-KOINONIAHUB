@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 
-import { AVISO_SEM_PERFIL_OPERACIONAL, aplicarGuardas } from "./guardas";
+import { AVISO_RESTRITO_ADMIN, AVISO_SEM_PERFIL_OPERACIONAL, aplicarGuardas } from "./guardas";
 import { usarAutenticacaoStore } from "../armazenamentos/autenticacaoStore";
 import { setToastHandler, type ToastPayload } from "../servicos/notificacoes";
 
@@ -28,6 +28,7 @@ function criarRouter() {
         children: [
           { path: "", component: Vazio },
           { path: "pessoas", component: Vazio, meta: { requerAdministrativo: true } },
+          { path: "igreja", component: Vazio, meta: { requerAdmin: true } },
           { path: "meus-dados", component: Vazio },
           { path: "minhas-turmas", component: Vazio },
           {
@@ -152,6 +153,42 @@ describe("guardas de rota — Página da Turma exige perfil gestor (RNF 21.4)", 
 
     await router.push("/departamentos/7/atribuicoes");
     expect(router.currentRoute.value.path).toBe("/");
+    expect(toasts).toHaveLength(0);
+  });
+});
+
+// Corretiva da 7.3 (CSU24 FA2): rota só do Admin digitada por outro perfil volta ao
+// Painel e informa que o recurso é restrito a administradores.
+describe("guardas de rota — rotas só do Admin avisam (CSU24 FA2)", () => {
+  const toasts: ToastPayload[] = [];
+
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+    toasts.length = 0;
+    setToastHandler((payload) => toasts.push(payload));
+  });
+
+  it("Professor em /igreja volta ao Painel com um único aviso", async () => {
+    entrarComo("Professor", false);
+    const router = criarRouter();
+
+    await router.push("/igreja");
+    await router.isReady();
+
+    expect(router.currentRoute.value.path).toBe("/");
+    expect(toasts).toHaveLength(1);
+    expect(toasts[0]).toMatchObject({ severity: "warn", summary: "Sem permissão", detail: AVISO_RESTRITO_ADMIN });
+  });
+
+  it("Admin abre /igreja sem aviso", async () => {
+    entrarComo("Admin", false);
+    const router = criarRouter();
+
+    await router.push("/igreja");
+    await router.isReady();
+
+    expect(router.currentRoute.value.path).toBe("/igreja");
     expect(toasts).toHaveLength(0);
   });
 });

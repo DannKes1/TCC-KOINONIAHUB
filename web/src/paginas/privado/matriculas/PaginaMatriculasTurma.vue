@@ -7,6 +7,9 @@ import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import CartaoItem from "../../../components/ui/CartaoItem.vue";
 import MenuAcoes from "../../../components/ui/MenuAcoes.vue";
+// Corretiva da 7.3 (CSU14, RNF 34.3): o Professor consulta o histórico de presenças do
+// aluno a partir da aba Alunos, pelo mesmo diálogo de Pessoas.
+import DialogHistoricoPresencas from "../../../components/pessoas/DialogHistoricoPresencas.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 import { usarTelaCompacta } from "../../../aplicacao/composables/usarTelaCompacta";
@@ -76,8 +79,15 @@ const {
   mostrarMais,
 } = usarMostrarMais(alunosOrdenados, 10);
 
+// Ações secundárias do cartão (celular). O histórico vale também para matrícula
+// inativa (as presenças ficam preservadas, RF29); remover, só para a ativa.
 function itensAcoes(aluno: AlunoDaClasseVM): MenuItem[] {
   return [
+    {
+      label: "Histórico de presenças",
+      icon: "pi pi-calendar",
+      command: () => abrirHistorico(aluno),
+    },
     {
       label: "Remover matrícula",
       icon: "pi pi-trash",
@@ -85,6 +95,14 @@ function itensAcoes(aluno: AlunoDaClasseVM): MenuItem[] {
       command: () => confirmarRemover(aluno),
     },
   ];
+}
+
+const dialogHistoricoAberto = ref(false);
+const alunoHistorico = ref<AlunoDaClasseVM | null>(null);
+
+function abrirHistorico(aluno: AlunoDaClasseVM) {
+  alunoHistorico.value = aluno;
+  dialogHistoricoAberto.value = true;
 }
 
 const dialogAberto = ref(false);
@@ -317,6 +335,14 @@ onMounted(carregarTudo);
                 @click="abrirResponsaveis(data)"
               />
               <Button
+                icon="pi pi-calendar"
+                severity="secondary"
+                :disabled="carregando"
+                v-tooltip.top="'Histórico de presenças'"
+                data-testid="aluno-historico"
+                @click="abrirHistorico(data)"
+              />
+              <Button
                 v-if="data.matriculaAtiva"
                 icon="pi pi-trash"
                 severity="danger"
@@ -482,5 +508,11 @@ onMounted(carregarTudo);
         />
       </template>
     </Dialog>
+
+    <DialogHistoricoPresencas
+      v-model:visible="dialogHistoricoAberto"
+      :pessoa-id="alunoHistorico?.pessoaId ?? null"
+      :nome="alunoHistorico?.nome ?? ''"
+    />
   </div>
 </template>

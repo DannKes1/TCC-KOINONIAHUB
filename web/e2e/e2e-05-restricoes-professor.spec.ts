@@ -5,7 +5,7 @@ import { apiURL } from "./apoio/ambiente";
 import { login, novoClienteApi } from "./apoio/api";
 import { ARQUIVO_ESTADO_PROFESSOR, lerSemente } from "./apoio/semente";
 
-// E2E-05 — Restrições do Professor (Plano 7.3; CSU16, CSU12, CSU18; RNFs 21.4, 35.4,
+// E2E-05 — Restrições do Professor (Plano 7.3; CSU16, CSU15, CSU18; RNFs 21.4, 35.4,
 // 36.4, 37.4). Desktop. O menu é só conveniência: as negativas também são conferidas
 // direto na API (403), como a banca pode pedir.
 

@@ -7,6 +7,7 @@ import { createMemoryHistory, createRouter } from "vue-router";
 import PaginaMatriculasTurma from "./PaginaMatriculasTurma.vue";
 import type { OpcoesConfirmacao } from "../../../aplicacao/servicos/notificacoes";
 import { removerMatricula } from "../../../aplicacao/servicos/matriculasServico";
+import { listarHistoricoPresencasDaPessoa } from "../../../aplicacao/servicos/presencasPessoaServico";
 
 // Etapa 6.4-C (RF20 / RF27–RF28): no celular a aba Alunos vira cartões — um por
 // matrícula, "Responsáveis" como ação principal, "Remover matrícula" no ⋮ (só com
@@ -38,6 +39,14 @@ vi.mock("../../../aplicacao/servicos/matriculasServico", () => ({
 
 vi.mock("../../../aplicacao/servicos/parentescosServico", () => ({
   listarParentescosDaPessoa: vi.fn(async () => []),
+}));
+
+// Corretiva da 7.3 (CSU14): o histórico do aluno abre pelo ⋮ e carrega pela rota
+// da pessoa (RNF 34.3), com um registro de aula Consolidada para os totais.
+vi.mock("../../../aplicacao/servicos/presencasPessoaServico", () => ({
+  listarHistoricoPresencasDaPessoa: vi.fn(async () => [
+    { aulaId: 1, dataAula: "2026-10-05T12:00:00Z", departamentoId: 7, departamentoNome: "Jovens", materiaId: 1, materiaNome: "Gênesis", presente: true, observacao: null, situacaoAula: "Consolidada" },
+  ]),
 }));
 
 async function montar() {
@@ -77,10 +86,36 @@ describe("PaginaMatriculasTurma — cartões no celular (6.4-C)", () => {
     expect(cartoes[0]!.text()).toContain("Matrícula ativa");
     expect(cartoes[2]!.text()).toContain("Matrícula inativa");
     expect(cartoes[2]!.text()).toContain("Pessoa: Inativo");
-    // Sem matrícula ativa não há ação secundária: o ⋮ nem aparece.
+    // O ⋮ aparece em todo cartão: o histórico vale também para a matrícula inativa
+    // (7.3); "Remover matrícula" continua só na ativa (conferido no caso abaixo).
     expect(cartoes[0]!.find('[data-testid="menu-acoes"]').exists()).toBe(true);
-    expect(cartoes[2]!.find('[data-testid="menu-acoes"]').exists()).toBe(false);
+    expect(cartoes[2]!.find('[data-testid="menu-acoes"]').exists()).toBe(true);
     expect(wrapper.find(".p-datatable").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("Histórico de presenças pelo ⋮ abre o diálogo e carrega pela pessoa do aluno (CSU14)", async () => {
+    const { wrapper } = await montar();
+
+    // Matrícula inativa (Caio): só o histórico no ⋮, sem "Remover matrícula".
+    await wrapper.findAll('[data-testid="aluno-cartao"]')[2]!.get('[data-testid="menu-acoes"]').trigger("click");
+    await flushPromises();
+    const itens = Array.from(document.querySelectorAll<HTMLElement>(".p-menu-item-link, .p-menuitem-link"))
+      .map((el) => el.textContent?.trim() ?? "");
+    expect(itens).toContain("Histórico de presenças");
+    expect(itens).not.toContain("Remover matrícula");
+
+    Array.from(document.querySelectorAll<HTMLElement>(".p-menu-item-link, .p-menuitem-link"))
+      .find((el) => el.textContent?.includes("Histórico de presenças"))!
+      .click();
+    await flushPromises();
+
+    expect(listarHistoricoPresencasDaPessoa).toHaveBeenCalledWith(12);
+    const dialogo = document.querySelector('[data-testid="historico-dialogo"]');
+    expect(dialogo).not.toBeNull();
+    expect(dialogo!.textContent).toContain("Caio");
+    expect(dialogo!.querySelector('[data-testid="historico-consolidadas"]')!.textContent?.trim()).toBe("1");
+    expect(dialogo!.querySelectorAll('[data-testid="historico-cartao"]')).toHaveLength(1);
     wrapper.unmount();
   });
 

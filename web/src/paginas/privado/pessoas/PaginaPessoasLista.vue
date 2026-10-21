@@ -28,18 +28,14 @@ import {
   criarParentesco,
   removerParentesco,
 } from "../../../aplicacao/servicos/parentescosServico";
-import { listarHistoricoPresencasDaPessoa } from "../../../aplicacao/servicos/presencasPessoaServico";
-import {
-  formatarPercentual,
-  resumirPresencas,
-} from "../../../aplicacao/dominio/indicadoresPresenca";
-import TagSituacaoAula from "../../../components/ui/TagSituacaoAula.vue";
 import TabelaParentescos from "../../../components/pessoas/TabelaParentescos.vue";
+// Corretiva da 7.3 (CSU14): o diálogo do histórico virou componente, compartilhado
+// com a aba Alunos da Página da Turma.
+import DialogHistoricoPresencas from "../../../components/pessoas/DialogHistoricoPresencas.vue";
 
 import type {
   PessoaVM,
   ParentescoVM,
-  HistoricoPresencaPessoaVM,
 } from "../../../aplicacao/modelos/dtos";
 
 import DataTable from "primevue/datatable";
@@ -49,7 +45,6 @@ import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
 import Dropdown from "primevue/dropdown";
 import Calendar from "primevue/calendar";
-import Tag from "primevue/tag";
 
 import { useConfirm } from "primevue/useconfirm";
 
@@ -60,7 +55,6 @@ const dialogImportarAberto = ref(false);
 
 const pessoas = ref<PessoaVM[]>([]);
 const parentescos = ref<ParentescoVM[]>([]);
-const historicoPresencas = ref<HistoricoPresencaPessoaVM[]>([]);
 
 const dialogPessoaAberto = ref(false);
 const dialogParentescosAberto = ref(false);
@@ -185,12 +179,10 @@ async function abrirParentescos(pessoa: PessoaVM) {
   await carregarParentescos();
 }
 
-async function abrirHistorico(pessoa: PessoaVM) {
+function abrirHistorico(pessoa: PessoaVM) {
   clearErrors();
   pessoaSelecionadaHistorico.value = pessoa;
-  historicoPresencas.value = [];
   dialogHistoricoAberto.value = true;
-  await carregarHistorico();
 }
 
 function textoOuNull(valor?: string | null) {
@@ -265,10 +257,6 @@ function validarFormularioParentesco(): string {
   return "";
 }
 
-function severityPresenca(presente: boolean) {
-  return presente ? "success" : "danger";
-}
-
 const pessoasFiltradas = computed(() => {
   const termo = busca.value.trim().toLowerCase();
   const situacao = filtroSituacao.value?.trim().toLowerCase() || "";
@@ -309,20 +297,6 @@ const pessoasDisponiveisParaParentesco = computed(() => {
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 });
 
-// Etapa 6: os totais do diálogo seguem o CSU07 — só aulas Consolidadas contam. A
-// tabela continua listando todos os registros, com a situação da aula em cada um.
-const resumoHistorico = computed(() => resumirPresencas(historicoPresencas.value));
-
-const totalHistorico = computed(() => historicoPresencas.value.length);
-const totalHistoricoConsolidadas = computed(
-  () => resumoHistorico.value.aulasConsolidadas,
-);
-const totalHistoricoPresentes = computed(() => resumoHistorico.value.presencas);
-const totalHistoricoAusentes = computed(() => resumoHistorico.value.faltas);
-const percentualHistorico = computed(() =>
-  formatarPercentual(resumoHistorico.value.percentual),
-);
-
 async function carregarLista() {
   await run(async () => {
     pessoas.value = await listarPessoas();
@@ -336,17 +310,6 @@ async function carregarParentescos() {
   await run(async () => {
     parentescos.value = await listarParentescosDaPessoa(pessoa.id);
   }, "Não foi possível carregar os parentescos.");
-}
-
-async function carregarHistorico() {
-  const pessoa = pessoaSelecionadaHistorico.value;
-  if (!pessoa) return;
-
-  await run(async () => {
-    historicoPresencas.value = await listarHistoricoPresencasDaPessoa(
-      pessoa.id,
-    );
-  }, "Não foi possível carregar o histórico de presenças.");
 }
 
 async function salvarPessoa() {
@@ -813,150 +776,10 @@ onMounted(carregarLista);
       </template>
     </Dialog>
 
-    <Dialog
+    <DialogHistoricoPresencas
       v-model:visible="dialogHistoricoAberto"
-      modal
-      :closable="!carregando"
-      :dismissableMask="!carregando"
-      :header="`Histórico de Presenças - ${pessoaSelecionadaHistorico?.nome ?? ''}`"
-      style="width: 980px; max-width: 96vw"
-    >
-      <div style="display: flex; flex-direction: column; gap: 14px">
-        <InlineMessage :texto="erro" tipo="erro" />
-
-        <div
-          data-testid="historico-indicadores"
-          style="
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 12px;
-          "
-        >
-          <div
-            style="
-              border: 1px solid rgba(0, 0, 0, 0.08);
-              border-radius: 12px;
-              padding: 12px;
-            "
-          >
-            <div style="font-size: 12px; opacity: 0.7">Aulas consolidadas</div>
-            <div style="font-size: 24px; font-weight: 700">
-              {{ totalHistoricoConsolidadas }}
-            </div>
-          </div>
-
-          <div
-            style="
-              border: 1px solid rgba(0, 0, 0, 0.08);
-              border-radius: 12px;
-              padding: 12px;
-            "
-          >
-            <div style="font-size: 12px; opacity: 0.7">Presenças</div>
-            <div style="font-size: 24px; font-weight: 700">
-              {{ totalHistoricoPresentes }}
-            </div>
-          </div>
-
-          <div
-            style="
-              border: 1px solid rgba(0, 0, 0, 0.08);
-              border-radius: 12px;
-              padding: 12px;
-            "
-          >
-            <div style="font-size: 12px; opacity: 0.7">Faltas</div>
-            <div style="font-size: 24px; font-weight: 700">
-              {{ totalHistoricoAusentes }}
-            </div>
-          </div>
-
-          <div
-            style="
-              border: 1px solid rgba(0, 0, 0, 0.08);
-              border-radius: 12px;
-              padding: 12px;
-            "
-          >
-            <div style="font-size: 12px; opacity: 0.7">Frequência</div>
-            <div style="font-size: 24px; font-weight: 700">
-              {{ percentualHistorico }}
-            </div>
-          </div>
-
-          <div
-            style="
-              border: 1px solid rgba(0, 0, 0, 0.08);
-              border-radius: 12px;
-              padding: 12px;
-            "
-          >
-            <div style="font-size: 12px; opacity: 0.7">Registros no histórico</div>
-            <div style="font-size: 24px; font-weight: 700">
-              {{ totalHistorico }}
-            </div>
-          </div>
-        </div>
-
-        <InlineMessage
-          texto="Os totais consideram somente aulas Consolidadas (CSU07). Registros de aulas Em aberto ou Não realizadas aparecem na lista, mas não entram na frequência."
-          tipo="info"
-        />
-
-        <LoadingOverlay
-          :loading="carregando"
-          texto="Carregando histórico de presenças..."
-        >
-          <DataTable
-            :value="historicoPresencas"
-            paginator
-            :rows="10"
-            rowHover
-            sortField="dataAula"
-            :sortOrder="-1"
-            dataKey="aulaId"
-            responsiveLayout="scroll"
-          >
-            <template #empty>
-              <div style="padding: 14px; opacity: 0.7">Nenhum histórico de presença encontrado para esta pessoa.</div>
-            </template>
-            <Column header="Data" style="width: 120px">
-              <template #body="{ data }">
-                {{ formatarData(data.dataAula) }}
-              </template>
-            </Column>
-
-            <Column field="departamentoNome" header="Turma" sortable />
-            <Column field="materiaNome" header="Matéria" sortable />
-
-            <Column header="Presença" style="width: 120px">
-              <template #body="{ data }">
-                <Tag
-                  :value="data.presente ? 'Presente' : 'Ausente'"
-                  :severity="severityPresenca(data.presente)"
-                />
-              </template>
-            </Column>
-
-            <Column header="Aula" style="width: 170px">
-              <template #body="{ data }">
-                <TagSituacaoAula :situacao="data.situacaoAula" />
-              </template>
-            </Column>
-
-            <Column field="observacao" header="Observação" />
-          </DataTable>
-        </LoadingOverlay>
-      </div>
-
-      <template #footer>
-        <Button
-          label="Fechar"
-          severity="secondary"
-          :disabled="carregando"
-          @click="dialogHistoricoAberto = false"
-        />
-      </template>
-    </Dialog>
+      :pessoa-id="pessoaSelecionadaHistorico?.id ?? null"
+      :nome="pessoaSelecionadaHistorico?.nome ?? ''"
+    />
   </div>
 </template>

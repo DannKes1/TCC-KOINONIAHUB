@@ -9,6 +9,10 @@ import { toastWarn } from "../servicos/notificacoes";
 export const AVISO_SEM_PERFIL_OPERACIONAL =
   "Sua conta não tem perfil para operar turmas. Se você é professor(a) ou auxiliar, peça a um Admin para ajustar o perfil da sua conta.";
 
+// CSU24 FA2 (corretiva da 7.3): Usuários e Igreja são só do Admin; outro perfil que
+// digite a rota volta ao Painel com um único aviso, como faz a guarda da turma.
+export const AVISO_RESTRITO_ADMIN = "Este recurso é restrito a administradores.";
+
 export function aplicarGuardas(router: Router) {
   router.beforeEach((to) => {
     const autenticacao = usarAutenticacaoStore();
@@ -40,6 +44,7 @@ export function aplicarGuardas(router: Router) {
     }
 
     if (requerAdmin && !autenticacao.isAdmin) {
+      toastWarn(AVISO_RESTRITO_ADMIN, "Sem permissão");
       return "/";
     }
 

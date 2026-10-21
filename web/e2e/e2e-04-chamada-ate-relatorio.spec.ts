@@ -4,7 +4,7 @@ import type { Page } from "@playwright/test";
 import { evidenciaCelular, larguraDoDocumento, semRolagemHorizontal } from "./apoio/celular";
 import { ARQUIVO_ESTADO_PROFESSOR, lerSemente, turmaChamadaPara } from "./apoio/semente";
 
-// E2E-04 — Chamada até o relatório (Plano 7.3; CSU08, CSU10, CSU11, CSU12). Roda no
+// E2E-04 — Chamada até o relatório (Plano 7.3; CSU09, CSU10, CSU11, CSU15). Roda no
 // desktop e no celular, cada projeto com a sua turma (semente, Etapa 7.2). O professor
 // cria a aula pela tela, lança uma chamada incompleta e aciona Consolidar: a
 // confirmação nomeia os alunos sem registro e oferece "Salvar e consolidar" (CSU11
@@ -44,7 +44,7 @@ test("E2E-04 chamada até relatório: consolidar com aluno sem registro nomeia q
   await expect(page.locator("h2.page-header-titulo")).toHaveText(turma.nome);
   await expect(page.getByTestId("aula-chamada")).toHaveCount(0);
 
-  // CSU08: Nova Aula com data, matéria, professor e tema.
+  // CSU09: Nova Aula com data, matéria, professor e tema.
   await page.getByTestId("aulas-nova").click();
   const dialogo = page.getByTestId("aula-dialogo");
   await expect(dialogo).toBeVisible();
@@ -129,7 +129,7 @@ test("E2E-04 chamada até relatório: consolidar com aluno sem registro nomeia q
     await evidenciaCelular(page, testInfo, "e2e04-chamada-consolidada");
   }
 
-  // CSU12: Frequência da turma conta a aula consolidada (1 aula, 2 presenças).
+  // CSU15: Frequência da turma conta a aula consolidada (1 aula, 2 presenças).
   await page.goto("/relatorios/ebd");
   await expect(page.locator("h2.page-header-titulo")).toContainText("Relatórios");
   // Espera a carga da turma pré-selecionada antes de trocar, para a resposta dela
