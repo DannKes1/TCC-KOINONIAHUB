@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Infraestrutura.Dados;
 using KoinoniaHub.API.Tests.Infraestrutura;
 using Microsoft.EntityFrameworkCore;
@@ -77,8 +78,10 @@ namespace KoinoniaHub.API.Tests
                 _ => await professor.PatchAsJsonAsync($"/api/usuarios/{professorUsuarioId}", new { Perfil = "Admin" })
             };
 
-            // RNFs 13.1/14.1/16.1: a operação é restrita ao perfil Administrador…
+            // RNFs 13.1/14.1/16.1: a operação é restrita ao perfil Administrador, e o 403
+            // traz { mensagem } como o resto da API (RespostaAutorizacaoHandler, 7.3)…
             Assert.Equal(HttpStatusCode.Forbidden, resposta.StatusCode);
+            Assert.Equal(RespostaAutorizacaoHandler.MensagemSemPermissao, await LerMensagemAsync(resposta));
 
             // …e nada mudou: nenhuma conta nova, e o Professor continua Professor.
             using var escopo = _fabrica.Services.CreateScope();
@@ -102,6 +105,13 @@ namespace KoinoniaHub.API.Tests
             var resposta = await cliente.GetAsync("/api/usuarios");
 
             Assert.Equal(HttpStatusCode.Forbidden, resposta.StatusCode);
+            Assert.Equal(RespostaAutorizacaoHandler.MensagemSemPermissao, await LerMensagemAsync(resposta));
+        }
+
+        private static async Task<string?> LerMensagemAsync(HttpResponseMessage resposta)
+        {
+            using var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+            return json.RootElement.GetProperty("mensagem").GetString();
         }
 
         private async Task<string> LerSenhaHashAsync(string email)

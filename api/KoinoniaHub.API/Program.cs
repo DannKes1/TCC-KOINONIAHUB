@@ -118,6 +118,9 @@ builder.Services.AddAuthorization(opcoes =>
         .Build();
 });
 
+// 403 por perfil com corpo { mensagem }, como o resto da API (corretiva da 7.3).
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, RespostaAutorizacaoHandler>();
+
 // Repositórios
 builder.Services.AddScoped<IIgrejaRepositorio, IgrejaRepositorio>();
 builder.Services.AddScoped<IPessoaRepositorio, PessoaRepositorio>();

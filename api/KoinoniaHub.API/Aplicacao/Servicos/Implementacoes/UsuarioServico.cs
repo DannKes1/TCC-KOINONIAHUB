@@ -196,10 +196,25 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             }
 
             if (dto.Ativo.HasValue)
-                usuario.Ativo = dto.Ativo.Value;
+                AplicarSituacao(usuario, dto.Ativo.Value);
 
             await _repositorio.AtualizarAsync(usuario);
             return true;
+        }
+
+        // Corretiva da 7.3 (RNF 40.2): inativar a conta descarta o convite pendente;
+        // reativar não o recria — o Admin gera um novo quando precisar. Um hash numa
+        // conta inativa é sempre obsoleto (GerarConviteAsync recusa conta inativa), então
+        // o convite só sobrevive quando a conta estava ativa e continua ativa.
+        private static void AplicarSituacao(Usuario usuario, bool ativo)
+        {
+            if (!(usuario.Ativo && ativo))
+            {
+                usuario.ConviteTokenHash = null;
+                usuario.ConviteExpiraEm = null;
+            }
+
+            usuario.Ativo = ativo;
         }
 
         private static UsuarioRespostaDto MapearParaResposta(Usuario u, string? nomePessoa)

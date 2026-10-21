@@ -192,9 +192,11 @@ namespace KoinoniaHub.API.Tests
         }
 
         [Fact]
-        public async Task Ativar_ContaInativa_Retorna400()
+        public async Task Inativar_DescartaConvitePendente_EReativarNaoORecria()
         {
-            const string mensagemInativo = "Este usuário está inativo. Procure o administrador.";
+            // Corretiva da 7.3 (RNF 40.2): ao inativar a conta pela API, o convite pendente é
+            // descartado (hash e validade nulos); reativar não o traz de volta, então o link
+            // antigo continua recusado e o Admin precisa gerar um novo.
             var cenario = await CenarioConvite.CriarAsync(_fabrica, "rf40c");
             var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
             var (_, token) = await GerarConviteAsync(admin, cenario.AlvoId);
@@ -203,17 +205,56 @@ namespace KoinoniaHub.API.Tests
             var inativar = await admin.PatchAsJsonAsync($"/api/usuarios/{cenario.AlvoId}", new { Ativo = false });
             Assert.Equal(HttpStatusCode.NoContent, inativar.StatusCode);
 
+            var inativo = await LerUsuarioAsync(cenario.AlvoId);
+            Assert.False(inativo.Ativo);
+            Assert.Null(inativo.ConviteTokenHash);
+            Assert.Null(inativo.ConviteExpiraEm);
+            Assert.False(await LerConvitePendenteAsync(admin, cenario.AlvoId)); // a tag "Convite pendente" some
+
+            var reativar = await admin.PatchAsJsonAsync($"/api/usuarios/{cenario.AlvoId}", new { Ativo = true });
+            Assert.Equal(HttpStatusCode.NoContent, reativar.StatusCode);
+            Assert.True((await LerUsuarioAsync(cenario.AlvoId)).Ativo);
+            Assert.Null((await LerUsuarioAsync(cenario.AlvoId)).ConviteTokenHash);
+
+            // O link antigo é recusado como inválido, na validação e na ativação.
             var publico = _fabrica.CreateClient();
             var validar = await publico.GetAsync($"/api/auth/primeiro-acesso/{token}");
             var ativar = await publico.PostAsJsonAsync("/api/auth/primeiro-acesso", new { Token = token, NovaSenha = SenhaNova, AceiteTermoVersao = TermosDeUso.Vigente.Versao });
 
-            // RNF 40.2: convite de conta inativa é recusado com mensagem clara, na validação e na ativação.
+            Assert.Equal(HttpStatusCode.NotFound, validar.StatusCode);
+            Assert.Equal(MensagemInvalido, await LerMensagemAsync(validar));
+            Assert.Equal(HttpStatusCode.BadRequest, ativar.StatusCode);
+            Assert.Equal(MensagemInvalido, await LerMensagemAsync(ativar));
+            Assert.Equal(hashAntes, (await LerUsuarioAsync(cenario.AlvoId)).SenhaHash);
+
+            // Um convite novo, gerado pelo Admin, volta a funcionar.
+            var (novo, tokenNovo) = await GerarConviteAsync(admin, cenario.AlvoId);
+            Assert.Equal(HttpStatusCode.OK, novo.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await publico.GetAsync($"/api/auth/primeiro-acesso/{tokenNovo}")).StatusCode);
+        }
+
+        [Fact]
+        public async Task Ativar_ContaInativadaForaDaApi_Retorna400()
+        {
+            // RNF 40.2, defesa em profundidade: se a conta ficar inativa por outro caminho
+            // (sem passar pelo PATCH, que descarta o convite), o convite ainda é recusado
+            // com a mensagem de conta inativa, e nada é consumido nem gravado.
+            const string mensagemInativo = "Este usuário está inativo. Procure o administrador.";
+            var cenario = await CenarioConvite.CriarAsync(_fabrica, "rf40d");
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+            var (_, token) = await GerarConviteAsync(admin, cenario.AlvoId);
+            var hashAntes = (await LerUsuarioAsync(cenario.AlvoId)).SenhaHash;
+            await InativarNoBancoAsync(cenario.AlvoId);
+
+            var publico = _fabrica.CreateClient();
+            var validar = await publico.GetAsync($"/api/auth/primeiro-acesso/{token}");
+            var ativar = await publico.PostAsJsonAsync("/api/auth/primeiro-acesso", new { Token = token, NovaSenha = SenhaNova, AceiteTermoVersao = TermosDeUso.Vigente.Versao });
+
             Assert.Equal(HttpStatusCode.BadRequest, validar.StatusCode);
             Assert.Equal(mensagemInativo, await LerMensagemAsync(validar));
             Assert.Equal(HttpStatusCode.BadRequest, ativar.StatusCode);
             Assert.Equal(mensagemInativo, await LerMensagemAsync(ativar));
 
-            // Nada foi consumido nem gravado: mesma senha, convite intacto, nenhum aceite do termo.
             var usuario = await LerUsuarioAsync(cenario.AlvoId);
             Assert.Equal(hashAntes, usuario.SenhaHash);
             Assert.NotNull(usuario.ConviteTokenHash);
@@ -221,6 +262,27 @@ namespace KoinoniaHub.API.Tests
             using var escopo = _fabrica.Services.CreateScope();
             var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
             Assert.False(await db.AceitesTermo.AnyAsync(a => a.UsuarioId == cenario.AlvoId));
+        }
+
+        [Fact]
+        public async Task Reativar_ContaInativadaForaDaApi_DescartaConviteAntigo()
+        {
+            // Conta inativada por outro caminho ainda carrega o hash; reativá-la pelo PATCH
+            // não pode reviver o link antigo (é o caso das contas inativadas antes da 7.3).
+            var cenario = await CenarioConvite.CriarAsync(_fabrica, "rf40e");
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+            var (_, token) = await GerarConviteAsync(admin, cenario.AlvoId);
+            await InativarNoBancoAsync(cenario.AlvoId);
+            Assert.NotNull((await LerUsuarioAsync(cenario.AlvoId)).ConviteTokenHash);
+
+            var reativar = await admin.PatchAsJsonAsync($"/api/usuarios/{cenario.AlvoId}", new { Ativo = true });
+            Assert.Equal(HttpStatusCode.NoContent, reativar.StatusCode);
+
+            var usuario = await LerUsuarioAsync(cenario.AlvoId);
+            Assert.True(usuario.Ativo);
+            Assert.Null(usuario.ConviteTokenHash);
+            Assert.Null(usuario.ConviteExpiraEm);
+            Assert.Equal(HttpStatusCode.NotFound, (await _fabrica.CreateClient().GetAsync($"/api/auth/primeiro-acesso/{token}")).StatusCode);
         }
 
         [Fact]
@@ -262,6 +324,15 @@ namespace KoinoniaHub.API.Tests
             using var escopo = _fabrica.Services.CreateScope();
             var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
             return await db.Usuarios.AsNoTracking().SingleAsync(u => u.Id == usuarioId);
+        }
+
+        private async Task InativarNoBancoAsync(int usuarioId)
+        {
+            using var escopo = _fabrica.Services.CreateScope();
+            var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+            var usuario = await db.Usuarios.SingleAsync(u => u.Id == usuarioId);
+            usuario.Ativo = false;
+            await db.SaveChangesAsync();
         }
 
         private async Task ExpirarConviteAsync(int usuarioId)
