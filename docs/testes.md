@@ -1746,3 +1746,86 @@ D10 ✔ — executados pelo autor em 22/10/2026, todos com o resultado esperado.
 `Confiabilidade-restauracao-5-api-no-banco-restaurado.png` (C5). Em `docs/resultados.md`, a coluna
 Evidência passou a ✔, o CSU19 passou a Aprovado (15 Aprovados e 9 Parciais) e a cópia e restauração,
 a Aprovado (Confiabilidade 20 de 20).
+
+---
+
+## SonarCloud — primeira análise (22 e 23/10/2026)
+
+**Escopo.** Próximo passo fora das etapas (Plano v1.9, seção 5): análise estática da API e do front
+no SonarCloud, por GitHub Actions. Nenhuma regra de negócio, rota, contrato ou tela mudou, e nenhum
+arquivo de código foi alterado. Monorepo com dois projetos na organização `dannkes1`
+(`dannkes1_tcc-koinoniahub_api` e `dannkes1_tcc-koinoniahub_web`, públicos, análise automática
+desligada). Arquivos: `.github/workflows/sonarcloud.yml` (jobs `api` e `web`, em push e pull request
+para a main), `web/sonar-project.properties`, `coverlet.collector` 10.1.0 no projeto de testes e
+`TestResults/` e `.sonarqube/` no `.gitignore` (commits `d5d556b` e `c482d3d`). Migrations fora da
+análise da API (decisão do autor): **a cobertura reportada é a do código de autoria**. Decisões em
+`docs/decisoes/sonarcloud.md`. A correção do que o Sonar apontou é a entrega seguinte, com plano antes.
+
+**Validação local antes do push (22 e 23/10/2026, comandos exatos do workflow, em bash):**
+`dotnet build KoinoniaHub.API.sln --no-incremental` limpo (0 avisos, 0 erros) · `dotnet test --no-build
+--logger trx --collect:"XPlat Code Coverage" --results-directory TestResults -- …Format=opencover` =
+**170 aprovados**, com `TestResults/<guid>/coverage.opencover.xml` e `TestResults/*.trx` (contadores
+170/170) nos caminhos que o `begin` lê · `npm run test:cov -- --coverage.reporter=lcov
+--coverage.reporter=text-summary` = **24 arquivos, 126 casos**, com `TZ=UTC` (fuso do runner) e com
+`TZ=America/Porto_Velho` (o do job), e `coverage/lcov.info` com caminhos `SF:src/...` · `npx vue-tsc -b`
+limpo · `npm run build` ok · YAML lido por parser estrito e `actionlint` 1.7.12 sem erros. Medida
+local do OpenCover que motivou a exclusão: 28,3% dos pontos de sequência com as Migrations (7.603 dos
+12.025 pontos são delas, todos a 0%) e 77,0% sem elas (3.404 de 4.422). Auditoria de portabilidade
+para Linux antes do push (cultura, fuso, maiúsculas nos imports, arquivos ignorados, certificado,
+user-secrets): nenhum teste dependia do Windows do autor.
+
+**Primeira análise (run #1 do workflow SonarCloud, commit `c482d3d`, 23/10/2026, 00h44 locais):** os
+dois jobs verdes no `ubuntu-24.04` — API (.NET) em 1min42s e Web (Vue) em 1min16s (1min46s de ponta a
+ponta). Foi a primeira execução das suítes fora do Windows: **170 xUnit** e **24 arquivos / 126
+Vitest** aprovados no Linux, com cultura invariante e fuso UTC na API.
+
+| Métrica | API (`dannkes1_tcc-koinoniahub_api`) | Web (`dannkes1_tcc-koinoniahub_web`) |
+| --- | --- | --- |
+| Linhas de código | 6.742 (sem Migrations) | 13.627 |
+| Quality Gate | não computado (primeira análise) | não computado (primeira análise) |
+| Security | 3 — 2 Blocker, 1 Medium · nota **E** | 0 · **A** |
+| Reliability | 12 — 1 High, 11 Medium · **C** | 85 — todas Medium · **C** |
+| Maintainability | 45 · **A** | 128 · **A** |
+| Security Hotspots | 0 · **A** | 0 · **A** |
+| Coverage | **74,5%** (linhas 77,0%; condições 60,5%; 4.422 linhas a cobrir, 1.018 descobertas) | **48,0%** (linhas 41,1%; condições 63,3%; 2.542 a cobrir, 1.498 descobertas) |
+| Duplications | 3,0% | 0,9% |
+| Testes | 170 · 0 erros · 0 falhas · 100% de sucesso (pelo `.trx`) | não importados (só o lcov) |
+| Avisos da análise | nenhum | 1: o lcov cita `src/assets/LOGOIPB2.png` |
+
+**Como ler os números.**
+- *Cobertura.* A do SonarCloud combina linhas e condições; por isso a API fica em 74,5% com 77,0% das
+  linhas. As 4.422 linhas a cobrir são o mesmo universo medido localmente sem as Migrations. No web,
+  o Sonar conta com 0% os arquivos que nenhum spec importa (38 dos 74 `.ts`/`.vue` de `src`, fora os
+  specs), enquanto o resumo do Vitest no log do job (71,7% das linhas) só considera os 36 carregados
+  pelos testes. **O número oficial para o texto é o do SonarCloud.**
+- *Notas.* A organização está no modo clássico (Standard Experience): a nota de cada qualidade segue
+  o apontamento mais grave do tipo clássico (VULNERABILITY para Security, BUG para Reliability), não
+  a quantidade. Security E na API pelos dois Blocker; Reliability C nos dois projetos porque o pior
+  BUG é Major (o S8949, "High" na visão por qualidade, é Major como BUG). Na API, só 2 dos 12
+  apontamentos de Reliability são BUG (S8949 e S8733); no web, 12 dos 85 (os 72 S6853 e o S6845 são
+  CODE_SMELL e não entram na nota).
+- *Security da API.* Dois dos três apontamentos estão no `appsettings.E2E.json` versionado (senha do
+  PostgreSQL local de teste e chave JWT do ambiente E2E, valores descartáveis): o scanner .NET indexa
+  também os JSON versionados de `api/`. O terceiro está em `Aplicacao` (`TokenServico.cs`). O
+  workflow não cita esse arquivo.
+- *Annotations do run.* Os 10 avisos do job API em "Annotations" são avisos dos analisadores do Sonar
+  na compilação (o GitHub mostra no máximo 10 por passo); não são falhas.
+- *Quality Gate.* As condições do Sonar way valem para o código novo, e na primeira análise da main
+  ainda não há código novo de referência; os checks "SonarCloud Code Analysis" saíram como neutros.
+
+**Triagem dos apontamentos.** Security (3) e Reliability (API 12, Web 85) foram agrupados por regra
+em 23/10/2026, com uma proposta por grupo (corrigir, aceitar com justificativa ou adiar) levada ao
+autor. Nada foi corrigido nesta entrega.
+
+**Prints (`docs/evidencias/`, 17 arquivos):** `SONAR-actions-verde.png`, `SONAR-api-log.png`,
+`SONAR-api-log-testes.png`, `SONAR-api-overview.png`, `SONAR-api-overview-reliability.png`,
+`SONAR-api-overview-maintainability.png`, `SONAR-api-overview-hotspots.png`, `SONAR-api-coverage.png`,
+`SONAR-api-testes.png`, `SONAR-api-sem-migrations.png`, `SONAR-web-log.png`, `SONAR-web-log-testes.png`,
+`SONAR-web-overview.png`, `SONAR-web-overview-reliability.png`, `SONAR-web-overview-maintainability.png`,
+`SONAR-web-overview-hotspots.png` e `SONAR-web-coverage.png`. Prefixo `SONAR-` porque a análise não
+corresponde a um RF ou RNF.
+
+**Registro para o Plano (v1.10):** seção 5 (linha nova "SonarCloud" na tabela de estado, fora das
+etapas), 7.4 (o CI e a reprodução local da cobertura) e 7.5 (a análise estática como evidência
+complementar), mais a pendência de texto da monografia na seção 9 (4.10 e 5.1 não preveem análise
+estática). Texto completo em `docs/decisoes/sonarcloud.md`, seção 4.
