@@ -1426,7 +1426,7 @@ fuso configurável, armazenamento em UTC), seção 5 (linha 7.2 atendida em 18/1
 
 ---
 
-## Etapa 7.3 — Resultados: tabela CSU → teste, testes de Segurança e roteiros de evidência (19/10/2026)
+## Etapa 7.3 — Resultados: tabela CSU → teste, testes de Segurança e roteiros de evidência (19 a 22/10/2026)
 
 **Escopo.** Plano v1.8, seção 5 (linha 7.3), 6.17 e 7.5: (a) `docs/resultados.md` com a tabela
 CSU → teste → resultado (CSU01–CSU24) e as tabelas RNF → teste → evidência de Segurança e de
@@ -1568,7 +1568,9 @@ Esperado: `Now listening on: https://localhost:7054`.
 **C6 — Terminal C: front, login e listagem.** `cd web; npm run dev`. No navegador,
 http://localhost:5173 → entrar com o Admin de desenvolvimento (o mesmo de sempre). Esperado: o
 Painel abre. Menu **Pessoas**. Esperado: a mesma lista do sistema antes da cópia. **Print 5:**
-`Confiabilidade-restauracao-5-login-listagem.png` (Pessoas com o usuário logado no topo).
+`Confiabilidade-restauracao-5-login-listagem.png` (Pessoas com o usuário logado no topo); e o
+console do Terminal B com a API no ar apontada para o banco restaurado:
+`Confiabilidade-restauracao-5-api-no-banco-restaurado.png`.
 
 **C7 — Escrita vai para o banco restaurado.** Pessoas → **Nova Pessoa** → Nome
 `Restauracao 7.3` (sem acento) → **Salvar**. Esperado: aviso de sucesso e a linha na lista. No
@@ -1638,9 +1640,10 @@ Os roteiros reaproveitam contas uns dos outros; execute na ordem.
 5. Janela anônima → cole o **Link 3**. Esperado (corretiva de 20/10: inativar descarta o convite):
    "Convite inválido ou já utilizado. Solicite um novo link ao administrador.". **Print:**
    `RNF-40.2-convite-conta-inativa.png`. Em Usuários, a linha da conta ficou sem a tag "Convite
-   pendente" e com o botão de convite desabilitado.
+   pendente" e com o botão de convite desabilitado (`RNF-40.2-conta-inativa-sem-convite-pendente.png`).
 6. Editar → Status **Ativo** → Salvar. Esperado: a conta volta a Ativo **sem** a tag "Convite
-   pendente"; o Link 3 continua recusado (cole-o de novo na janela anônima). Para a pessoa definir a
+   pendente" (`RNF-40.2-conta-reativada-sem-convite.png`); o Link 3 continua recusado (cole-o de
+   novo na janela anônima: `RNF-40.2-convite-apos-reativar-recusado.png`). Para a pessoa definir a
    senha, o Admin gera um convite novo pelo botão de convite.
 
 **D4 — Senha só como hash BCrypt (RNFs 1.2, 2.2, 13.2, 15.4, 40.3; seção 4.8).**
@@ -1655,9 +1658,11 @@ Os roteiros reaproveitam contas uns dos outros; execute na ordem.
    `$2b$11$`), custo `11` (≥ 10) e tamanho `60`.
    Consulta B:
    `SELECT count(*) FILTER (WHERE "SenhaHash" !~ '^\$2[aby]\$[0-9]{2}\$.{53}$') AS fora_do_formato_bcrypt, count(*) FILTER (WHERE position('Teste@2026' in "SenhaHash") > 0) AS contem_a_senha FROM "Usuarios";`
-   Esperado: `0` e `0`. **Print:** `RNF-2.2-senhahash-bcrypt-no-banco.png` (as duas saídas).
+   Esperado: `0` e `0`. **Prints:** `RNF-2.2-senhahash-bcrypt-no-banco.png` (consulta A) e
+   `RNF-2.2-senhahash-bcrypt-contagem.png` (consulta B).
 4. Sair → entrar com `teste73.senha@exemplo.test` / `Teste@2026`. Esperado: abre a tela do termo
-   (aceite pendente, RNF 13.4) — o hash confere a senha. Sair.
+   (aceite pendente, RNF 13.4) — o hash confere a senha. **Print:**
+   `RNF-13.4-login-senha-manual-termo-pendente.png`. Sair.
 
 **D5 — 403 de Professor em `/api/usuarios` (RNFs 13.1, 14.1, 16.1).**
 1. Entrar como Professor. Esperado: menu sem "Usuários".
@@ -1665,7 +1670,8 @@ Os roteiros reaproveitam contas uns dos outros; execute na ordem.
    `const r = await fetch('/api/usuarios'); console.log(r.status, await r.json())`
    Esperado: `403 {mensagem: 'Você não tem permissão para esta operação.'}` (corretiva de 20/10:
    o 403 por perfil traz `{ mensagem }`) e a linha `usuarios` com Status 403 na aba Network.
-   **Print:** `RNF-13.1-403-professor-api-usuarios.png` (Console e Network visíveis).
+   **Prints:** `RNF-13.1-403-professor-api-usuarios.png` (Console) e
+   `RNF-13.1-403-professor-api-usuarios-network.png` (aba Network).
 3. Opcional (14.1):
    `const p = await fetch('/api/usuarios/1', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Perfil: 'Admin' }) }); console.log(p.status, await p.json())`
    Esperado: `403` com a mesma mensagem. Sair.
@@ -1713,10 +1719,10 @@ Os roteiros reaproveitam contas uns dos outros; execute na ordem.
    a tabela com Data, Turma, Matéria, Presença, Aula e Observação; só aulas das turmas do
    Professor aparecem (RNF 34.3). **Print:** `CSU14-historico-aluno-professor-desktop.png`.
 2. Fechar. F12 → Ctrl+Shift+M → Responsive 360×640 → recarregue a aba Alunos. No cartão do mesmo
-   aluno, ⋮ → **Histórico de presenças**. Esperado: o mesmo diálogo com os registros em cartões
-   (data · turma no título; tags Presente/Ausente e situação da aula; matéria e observação),
-   "Mostrar mais" quando houver mais de dez, e nada rolando para o lado. **Print:**
-   `CSU14-historico-aluno-professor-360.png`.
+   aluno, ⋮ → **Histórico de presenças** (menu aberto: `CSU14-historico-menu-360.png`). Esperado:
+   o mesmo diálogo com os registros em cartões (data · turma no título; tags Presente/Ausente e
+   situação da aula; matéria e observação), "Mostrar mais" quando houver mais de dez, e nada
+   rolando para o lado. **Print:** `CSU14-historico-aluno-professor-360.png`.
 3. Opcional: num cartão de matrícula inativa, o ⋮ oferece só o histórico, sem "Remover matrícula".
 
 **D10 — Rota só do Admin digitada por outro perfil (CSU24 FA2; corretiva de 20/10).**
@@ -1727,9 +1733,16 @@ Os roteiros reaproveitam contas uns dos outros; execute na ordem.
 2. Repita com `/usuarios`. Esperado: o mesmo aviso. Entre como Admin e abra Igreja pelo menu.
    Esperado: abre sem aviso.
 
-### Resultado dos roteiros (preencher após a execução)
+### Resultado dos roteiros (22/10/2026)
 
-C ☐ · D1 ☐ · D2 ☐ · D3 ☐ · D4 ☐ · D5 ☐ · D6 ☐ · D7 ☐ · D8 ☐ · D9 ☐ · D10 ☐ — prints em
-`docs/evidencias/` com os nomes acima. Depois da execução, a coluna Evidência de
-`docs/resultados.md` passa de "Roteiro D*n*" para ✔, o CSU19 passa a Aprovado (15 Aprovados e 9
-Parciais) e a linha de cópia e restauração, a Aprovado.
+C ✔ · D1 ✔ · D2 ✔ · D3 ✔ · D4 ✔ · D5 ✔ · D6 ✔ · D7 ✔ (com o opcional do cookie) · D8 ✔ · D9 ✔ ·
+D10 ✔ — executados pelo autor em 22/10/2026, todos com o resultado esperado. Prints em
+`docs/evidencias/`: os nomes dos roteiros (30 arquivos no total) mais os extras
+`RNF-2.2-senhahash-bcrypt-contagem.png` (D4, consulta B), `RNF-13.4-login-senha-manual-termo-pendente.png`
+(D4, passo 4), `RNF-13.1-403-professor-api-usuarios-network.png` (D5),
+`RNF-40.2-conta-inativa-sem-convite-pendente.png`, `RNF-40.2-conta-reativada-sem-convite.png` e
+`RNF-40.2-convite-apos-reativar-recusado.png` (D3, passos 5 e 6), `CSU14-historico-menu-360.png`
+(D9), `RNF-2.3-cookie-secure-httponly.png` (D7, opcional) e
+`Confiabilidade-restauracao-5-api-no-banco-restaurado.png` (C5). Em `docs/resultados.md`, a coluna
+Evidência passou a ✔, o CSU19 passou a Aprovado (15 Aprovados e 9 Parciais) e a cópia e restauração,
+a Aprovado (Confiabilidade 20 de 20).
