@@ -6,6 +6,8 @@ obj/
 .vs/
 publish/
 *.log
+TestResults/
+.sonarqube/
 
 # ===== Segredos e ambiente =====
 .env

@@ -1,0 +1,114 @@
+# Análise do SonarCloud (SonarQube Cloud) da API e do front, com a cobertura dos testes.
+# Monorepo com dois projetos na organização dannkes1; a análise automática está desligada,
+# então ela roda aqui, um job por projeto. O token vem só do segredo SONAR_TOKEN do
+# repositório, sempre por variável de ambiente.
+# As actions estão fixadas pelo SHA do commit (a tag fica no comentário): uma tag pode ser
+# movida, o SHA não. Atualização manual.
+name: SonarCloud
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Nenhuma permissão por padrão; cada job pede só a leitura do código.
+permissions: {}
+
+jobs:
+  api:
+    name: API (.NET)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # histórico completo: o Sonar usa o blame para separar o código novo
+          persist-credentials: false # nenhum passo usa a credencial do git
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Instalar o SonarScanner for .NET
+        run: |
+          dotnet tool install --global dotnet-sonarscanner --version 12.0.0
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      # Migrations: código gerado pelo dotnet ef, que os testes (SQLite) não executam.
+      # Fora da análise, a cobertura reportada é a do código de autoria.
+      - name: Iniciar a análise
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          dotnet sonarscanner begin \
+            /k:"dannkes1_tcc-koinoniahub_api" \
+            /o:"dannkes1" \
+            /d:sonar.token="$SONAR_TOKEN" \
+            /d:sonar.cs.opencover.reportsPaths="TestResults/*/coverage.opencover.xml" \
+            /d:sonar.cs.vstest.reportsPaths="TestResults/*.trx" \
+            /d:sonar.exclusions="**/Migrations/**"
+
+      - name: Compilar
+        run: dotnet build KoinoniaHub.API.sln --no-incremental
+
+      # xUnit com SQLite em memória (ambiente Testing): sem PostgreSQL no runner.
+      # O .trx leva ao Sonar a contagem e o resultado dos testes; o OpenCover, a cobertura.
+      - name: Testar com cobertura (OpenCover)
+        run: |
+          dotnet test KoinoniaHub.API.sln --no-build \
+            --logger trx \
+            --collect:"XPlat Code Coverage" \
+            --results-directory TestResults \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+      - name: Concluir a análise
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
+
+  web:
+    name: Web (Vue)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      # Fuso da igreja (Igreja:FusoHorario), UTC-4 como o computador do autor: o caso
+      # "21h locais" de situacaoAula.spec.ts só prova a corretiva da 7.2 em fuso negativo
+      # (em UTC passaria sempre).
+      TZ: America/Porto_Velho
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+
+      # O Vitest não gera lcov por padrão; o formato é pedido aqui, sem mudar o vite.config.ts.
+      - name: Testar com cobertura (lcov)
+        run: npm run test:cov -- --coverage.reporter=lcov --coverage.reporter=text-summary
+
+      - name: Checar tipos
+        run: npx vue-tsc -b
+
+      # Lê web/sonar-project.properties (chave do projeto, fontes, testes e lcov).
+      - name: Analisar
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: web
