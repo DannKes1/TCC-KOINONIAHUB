@@ -1434,7 +1434,7 @@ Confiabilidade; (b) `RF44_IgrejaTests.Atualizar_CampoOmitido_ViraNulo` e os xUni
 faltantes do inventário da 7.1 exigiam (a regra existia, o teste não); (c) roteiro de cópia e
 restauração (seção 6.17); (d) roteiros das evidências de Segurança faltantes. Nenhuma regra de
 negócio, rota ou tela mudou. Levantamento: inventário dos 151 xUnit, 119 Vitest e 18 Playwright,
-dos testes manuais e dos 104 prints, com verificação cética de cada citação.
+dos testes manuais e dos 104 prints; cada citação da tabela foi conferida no arquivo real.
 
 **Validação automatizada (19/10/2026, ambiente do autor):** `dotnet build` limpo e `dotnet test` =
 **168 aprovados** (151 + 17: `RF44_IgrejaTests.Atualizar_CampoOmitido_ViraNulo` — PUT só com o Nome
@@ -1469,8 +1469,8 @@ direto no banco, defesa em profundidade; `RF13_UsuarioTests` passou a conferir a
 tabela no desktop; fechado não carrega + `PaginaMatriculasTurma.spec` +1: Histórico pelo ⋮ abre o
 diálogo e carrega pela pessoa do aluno, inclusive matrícula inativa + `guardas.spec` +2: Professor
 em `/igreja` volta ao Painel com um único aviso; Admin abre sem aviso) · `npm run build` ok ·
-`npm run test:e2e` = **18 aprovados** (10 `chromium` + 8 `mobile`). Revisão adversarial da corretiva
-(22 revisores sobre o diff) apontou dois defeitos, corrigidos antes do fechamento: reativar uma conta
+`npm run test:e2e` = **18 aprovados** (10 `chromium` + 8 `mobile`). Revisão independente do diff da
+corretiva apontou dois defeitos, corrigidos antes do fechamento: reativar uma conta
 inativada por outro caminho (ou antes da corretiva) revivia o convite antigo — agora o convite só
 sobrevive quando a conta estava ativa e continua ativa (`Reativar_ContaInativadaForaDaApi_DescartaConviteAntigo`,
 xUnit **170**); e Esc fechava o diálogo do histórico durante o carregamento, deixando a resposta em
@@ -1770,9 +1770,9 @@ análise da API (decisão do autor): **a cobertura reportada é a do código de 
 `TZ=America/Porto_Velho` (o do job), e `coverage/lcov.info` com caminhos `SF:src/...` · `npx vue-tsc -b`
 limpo · `npm run build` ok · YAML lido por parser estrito e `actionlint` 1.7.12 sem erros. Medida
 local do OpenCover que motivou a exclusão: 28,3% dos pontos de sequência com as Migrations (7.603 dos
-12.025 pontos são delas, todos a 0%) e 77,0% sem elas (3.404 de 4.422). Auditoria de portabilidade
-para Linux antes do push (cultura, fuso, maiúsculas nos imports, arquivos ignorados, certificado,
-user-secrets): nenhum teste dependia do Windows do autor.
+12.025 pontos são delas, todos a 0%) e 77,0% sem elas (3.404 de 4.422). A verificação do código
+antes do push (cultura, fuso, maiúsculas nos imports, arquivos ignorados, certificado, user-secrets)
+mostrou que nenhum teste dependia do Windows do autor.
 
 **Primeira análise (run #1 do workflow SonarCloud, commit `c482d3d`, 23/10/2026, 00h44 locais):** os
 dois jobs verdes no `ubuntu-24.04` — API (.NET) em 1min42s e Web (Vue) em 1min16s (1min46s de ponta a
@@ -1829,3 +1829,60 @@ corresponde a um RF ou RNF.
 etapas), 7.4 (o CI e a reprodução local da cobertura) e 7.5 (a análise estática como evidência
 complementar), mais a pendência de texto da monografia na seção 9 (4.10 e 5.1 não preveem análise
 estática). Texto completo em `docs/decisoes/sonarcloud.md`, seção 4.
+
+**Segunda análise (23/10/2026, commit `1d380b4`, só documentação):** Quality Gate **OK** nos dois
+projetos (as condições do código novo passaram a ser avaliadas); demais números iguais aos da
+primeira, salvo Maintainability do web, de 128 para 131, sem mudança de código (atualização do lado
+do SonarCloud).
+
+---
+
+## SonarCloud — correção dos apontamentos (23/10/2026)
+
+**Escopo.** Correção da primeira análise com as decisões do autor de 23/10/2026
+(`docs/decisoes/sonarcloud.md`, seções 5 e 6). Nenhuma regra da monografia nem rota mudou; o
+contrato da API só muda para requisição malformada, que passa a receber o 400 `ValidationProblemDetails`
+(decisão do autor). Blocos de commit: api · front · maintainability-api · maintainability-web · docs.
+
+**O que mudou.**
+- *API (Reliability).* `Data` obrigatória no cadastro e na edição de aula (sem o campo, a aula era
+  gravada com 0001-01-01); ids de aula, matéria, matrícula e usuário com `[Range(1, …)]` (id ausente
+  deixa de responder "não encontrado" e passa a dizer qual campo falta); item da chamada sem
+  `presente` → 400, sem gravar nada do lote (antes virava ausência; RNF 32.6); `await app.RunAsync()`
+  (S6966); `AsSingleQuery()` na consulta de uma pessoa (S8733, aceito e registrado no código).
+- *Front (Reliability e acessibilidade).* 72 rótulos ligados aos campos em 12 telas (17 desses campos
+  não tinham nome acessível nenhum); Cadastro Inicial com rótulos visíveis acima dos campos, com os
+  placeholders mantidos; rótulo do Conteúdo da aula ligado ao campo; `aria-label` no arquivo da
+  importação; `void` no logout em segundo plano (S9383); Minha Frequência sem avaliação dupla (S6523);
+  Meus Dados com o perfil administrativo da store (o Superintendente via a orientação errada).
+- *Maintainability, sem mudança de comportamento.* API: 8 apontamentos (S112 em `Program.cs`, S1118,
+  ASP0027, S108, S1125, CA1822, S1192, S9022). Front: 20 (S7924, S4666 ×2, S9449 ×3, S3863 ×5, S6644
+  ×3, S7770, S7762 ×2, S4624, S6551, S5976), mais os `!important` que estavam dentro dos blocos de CSS
+  removidos. Aceitos com justificativa: 18 regras (`docs/decisoes/sonarcloud.md`, seção 5).
+
+**Validação automatizada (23/10/2026, ambiente do autor):** `dotnet build` com 0 avisos e 0 erros ·
+`dotnet test` = **174 aprovados** (170 + `RF30_CadastrarAulaTests` 2: aula sem data → 400 com
+`errors.Data` e nada gravado; sem matéria → 400 com `errors.MateriaId`, antes 404 · `RF45_EditarAulaTests`
++1: editar sem data → 400 e a data não muda · `RF32_ChamadaTests` +1: item sem `presente` → 400 com
+`errors["Itens[1].Presente"]`, sem gravar o item válido nem os visitantes) · `vue-tsc -b` limpo ·
+`npm run test` = **26 arquivos, 131 casos** (126 + `meusDadosServico.spec` 3 + `PaginaCadastroInicial.spec`
+1 + `PaginaAulasTurma.spec` +1: cada rótulo do diálogo aponta para o seu campo e os Dropdowns são
+nomeados pelo rótulo) · `npm run build` ok · `npm run test:e2e` = **18 aprovados** (10 `chromium` +
+8 `mobile`), com o E2E-01 conferindo o rótulo "Nome da igreja *" e, no celular, `semRolagemHorizontal`
+estrito no Cadastro Inicial (verificação nova nessa tela) e o print; o E2E-02, o rótulo "Senha". Cada
+bloco de commit foi validado no seu estado.
+
+**CSS conferido no navegador.** Painel, Aulas da turma, Pessoas e Usuários, a 1366×768 e 360×640,
+antes e depois das mudanças de CSS: **0 pixel diferente** nos 8 prints; estilos calculados de
+BarraTopo (cabeçalho, marca, botão do menu, logo, textos, usuário) e das 21 tags idênticos. A única
+diferença é a declarada pelo S9449: a transição dos links do menu passou de `all` para
+`background-color, color, font-weight, box-shadow`, e a do Sair para `border-color, color`.
+
+**Testes manuais (perfil `https`):** M1 a M8 do relato da entrega, a executar pelo autor.
+
+**Prints (`docs/evidencias/`):** `RNF-responsividade-cadastro-inicial.png` (E2E-01, projeto
+`mobile`). A tirar: `RF1-cadastro-inicial-labels.png` (desktop) e, depois da nova análise,
+`SONAR-correcao-api-overview.png` e `SONAR-correcao-web-overview.png`.
+
+**Registro para o Plano (v1.10):** `docs/decisoes/sonarcloud.md`, seção 4, itens 11 a 20 (seções 2.3,
+2.4, 6.1, 7.1 a 7.5 e 9).
