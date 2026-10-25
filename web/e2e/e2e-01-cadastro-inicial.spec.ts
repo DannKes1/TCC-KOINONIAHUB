@@ -1,10 +1,11 @@
 import { expect, test } from "@playwright/test";
 
+import { evidenciaCelular, semRolagemHorizontal } from "./apoio/celular";
 import { SENHA_PADRAO, emailE2E } from "./apoio/semente";
 
 // E2E-01 — Cadastro inicial com termo (CSU01 + CSU23; RF1, RNF 1.5, RNF 42.1, 42.7).
 // Sem sessão, sem semente: a tela cria uma igreja nova a cada execução.
-test("E2E-01 cadastro inicial: botão desabilitado até o aceite, termo com a igreja digitada, entra sem passar pelo /termo", async ({ page }) => {
+test("E2E-01 cadastro inicial: botão desabilitado até o aceite, termo com a igreja digitada, entra sem passar pelo /termo", async ({ page }, testInfo) => {
   const id = `${Date.now().toString(36)}c`;
   const nomeIgreja = `E2E Cadastro ${id}`;
   const emailAdmin = emailE2E("admin.cadastro", id);
@@ -19,6 +20,9 @@ test("E2E-01 cadastro inicial: botão desabilitado até o aceite, termo com a ig
 
   // Dados da igreja: o cabeçalho do termo acompanha o formulário (RNF 42.7).
   await page.getByTestId("cadastro-nome-igreja").fill(nomeIgreja);
+  // Correção do SonarCloud (Web:InputWithoutLabelCheck): o rótulo visível está
+  // ligado ao campo por for/id.
+  await expect(page.getByLabel("Nome da igreja *", { exact: true })).toHaveValue(nomeIgreja);
   await page.getByTestId("cadastro-cidade").fill("Ji-Paraná");
   await page.getByTestId("cadastro-estado").fill("RO");
   await page.getByTestId("cadastro-email-igreja").fill(emailE2E("igreja.cadastro", id));
@@ -36,6 +40,12 @@ test("E2E-01 cadastro inicial: botão desabilitado até o aceite, termo com a ig
 
   await page.getByText("Li e aceito o Termo de Uso e Sigilo do KoinoniaHub.").click();
   await expect(concluir).toBeEnabled();
+
+  // No celular, o formulário preenchido (com os rótulos) cabe nos 360 px e vira evidência.
+  if (testInfo.project.name === "mobile") {
+    await semRolagemHorizontal(page, "E2E-01 — Cadastro inicial");
+    await evidenciaCelular(page, testInfo, "cadastro-inicial");
+  }
 
   await concluir.click();
 

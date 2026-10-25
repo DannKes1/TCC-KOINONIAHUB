@@ -113,6 +113,7 @@ export async function obterMinhaFrequencia(
     },
   );
   const b = resposta.data;
+  const aulasBrutas = b?.Aulas ?? b?.aulas;
   return {
     departamentoId: Number(b?.DepartamentoId ?? b?.departamentoId ?? 0),
     nomeDepartamento: String(b?.NomeDepartamento ?? b?.nomeDepartamento ?? ""),
@@ -125,10 +126,7 @@ export async function obterMinhaFrequencia(
     percentualPresenca: Number(
       b?.PercentualPresenca ?? b?.percentualPresenca ?? 0,
     ),
-    aulas: (Array.isArray(b?.Aulas ?? b?.aulas)
-      ? (b?.Aulas ?? b?.aulas)
-      : []
-    ).map((a: any) => ({
+    aulas: (Array.isArray(aulasBrutas) ? aulasBrutas : []).map((a: any) => ({
       aulaId: Number(a?.AulaId ?? a?.aulaId ?? 0),
       data: String(a?.Data ?? a?.data ?? ""),
       tema: (a?.Tema ?? a?.tema ?? null) as string | null,

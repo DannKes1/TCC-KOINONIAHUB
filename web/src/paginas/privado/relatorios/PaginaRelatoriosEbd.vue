@@ -422,7 +422,9 @@ onMounted(async () => {
     <div class="filtros-relatorios nao-imprimir">
       <template v-if="abaAtiva !== 'resumo'">
         <div class="filtro-campo filtro-turma">
-          <label>Turma</label>
+          <label id="relatorio-filtro-turma-rotulo" for="relatorio-filtro-turma"
+            >Turma</label
+          >
           <Dropdown
             v-model="turmaSelecionadaId"
             :options="turmas"
@@ -430,48 +432,76 @@ onMounted(async () => {
             optionValue="id"
             placeholder="Selecione..."
             filter
+            labelId="relatorio-filtro-turma"
+            ariaLabelledby="relatorio-filtro-turma-rotulo"
             data-testid="relatorio-turma"
           />
         </div>
 
         <div class="filtro-campo">
-          <label>Data início</label>
-          <Calendar v-model="dataInicio" dateFormat="dd/mm/yy" showIcon />
+          <label for="relatorio-filtro-data-inicio">Data início</label>
+          <Calendar
+            v-model="dataInicio"
+            dateFormat="dd/mm/yy"
+            showIcon
+            inputId="relatorio-filtro-data-inicio"
+          />
         </div>
 
         <div class="filtro-campo">
-          <label>Data fim</label>
-          <Calendar v-model="dataFim" dateFormat="dd/mm/yy" showIcon />
+          <label for="relatorio-filtro-data-fim">Data fim</label>
+          <Calendar
+            v-model="dataFim"
+            dateFormat="dd/mm/yy"
+            showIcon
+            inputId="relatorio-filtro-data-fim"
+          />
         </div>
       </template>
 
       <template v-if="abaAtiva === 'resumo'">
         <div class="filtro-campo">
-          <label>Data</label>
-          <Calendar v-model="dataResumo" dateFormat="dd/mm/yy" showIcon />
+          <label for="relatorio-filtro-data-resumo">Data</label>
+          <Calendar
+            v-model="dataResumo"
+            dateFormat="dd/mm/yy"
+            showIcon
+            inputId="relatorio-filtro-data-resumo"
+          />
         </div>
       </template>
 
       <template v-if="abaAtiva === 'acompanhamento'">
         <div class="filtro-campo">
-          <label>Mín. frequência (%)</label>
+          <label for="relatorio-filtro-limiar-atencao">Mín. frequência (%)</label>
           <InputNumber
             v-model="limiarAtencao"
             :min="0"
             :max="100"
             suffix=" %"
+            inputId="relatorio-filtro-limiar-atencao"
           />
         </div>
         <div class="filtro-campo">
-          <label>Faltas seguidas</label>
-          <InputNumber v-model="faltasConsecutivasCritico" :min="1" :max="50" />
+          <label for="relatorio-filtro-faltas-seguidas">Faltas seguidas</label>
+          <InputNumber
+            v-model="faltasConsecutivasCritico"
+            :min="1"
+            :max="50"
+            inputId="relatorio-filtro-faltas-seguidas"
+          />
         </div>
       </template>
 
       <template v-if="abaAtiva === 'ranking'">
         <div class="filtro-campo">
-          <label>Qtd. no ranking (top)</label>
-          <InputNumber v-model="topRanking" :min="1" :max="100" />
+          <label for="relatorio-filtro-top-ranking">Qtd. no ranking (top)</label>
+          <InputNumber
+            v-model="topRanking"
+            :min="1"
+            :max="100"
+            inputId="relatorio-filtro-top-ranking"
+          />
         </div>
       </template>
     </div>

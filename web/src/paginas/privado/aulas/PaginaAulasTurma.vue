@@ -603,7 +603,7 @@ onMounted(carregarTudo);
     >
       <div class="page-container">
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Data</label>
+          <label for="aula-data">Data</label>
           <Calendar
             v-model="form.data"
             dateFormat="dd/mm/yy"
@@ -619,7 +619,7 @@ onMounted(carregarTudo);
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Matéria</label>
+          <label id="aula-materia-rotulo" for="aula-materia">Matéria</label>
           <Dropdown
             v-model="form.materiaId"
             :options="materias"
@@ -627,6 +627,8 @@ onMounted(carregarTudo);
             optionValue="id"
             filter
             placeholder="Selecione a matéria."
+            labelId="aula-materia"
+            ariaLabelledby="aula-materia-rotulo"
             data-testid="aula-materia"
           />
           <FieldError
@@ -638,7 +640,7 @@ onMounted(carregarTudo);
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Professor</label>
+          <label id="aula-professor-rotulo" for="aula-professor">Professor</label>
           <Dropdown
             v-model="form.professorId"
             :options="professores"
@@ -646,6 +648,8 @@ onMounted(carregarTudo);
             optionValue="id"
             filter
             placeholder="Selecione o professor."
+            labelId="aula-professor"
+            ariaLabelledby="aula-professor-rotulo"
             data-testid="aula-professor"
           />
           <FieldError
@@ -657,8 +661,9 @@ onMounted(carregarTudo);
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Tema (opcional)</label>
+          <label for="aula-tema">Tema (opcional)</label>
           <InputText
+            id="aula-tema"
             v-model="form.tema"
             placeholder="Ex.: Fé, Salvação."
             data-testid="aula-tema"
@@ -672,8 +677,9 @@ onMounted(carregarTudo);
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Conteúdo (opcional)</label>
+          <label for="aula-conteudo">Conteúdo (opcional)</label>
           <Textarea
+            id="aula-conteudo"
             v-model="form.conteudo"
             rows="3"
             autoResize

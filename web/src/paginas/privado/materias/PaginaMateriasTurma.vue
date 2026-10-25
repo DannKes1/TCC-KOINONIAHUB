@@ -337,8 +337,9 @@ onMounted(carregarTudo);
     >
       <div class="page-container">
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Nome</label>
+          <label for="materia-nome">Nome</label>
           <InputText
+            id="materia-nome"
             v-model="form.nome"
             placeholder="Ex.: Antigo Testamento, Doutrina..."
           />
@@ -351,8 +352,12 @@ onMounted(carregarTudo);
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Ordem de exibição (opcional)</label>
-          <InputNumber v-model="form.ordemExibicao" placeholder="Ex.: 1" />
+          <label for="materia-ordem-exibicao">Ordem de exibição (opcional)</label>
+          <InputNumber
+            v-model="form.ordemExibicao"
+            placeholder="Ex.: 1"
+            inputId="materia-ordem-exibicao"
+          />
           <FieldError
             :texto="
               firstFieldError(fieldErrors, 'OrdemExibicao') ||

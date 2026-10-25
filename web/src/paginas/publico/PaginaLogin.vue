@@ -70,8 +70,9 @@ async function entrar() {
 
         <div class="login-campos">
           <div class="login-campo">
-            <label class="login-label">E-mail</label>
+            <label class="login-label" for="login-email">E-mail</label>
             <InputText
+              id="login-email"
               v-model="email"
               placeholder="seu@email.com"
               class="login-input"
@@ -87,7 +88,7 @@ async function entrar() {
           </div>
 
           <div class="login-campo">
-            <label class="login-label">Senha</label>
+            <label class="login-label" for="login-senha">Senha</label>
             <Password
               v-model="senha"
               inputId="login-senha"

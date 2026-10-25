@@ -366,7 +366,7 @@ onMounted(carregarTudo);
     >
       <div class="page-container">
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Pessoa</label>
+          <label id="matricula-pessoa-rotulo" for="matricula-pessoa">Pessoa</label>
           <Dropdown
             v-model="form.pessoaId"
             :options="pessoas"
@@ -374,12 +374,15 @@ onMounted(carregarTudo);
             optionValue="id"
             filter
             placeholder="Selecione uma pessoa..."
+            labelId="matricula-pessoa"
+            ariaLabelledby="matricula-pessoa-rotulo"
           />
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Observação (opcional)</label>
+          <label for="matricula-observacao">Observação (opcional)</label>
           <InputText
+            id="matricula-observacao"
             v-model="form.observacao"
             placeholder="Ex.: Transferido, visitante, etc."
           />

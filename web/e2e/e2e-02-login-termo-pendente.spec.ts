@@ -13,6 +13,8 @@ test("E2E-02 login com termo pendente: só a tela /termo abre, o aceite libera a
   const pendente = contaPendentePara(testInfo.project.name, semente);
 
   await page.goto("/login");
+  // Correção do SonarCloud: o rótulo "Senha" do login está ligado ao campo (for/id).
+  await expect(page.getByLabel("Senha", { exact: true })).toBeVisible();
   await page.getByTestId("login-email").fill(pendente.email);
   await page.locator("#login-senha").fill(pendente.senha);
   await page.getByTestId("login-entrar").click();

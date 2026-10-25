@@ -428,16 +428,23 @@ onMounted(carregarLista);
       "
     >
       <div style="display: flex; flex-direction: column; gap: 6px">
-        <label>Buscar</label>
+        <label for="pessoas-filtro-busca">Buscar</label>
         <InputText
+          id="pessoas-filtro-busca"
           v-model="busca"
           placeholder="Pesquisar por nome, e-mail ou celular..."
         />
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 6px">
-        <label>Situação</label>
+        <label
+          id="pessoas-filtro-situacao-rotulo"
+          for="pessoas-filtro-situacao"
+          >Situação</label
+        >
         <Dropdown
+          labelId="pessoas-filtro-situacao"
+          ariaLabelledby="pessoas-filtro-situacao-rotulo"
           v-model="filtroSituacao"
           :options="opcoesSituacao"
           optionLabel="label"
@@ -532,8 +539,9 @@ onMounted(carregarLista);
       <div style="display: flex; flex-direction: column; gap: 16px">
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px">
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Nome *</label>
+            <label for="pessoa-formulario-nome">Nome *</label>
             <InputText
+              id="pessoa-formulario-nome"
               v-model="formulario.nome"
               placeholder="Nome completo da pessoa"
             />
@@ -546,8 +554,14 @@ onMounted(carregarLista);
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Situação</label>
+            <label
+              id="pessoa-formulario-situacao-rotulo"
+              for="pessoa-formulario-situacao"
+              >Situação</label
+            >
             <Dropdown
+              labelId="pessoa-formulario-situacao"
+              ariaLabelledby="pessoa-formulario-situacao-rotulo"
               v-model="formulario.situacao"
               :options="opcoesSituacao"
               optionLabel="label"
@@ -571,8 +585,11 @@ onMounted(carregarLista);
           "
         >
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Data de nascimento</label>
+            <label for="pessoa-formulario-nascimento"
+              >Data de nascimento</label
+            >
             <Calendar
+              inputId="pessoa-formulario-nascimento"
               v-model="formulario.dataNascimento"
               dateFormat="dd/mm/yy"
               showIcon
@@ -582,8 +599,14 @@ onMounted(carregarLista);
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Sexo</label>
+            <label
+              id="pessoa-formulario-sexo-rotulo"
+              for="pessoa-formulario-sexo"
+              >Sexo</label
+            >
             <Dropdown
+              labelId="pessoa-formulario-sexo"
+              ariaLabelledby="pessoa-formulario-sexo-rotulo"
               v-model="formulario.sexo"
               :options="opcoesSexo"
               optionLabel="label"
@@ -594,8 +617,14 @@ onMounted(carregarLista);
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Estado civil</label>
+            <label
+              id="pessoa-formulario-estado-civil-rotulo"
+              for="pessoa-formulario-estado-civil"
+              >Estado civil</label
+            >
             <Dropdown
+              labelId="pessoa-formulario-estado-civil"
+              ariaLabelledby="pessoa-formulario-estado-civil-rotulo"
               v-model="formulario.estadoCivil"
               :options="opcoesEstadoCivil"
               optionLabel="label"
@@ -606,23 +635,29 @@ onMounted(carregarLista);
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>CEP</label>
-            <InputText v-model="formulario.cep" placeholder="00000-000" />
+            <label for="pessoa-formulario-cep">CEP</label>
+            <InputText
+              id="pessoa-formulario-cep"
+              v-model="formulario.cep"
+              placeholder="00000-000"
+            />
           </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Celular</label>
+            <label for="pessoa-formulario-celular">Celular</label>
             <InputText
+              id="pessoa-formulario-celular"
               v-model="formulario.celular"
               placeholder="Celular / WhatsApp"
             />
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>E-mail</label>
+            <label for="pessoa-formulario-email">E-mail</label>
             <InputText
+              id="pessoa-formulario-email"
               v-model="formulario.email"
               placeholder="email@dominio.com"
             />
@@ -643,26 +678,36 @@ onMounted(carregarLista);
           "
         >
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Endereço</label>
+            <label for="pessoa-formulario-endereco">Endereço</label>
             <InputText
+              id="pessoa-formulario-endereco"
               v-model="formulario.endereco"
               placeholder="Rua, número, complemento"
             />
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Bairro</label>
-            <InputText v-model="formulario.bairro" placeholder="Bairro" />
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Cidade</label>
-            <InputText v-model="formulario.cidade" placeholder="Cidade" />
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>UF</label>
+            <label for="pessoa-formulario-bairro">Bairro</label>
             <InputText
+              id="pessoa-formulario-bairro"
+              v-model="formulario.bairro"
+              placeholder="Bairro"
+            />
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="pessoa-formulario-cidade">Cidade</label>
+            <InputText
+              id="pessoa-formulario-cidade"
+              v-model="formulario.cidade"
+              placeholder="Cidade"
+            />
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="pessoa-formulario-uf">UF</label>
+            <InputText
+              id="pessoa-formulario-uf"
               v-model="formulario.estado"
               placeholder="UF"
               maxlength="2"
@@ -707,8 +752,14 @@ onMounted(carregarLista);
           "
         >
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Parente *</label>
+            <label
+              id="pessoa-parentesco-parente-rotulo"
+              for="pessoa-parentesco-parente"
+              >Parente *</label
+            >
             <Dropdown
+              labelId="pessoa-parentesco-parente"
+              ariaLabelledby="pessoa-parentesco-parente-rotulo"
               v-model="formularioParentesco.parenteId"
               :options="pessoasDisponiveisParaParentesco"
               optionLabel="nome"
@@ -726,8 +777,11 @@ onMounted(carregarLista);
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Relacionamento *</label>
+            <label for="pessoa-parentesco-relacionamento"
+              >Relacionamento *</label
+            >
             <Dropdown
+              labelId="pessoa-parentesco-relacionamento"
               v-model="formularioParentesco.tipoRelacionamento"
               :options="opcoesRelacionamento"
               optionLabel="label"

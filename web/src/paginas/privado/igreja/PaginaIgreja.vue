@@ -179,8 +179,9 @@ onMounted(carregar);
         <div
           style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1"
         >
-          <label>Nome *</label>
+          <label for="igreja-nome">Nome *</label>
           <InputText
+            id="igreja-nome"
             v-model="form.nome"
             data-testid="igreja-nome"
             maxlength="200"
@@ -195,8 +196,9 @@ onMounted(carregar);
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Cidade</label>
+          <label for="igreja-cidade">Cidade</label>
           <InputText
+            id="igreja-cidade"
             v-model="form.cidade"
             data-testid="igreja-cidade"
             maxlength="100"
@@ -210,8 +212,9 @@ onMounted(carregar);
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Estado (UF)</label>
+          <label for="igreja-estado">Estado (UF)</label>
           <InputText
+            id="igreja-estado"
             v-model="form.estado"
             data-testid="igreja-estado"
             maxlength="2"
@@ -235,8 +238,9 @@ onMounted(carregar);
         "
       >
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>E-mail</label>
+          <label for="igreja-email">E-mail</label>
           <InputText
+            id="igreja-email"
             v-model="form.email"
             type="email"
             data-testid="igreja-email"
@@ -252,8 +256,9 @@ onMounted(carregar);
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Telefone</label>
+          <label for="igreja-telefone">Telefone</label>
           <InputText
+            id="igreja-telefone"
             v-model="form.telefone"
             data-testid="igreja-telefone"
             maxlength="20"

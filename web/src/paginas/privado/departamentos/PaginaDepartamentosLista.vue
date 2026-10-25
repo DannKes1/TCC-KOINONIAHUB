@@ -362,8 +362,9 @@ onMounted(carregarLista);
     >
       <div style="display: flex; flex-direction: column; gap: 10px">
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Nome</label>
+          <label for="departamento-nome">Nome</label>
           <InputText
+            id="departamento-nome"
             v-model="formulario.nome"
             placeholder="Ex.: Adolescentes, Jovens, Adultos..."
           />
@@ -376,8 +377,12 @@ onMounted(carregarLista);
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Tipo</label>
-          <InputText v-model="formulario.tipo" placeholder="Ex.: EBD" />
+          <label for="departamento-tipo">Tipo</label>
+          <InputText
+            id="departamento-tipo"
+            v-model="formulario.tipo"
+            placeholder="Ex.: EBD"
+          />
           <FieldError
             :texto="
               firstFieldError(fieldErrors, 'Tipo') ||

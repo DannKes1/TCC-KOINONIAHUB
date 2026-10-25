@@ -242,4 +242,51 @@ describe("PaginaAulasTurma — Editar e Excluir aula Em aberto (RF45, 6.5)", () 
     expect(excluirAula).toHaveBeenCalledWith(18);
     expect(recarregarResumo).toHaveBeenCalledTimes(1);
   });
+
+  // SonarCloud Web:S6853: cada rótulo do diálogo aponta (for) para o campo que
+  // descreve, e os Dropdowns de Matéria e Professor recebem o nome do rótulo por
+  // aria-labelledby. No jsdom o PrimeVue não liga o clique do rótulo ao Dropdown
+  // (offsetParent é sempre null), por isso o caso confere só os atributos.
+  it("Nova aula: todo rótulo do diálogo aponta para um campo e os Dropdowns são nomeados pelo rótulo (S6853)", async () => {
+    const { wrapper } = await montar();
+    wrapperAtual = wrapper;
+
+    await wrapper.get('[data-testid="aulas-nova"]').trigger("click");
+    await flushPromises();
+
+    const dialogo = document.querySelector<HTMLElement>('[data-testid="aula-dialogo"]');
+    expect(dialogo).not.toBeNull();
+    expect(dialogo!.textContent).toContain("Nova aula");
+
+    const rotulos = Array.from(dialogo!.querySelectorAll("label"));
+    expect(rotulos).toHaveLength(5);
+    for (const rotulo of rotulos) {
+      const alvo = rotulo.htmlFor;
+      expect(alvo, `rótulo "${rotulo.textContent}" sem for`).not.toBe("");
+      expect(document.querySelectorAll(`[id="${alvo}"]`), `id "${alvo}" único no documento`).toHaveLength(1);
+      const campo = document.getElementById(alvo);
+      expect(campo!.matches("input, textarea, [role='combobox']"), `#${alvo} é um campo`).toBe(true);
+    }
+
+    // Cada rótulo aponta para o seu campo, não só para algum campo.
+    const alvoDe = (texto: string) =>
+      document.getElementById(rotulos.find((r) => r.textContent!.trim() === texto)!.htmlFor);
+    expect(alvoDe("Data")?.closest(".p-datepicker")).not.toBeNull();
+    expect(alvoDe("Tema (opcional)")?.getAttribute("data-testid")).toBe("aula-tema");
+    expect(alvoDe("Conteúdo (opcional)")?.getAttribute("data-testid")).toBe("aula-conteudo");
+
+    for (const [testid, texto] of [
+      ["aula-materia", "Matéria"],
+      ["aula-professor", "Professor"],
+    ] as const) {
+      const combobox = dialogo!.querySelector<HTMLElement>(`[data-testid="${testid}"] [role="combobox"]`);
+      expect(combobox, `combobox de ${texto}`).not.toBeNull();
+      const idRotulo = combobox!.getAttribute("aria-labelledby");
+      expect(idRotulo, `aria-labelledby de ${texto}`).toBeTruthy();
+      const rotulo = document.getElementById(idRotulo!) as HTMLLabelElement | null;
+      expect(rotulo?.tagName).toBe("LABEL");
+      expect(rotulo!.textContent!.trim()).toBe(texto);
+      expect(rotulo!.htmlFor).toBe(combobox!.id);
+    }
+  });
 });

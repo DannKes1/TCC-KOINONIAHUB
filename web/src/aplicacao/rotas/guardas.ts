@@ -20,7 +20,8 @@ export function aplicarGuardas(router: Router) {
     const requerAdministrativo = Boolean(to.meta?.requerAdministrativo);
 
     if (autenticacao.tokenExpirado) {
-      autenticacao.sair();
+      // logout no servidor em segundo plano; o estado local já foi limpo e sair() não rejeita.
+      void autenticacao.sair();
     }
 
     const requerAutenticacao = Boolean(to.meta?.requerAutenticacao);

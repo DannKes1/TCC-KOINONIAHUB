@@ -364,17 +364,20 @@ onMounted(carregarTela);
       "
     >
       <div style="display: flex; flex-direction: column; gap: 6px">
-        <label>Buscar</label>
+        <label for="atribuicao-filtro-busca">Buscar</label>
         <InputText
+          id="atribuicao-filtro-busca"
           v-model="busca"
           placeholder="Pesquisar por pessoa ou função..."
         />
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 6px">
-        <label>Função</label>
+        <label id="atribuicao-filtro-funcao-rotulo" for="atribuicao-filtro-funcao">Função</label>
         <Dropdown
           v-model="filtroFuncao"
+          labelId="atribuicao-filtro-funcao"
+          ariaLabelledby="atribuicao-filtro-funcao-rotulo"
           :options="opcoesFuncao"
           optionLabel="label"
           optionValue="value"
@@ -384,9 +387,11 @@ onMounted(carregarTela);
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 6px">
-        <label>Status</label>
+        <label id="atribuicao-filtro-status-rotulo" for="atribuicao-filtro-status">Status</label>
         <Dropdown
           v-model="filtroAtivo"
+          labelId="atribuicao-filtro-status"
+          ariaLabelledby="atribuicao-filtro-status-rotulo"
           :options="opcoesStatus"
           optionLabel="label"
           optionValue="value"
@@ -509,9 +514,11 @@ onMounted(carregarTela);
     >
       <div class="page-container">
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Pessoa *</label>
+          <label id="atribuicao-criacao-pessoa-rotulo" for="atribuicao-criacao-pessoa">Pessoa *</label>
           <Dropdown
             v-model="formularioCriacao.pessoaId"
+            labelId="atribuicao-criacao-pessoa"
+            ariaLabelledby="atribuicao-criacao-pessoa-rotulo"
             :options="pessoasOrdenadas"
             optionLabel="nome"
             optionValue="id"
@@ -536,9 +543,10 @@ onMounted(carregarTela);
           "
         >
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Função *</label>
+            <label for="atribuicao-criacao-funcao">Função *</label>
             <Dropdown
               v-model="formularioCriacao.funcao"
+              labelId="atribuicao-criacao-funcao"
               :options="opcoesFuncao"
               optionLabel="label"
               optionValue="value"
@@ -554,9 +562,10 @@ onMounted(carregarTela);
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Data de início</label>
+            <label for="atribuicao-criacao-data-inicio">Data de início</label>
             <Calendar
               v-model="formularioCriacao.dataInicio"
+              inputId="atribuicao-criacao-data-inicio"
               dateFormat="dd/mm/yy"
               showIcon
               iconDisplay="input"
@@ -565,9 +574,11 @@ onMounted(carregarTela);
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Status inicial</label>
+            <label id="atribuicao-criacao-status-rotulo" for="atribuicao-criacao-status">Status inicial</label>
             <Dropdown
               v-model="formularioCriacao.ativo"
+              labelId="atribuicao-criacao-status"
+              ariaLabelledby="atribuicao-criacao-status-rotulo"
               :options="[
                 { label: 'Ativo', value: true },
                 { label: 'Inativo', value: false },
@@ -605,9 +616,10 @@ onMounted(carregarTela);
     >
       <div class="page-container">
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Função *</label>
+          <label for="atribuicao-edicao-funcao">Função *</label>
           <Dropdown
             v-model="formularioEdicao.funcao"
+            labelId="atribuicao-edicao-funcao"
             :options="opcoesFuncao"
             optionLabel="label"
             optionValue="value"
@@ -624,9 +636,11 @@ onMounted(carregarTela);
 
         <div style="display: grid; grid-template-columns: 180px 1fr; gap: 12px">
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Status</label>
+            <label id="atribuicao-edicao-status-rotulo" for="atribuicao-edicao-status">Status</label>
             <Dropdown
               v-model="formularioEdicao.ativo"
+              labelId="atribuicao-edicao-status"
+              ariaLabelledby="atribuicao-edicao-status-rotulo"
               :options="[
                 { label: 'Ativo', value: true },
                 { label: 'Inativo', value: false },
@@ -637,9 +651,10 @@ onMounted(carregarTela);
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Data fim</label>
+            <label for="atribuicao-edicao-data-fim">Data fim</label>
             <Calendar
               v-model="formularioEdicao.dataFim"
+              inputId="atribuicao-edicao-data-fim"
               dateFormat="dd/mm/yy"
               showIcon
               iconDisplay="input"

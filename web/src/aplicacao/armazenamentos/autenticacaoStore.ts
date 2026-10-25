@@ -89,7 +89,8 @@ export const usarAutenticacaoStore = defineStore("autenticacao", {
       this.$patch(dados);
 
       if (this.tokenExpirado) {
-        this.sair();
+        // logout no servidor em segundo plano; o estado local já foi limpo e sair() não rejeita.
+        void this.sair();
       }
     },
 

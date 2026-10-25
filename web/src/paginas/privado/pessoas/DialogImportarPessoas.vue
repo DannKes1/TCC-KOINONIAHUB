@@ -151,6 +151,7 @@ const itensOrdenados = computed(() => {
         <input
           type="file"
           accept=".csv,.txt"
+          aria-label="Arquivo CSV do rol de membros"
           :disabled="enviando"
           data-testid="importacao-arquivo"
           @change="aoSelecionarArquivo"

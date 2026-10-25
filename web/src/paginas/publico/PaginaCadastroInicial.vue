@@ -134,8 +134,12 @@ async function concluirCadastro(): Promise<void> {
             gap: 10px;
           "
         >
-          <div style="grid-column: 1 / -1">
+          <div
+            style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1"
+          >
+            <label for="cadastro-nome-igreja">Nome da igreja *</label>
             <input
+              id="cadastro-nome-igreja"
               v-model="nomeIgreja"
               placeholder="Nome da Igreja"
               style="width: 100%"
@@ -151,8 +155,10 @@ async function concluirCadastro(): Promise<void> {
             />
           </div>
 
-          <div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="cadastro-cidade">Cidade</label>
             <input
+              id="cadastro-cidade"
               v-model="cidade"
               placeholder="Cidade (opcional)"
               style="width: 100%"
@@ -168,8 +174,10 @@ async function concluirCadastro(): Promise<void> {
             />
           </div>
 
-          <div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="cadastro-estado">Estado</label>
             <input
+              id="cadastro-estado"
               v-model="estado"
               placeholder="Estado (opcional)"
               style="width: 100%"
@@ -185,8 +193,12 @@ async function concluirCadastro(): Promise<void> {
             />
           </div>
 
-          <div style="grid-column: 1 / -1">
+          <div
+            style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1"
+          >
+            <label for="cadastro-email-igreja">E-mail da igreja</label>
             <input
+              id="cadastro-email-igreja"
               v-model="emailIgreja"
               placeholder="E-mail da igreja (opcional)"
               style="width: 100%"
@@ -220,8 +232,12 @@ async function concluirCadastro(): Promise<void> {
             gap: 10px;
           "
         >
-          <div style="grid-column: 1 / -1">
+          <div
+            style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1"
+          >
+            <label for="cadastro-nome-admin">Nome do administrador *</label>
             <input
+              id="cadastro-nome-admin"
               v-model="nomeAdmin"
               placeholder="Nome do Administrador"
               style="width: 100%"
@@ -235,8 +251,12 @@ async function concluirCadastro(): Promise<void> {
             />
           </div>
 
-          <div style="grid-column: 1 / -1">
+          <div
+            style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1"
+          >
+            <label for="cadastro-email-admin">E-mail do administrador *</label>
             <input
+              id="cadastro-email-admin"
               v-model="emailAdmin"
               placeholder="E-mail do Administrador"
               style="width: 100%"
@@ -250,8 +270,12 @@ async function concluirCadastro(): Promise<void> {
             />
           </div>
 
-          <div style="grid-column: 1 / -1">
+          <div
+            style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1"
+          >
+            <label for="cadastro-senha-admin">Senha *</label>
             <input
+              id="cadastro-senha-admin"
               v-model="senhaAdmin"
               type="password"
               placeholder="Senha"

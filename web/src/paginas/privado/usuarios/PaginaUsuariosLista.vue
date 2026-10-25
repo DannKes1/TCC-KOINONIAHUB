@@ -434,17 +434,20 @@ onMounted(carregarDados);
       "
     >
       <div style="display: flex; flex-direction: column; gap: 6px">
-        <label>Buscar</label>
+        <label for="usuario-filtro-busca">Buscar</label>
         <InputText
+          id="usuario-filtro-busca"
           v-model="busca"
           placeholder="Pesquisar por nome da pessoa ou e-mail..."
         />
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 6px">
-        <label>Perfil</label>
+        <label id="usuario-filtro-perfil-rotulo" for="usuario-filtro-perfil">Perfil</label>
         <Dropdown
           v-model="filtroPerfil"
+          labelId="usuario-filtro-perfil"
+          ariaLabelledby="usuario-filtro-perfil-rotulo"
           :options="opcoesPerfil"
           optionLabel="label"
           optionValue="value"
@@ -454,9 +457,11 @@ onMounted(carregarDados);
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 6px">
-        <label>Status</label>
+        <label id="usuario-filtro-status-rotulo" for="usuario-filtro-status">Status</label>
         <Dropdown
           v-model="filtroAtivo"
+          labelId="usuario-filtro-status"
+          ariaLabelledby="usuario-filtro-status-rotulo"
           :options="opcoesStatus"
           optionLabel="label"
           optionValue="value"
@@ -555,9 +560,11 @@ onMounted(carregarDados);
     >
       <div class="page-container">
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Pessoa *</label>
+          <label id="usuario-criacao-pessoa-rotulo" for="usuario-criacao-pessoa">Pessoa *</label>
           <Dropdown
             v-model="formularioCriacao.pessoaId"
+            labelId="usuario-criacao-pessoa"
+            ariaLabelledby="usuario-criacao-pessoa-rotulo"
             :options="pessoasDisponiveis"
             optionLabel="nome"
             optionValue="id"
@@ -574,8 +581,9 @@ onMounted(carregarDados);
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>E-mail</label>
+          <label for="usuario-criacao-email">E-mail</label>
           <InputText
+            id="usuario-criacao-email"
             v-model="formularioCriacao.email"
             placeholder="Deixe em branco para usar o e-mail da pessoa"
           />
@@ -588,9 +596,11 @@ onMounted(carregarDados);
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Perfil</label>
+          <label id="usuario-criacao-perfil-rotulo" for="usuario-criacao-perfil">Perfil</label>
           <Dropdown
             v-model="formularioCriacao.perfil"
+            labelId="usuario-criacao-perfil"
+            ariaLabelledby="usuario-criacao-perfil-rotulo"
             :options="opcoesPerfil"
             optionLabel="label"
             optionValue="value"
@@ -634,9 +644,10 @@ onMounted(carregarDados);
           v-if="formularioCriacao.definirSenhaManual"
           style="display: flex; flex-direction: column; gap: 6px"
         >
-          <label>Senha inicial *</label>
+          <label for="usuario-criacao-senha">Senha inicial *</label>
           <Password
             v-model="formularioCriacao.senha"
+            inputId="usuario-criacao-senha"
             toggleMask
             :feedback="false"
             :inputStyle="{ width: '100%' }"
@@ -683,23 +694,30 @@ onMounted(carregarDados);
     >
       <div class="page-container">
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Pessoa vinculada</label>
+          <label for="usuario-edicao-pessoa">Pessoa vinculada</label>
           <InputText
+            id="usuario-edicao-pessoa"
             :modelValue="editandoUsuario?.nomePessoa ?? '-'"
             disabled
           />
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>E-mail</label>
-          <InputText :modelValue="editandoUsuario?.email ?? ''" disabled />
+          <label for="usuario-edicao-email">E-mail</label>
+          <InputText
+            id="usuario-edicao-email"
+            :modelValue="editandoUsuario?.email ?? ''"
+            disabled
+          />
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 180px; gap: 12px">
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Perfil</label>
+            <label id="usuario-edicao-perfil-rotulo" for="usuario-edicao-perfil">Perfil</label>
             <Dropdown
               v-model="formularioEdicao.perfil"
+              labelId="usuario-edicao-perfil"
+              ariaLabelledby="usuario-edicao-perfil-rotulo"
               :options="opcoesPerfil"
               optionLabel="label"
               optionValue="value"
@@ -708,9 +726,11 @@ onMounted(carregarDados);
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <label>Status</label>
+            <label id="usuario-edicao-status-rotulo" for="usuario-edicao-status">Status</label>
             <Dropdown
               v-model="formularioEdicao.ativo"
+              labelId="usuario-edicao-status"
+              ariaLabelledby="usuario-edicao-status-rotulo"
               :options="[
                 { label: 'Ativo', value: true },
                 { label: 'Inativo', value: false },

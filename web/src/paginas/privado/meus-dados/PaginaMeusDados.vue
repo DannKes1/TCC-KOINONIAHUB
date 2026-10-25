@@ -27,10 +27,8 @@ import { rotuloMeioAceite } from "../../../aplicacao/servicos/termoServico";
 
 const autenticacao = usarAutenticacaoStore();
 
-const isAdministrativo = computed(() => {
-  const p = (autenticacao.perfil || "").trim().toLowerCase();
-  return ["admin", "pastor", "lider"].includes(p);
-});
+// Perfis administrativos (Admin, Pastor e Superintendente), pelo getter da store.
+const isAdministrativo = computed(() => autenticacao.isAdministrativo);
 
 const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
 
@@ -236,8 +234,12 @@ onMounted(carregar);
         "
       >
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Celular</label>
-          <InputText v-model="form.celular" placeholder="(00) 00000-0000" />
+          <label for="meus-dados-celular">Celular</label>
+          <InputText
+            id="meus-dados-celular"
+            v-model="form.celular"
+            placeholder="(00) 00000-0000"
+          />
           <FieldError
             :texto="
               firstFieldError(fieldErrors, 'Celular') ||
@@ -247,8 +249,9 @@ onMounted(carregar);
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>E-mail</label>
+          <label for="meus-dados-email">E-mail</label>
           <InputText
+            id="meus-dados-email"
             v-model="form.email"
             type="email"
             placeholder="seu@email.com"
@@ -265,8 +268,9 @@ onMounted(carregar);
       <h3 style="margin: 16px 0 6px">Endereço</h3>
       <div class="grade-endereco">
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Endereço</label>
+          <label for="meus-dados-endereco">Endereço</label>
           <InputText
+            id="meus-dados-endereco"
             v-model="form.endereco"
             placeholder="Rua, número, complemento"
           />
@@ -279,8 +283,12 @@ onMounted(carregar);
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>CEP</label>
-          <InputText v-model="form.cep" placeholder="00000-000" />
+          <label for="meus-dados-cep">CEP</label>
+          <InputText
+            id="meus-dados-cep"
+            v-model="form.cep"
+            placeholder="00000-000"
+          />
           <FieldError
             :texto="
               firstFieldError(fieldErrors, 'CEP') ||
@@ -292,8 +300,8 @@ onMounted(carregar);
 
       <div class="grade-endereco grade-endereco-cidade">
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Bairro</label>
-          <InputText v-model="form.bairro" />
+          <label for="meus-dados-bairro">Bairro</label>
+          <InputText id="meus-dados-bairro" v-model="form.bairro" />
           <FieldError
             :texto="
               firstFieldError(fieldErrors, 'Bairro') ||
@@ -303,8 +311,8 @@ onMounted(carregar);
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Cidade</label>
-          <InputText v-model="form.cidade" />
+          <label for="meus-dados-cidade">Cidade</label>
+          <InputText id="meus-dados-cidade" v-model="form.cidade" />
           <FieldError
             :texto="
               firstFieldError(fieldErrors, 'Cidade') ||
@@ -314,8 +322,13 @@ onMounted(carregar);
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label>Estado (UF)</label>
-          <InputText v-model="form.estado" maxlength="2" placeholder="SP" />
+          <label for="meus-dados-uf">Estado (UF)</label>
+          <InputText
+            id="meus-dados-uf"
+            v-model="form.estado"
+            maxlength="2"
+            placeholder="SP"
+          />
           <FieldError
             :texto="
               firstFieldError(fieldErrors, 'Estado') ||

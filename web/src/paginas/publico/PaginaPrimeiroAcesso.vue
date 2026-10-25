@@ -206,12 +206,17 @@ function irParaLogin() {
           </p>
 
           <div class="login-campo">
-            <label class="login-label">E-mail de acesso</label>
-            <InputText :modelValue="email" disabled class="login-input" />
+            <label class="login-label" for="primeiro-acesso-email">E-mail de acesso</label>
+            <InputText
+              id="primeiro-acesso-email"
+              :modelValue="email"
+              disabled
+              class="login-input"
+            />
           </div>
 
           <div class="login-campo">
-            <label class="login-label">Nova senha *</label>
+            <label class="login-label" for="primeiro-acesso-senha">Nova senha *</label>
             <Password
               v-model="novaSenha"
               inputId="primeiro-acesso-senha"
@@ -225,7 +230,7 @@ function irParaLogin() {
           </div>
 
           <div class="login-campo">
-            <label class="login-label">Confirmar nova senha *</label>
+            <label class="login-label" for="primeiro-acesso-confirmar">Confirmar nova senha *</label>
             <Password
               v-model="confirmarSenha"
               inputId="primeiro-acesso-confirmar"
