@@ -1,4 +1,4 @@
-# KoinoniaHub · Plano de Desenvolvimento e Testes do TCC 2 · v1.9
+# KoinoniaHub · Plano de Desenvolvimento e Testes do TCC 2 · v1.10
 
 **KoinoniaHub — Plano de Desenvolvimento e Testes do TCC 2**
 
@@ -6,11 +6,11 @@
 
 Referência normativa: Monografia — versão de 10/10/2026 (RF1 a RF45, CSU01 a CSU24, com RF44, RF45, RNFs 12.3/12.4 e 21.3–21.5). Cópia de leitura em `docs/monografia.md`; a fonte oficial é o .docx do autor. Correções de redação ainda não aplicadas no .docx estão na seção 9.
 
-Estado do código analisado: repositório TCC-KOINONIAHUB, branch `main` após o fechamento da 7.3 (Resultados, testes de Segurança, cópia e restauração e corretiva de CSU14/CSU24/40.2/403, 19–22/10/2026). **Etapa 7 concluída.** Última migration: PessoaEnxuta (26/09/2026) — nenhuma depois. Testes: **170 xUnit · 126 Vitest (24 arquivos) · 18 Playwright (10 desktop + 8 celular)**.
+Estado do código analisado: repositório TCC-KOINONIAHUB, branch `main` após o fechamento da 7.3 (Resultados, testes de Segurança, cópia e restauração e corretiva de CSU14/CSU24/40.2/403, 19–22/10/2026). **Etapa 7 concluída.** Análise estática no SonarCloud por GitHub Actions desde 23/10/2026, com correção dos apontamentos em 23–24/10 (fora das etapas; seção 5). Última migration: PessoaEnxuta (26/09/2026) — nenhuma depois. Testes: **178 xUnit · 131 Vitest (26 arquivos) · 18 Playwright (10 desktop + 8 celular)**.
 
 Autor: Daniel Rocha · IFRO Campus Ji-Paraná · CST-ADS
 
-**Versão 1.7 — 18 de outubro de 2026**
+**Versão 1.10 — 25 de outubro de 2026**
 
 | Versão | Data | Mudanças |
 | --- | --- | --- |
@@ -24,6 +24,7 @@ Autor: Daniel Rocha · IFRO Campus Ji-Paraná · CST-ADS
 | 1.7 | 18/10/2026 | Fechamento da Etapa 7.1 (autorização, 17–18/10/2026). FallbackPolicy; RNF 21.4 em `GarantirOperacaoNaTurmaAsync` (existe → perfil → atribuição); `perfilConta` aditivo em `AtribuicaoRespostaDto` e tags na tela de Atribuições (21.5); turma, matéria e aula inexistentes → 404 `{ mensagem }` para qualquer perfil (`RecursoNaoEncontradoFiltro`); `POST /api/igrejas` removido; minhas-turmas sem vínculo de atribuição para conta de perfil Usuário e guarda `requerGestor` na Página da Turma (corretivas dos testes manuais). Seção 6.16 atendida com três microdecisões; seção 9 sem o item do POST /api/igrejas; inventário das evidências de Segurança em docs/testes.md (7.5). Totais 146 / 118 (23 arquivos) / 10. |
 | 1.8 | 19/10/2026 | Fechamento da Etapa 7.2 (E2E-04 a E2E-08, 18–19/10/2026). Cinco specs novos (8 casos; E2E-04 também no projeto mobile); semente com turma própria por cenário que grava aula e fixture `importacao-pessoas.csv`; `data-testid` em Aulas, Relatórios, Importação e Usuários. Corretiva revelada pelo E2E-04 (opção A, decisão do autor): `Aplicacao/Tempo/RelogioIgreja` lê `Igreja:FusoHorario` (padrão `America/Porto_Velho`) e converte o dia civil da igreja em dois instantes UTC — usado nos quatro relatórios, em Minha Frequência e na pendência de fechamento; armazenamento, rotas e DTOs inalterados. Seção 6.2 e 6.9 com o critério de data corrigido; seção 7.3 com o E2E-04 descrevendo o CSU11 passos 2–4 reais; seções 7.1–7.3 com os totais 151 / 119 (23 arquivos) / 18. Próxima: 7.3. |
 | 1.9 | 22/10/2026 | Fechamento da Etapa 7.3 (19–22/10/2026) e da Etapa 7. `docs/resultados.md` com a tabela CSU → teste → resultado (15 Aprovados, 9 Parciais, nenhum Não coberto) e as tabelas RNF → teste → evidência de Segurança (24 de 28 cobertas) e Confiabilidade (20 de 20). 19 xUnit novos onde a regra existia sem teste (BCrypt custo ≥ 10, 403 de Professor/Pastor/Superintendente nas rotas só do Admin, HTTPS 307, RNF 21.3 nas duas metades, token fora das leituras, convite de conta inativa, `Atualizar_CampoOmitido_ViraNulo`). Corretiva de 20/10 (decisões do autor sobre as divergências da tabela): Histórico de presenças do aluno na aba Alunos (CSU14), aviso na guarda `requerAdmin` (CSU24 FA2), inativar conta descarta o convite pendente (RNF 40.2), 403 de `[Authorize(Roles)]` com `{ mensagem }`. Cópia e restauração executada em 22/10 (seção 6.17 atendida). Roteiros D1–D10 com 30 prints. Seção 9 com o CSU01 passo 5 (muda a monografia) e as lacunas de prova em Trabalhos futuros. Totais 170 / 126 (24 arquivos) / 18. Próxima: SonarCloud (entrega separada) e conversão do texto para TCC 2. |
+| 1.10 | 25/10/2026 | Entrega SonarCloud, fora das etapas (22–24/10/2026). CI: `.github/workflows/sonarcloud.yml` com os jobs `api` e `web` (push e PR para a main, ubuntu-24.04, actions fixadas por SHA, token só pelo segredo `SONAR_TOKEN`), `web/sonar-project.properties`, `coverlet.collector` 10.1.0 (OpenCover) e `.trx`; Migrations fora da análise (cobertura do código de autoria). Primeira análise em 23/10 (run #1): API 74,5% de cobertura, 170 testes, Security E (3), Reliability C (12), Maintainability A (45); Web 48,0%, Security A, Reliability C (85), Maintainability A (128). Correção em 23/10 (decisões do autor sobre a triagem): Data obrigatória e ids com `[Range]` (S6964) com 400 `ValidationProblemDetails` para requisição malformada, item da chamada sem `presente` → 400, `RunAsync`, `AsSingleQuery`; 72 rótulos associados aos campos e Cadastro Inicial com rótulos visíveis (S6853); Meus Dados com o perfil administrativo da store; Maintainability sem mudança de comportamento (8 na API, 20 no front); `public partial class Program` removido; 18 regras aceitas com justificativa e CA1862 como falso positivo. Análise pós-correção em 24/10 (run #3): A em Security, Reliability e Maintainability nos dois projetos; Quality Gate da API fechado com o teste do período invertido (run #4, cobertura do código novo 92,3%). Seção 5 com a linha SonarCloud; 2.3, 2.4, 6.1, 7.1–7.5 e 9 atualizadas. Totais 178 / 131 (26 arquivos) / 18. Próxima: conversão do texto para TCC 2. |
 
 ---
 
@@ -86,7 +87,7 @@ TCC-KOINONIAHUB/
     Dominio/Termos/              (TermosDeUso — versões e texto do termo)
     Dominio/Interfaces/Repositorios/   Infraestrutura/Dados/ (KoinoniaHubDbContext)   Infraestrutura/Repositorios/
     Migrations/                  (Inicial ... SituacaoAula 25/09, AceitesTermo 26/09, PessoaEnxuta 26/09)
-    Program.cs (public partial class Program), appsettings.json, appsettings.Development.json,
+    Program.cs, appsettings.json, appsettings.Development.json,
     appsettings.E2E.json (local, nunca commitado com a string do autor), Properties/launchSettings.json (perfis https e e2e)
   api/KoinoniaHub.API.Tests/     (xUnit; Infraestrutura/ com KoinoniaHubWebApplicationFactory, ContextoDeTeste,
                                   sementes; 24 classes — seção 7.1)
@@ -136,7 +137,7 @@ Todos exigem autenticação, salvo os marcados como públicos. Restrições de p
 | api/relatorios/ebd/frequencia-turma, /acompanhamento, /ranking-faltas, /resumo-dia, /minha-frequencia | GET | Turma: gestão ou atribuição; resumo-dia: gestão; minha-frequencia: próprio usuário. Só aulas Consolidadas + `aulasPendentes[]` (seção 6.9). `dataInicio`/`dataFim`/`data` são dias civis da igreja (`RelogioIgreja`, 7.2): a API os converte nos instantes UTC de início e fim do dia local antes de consultar; a resposta devolve esses instantes reais (tipo inalterado); o resumo do dia continua devolvendo `data` como o dia pedido. |
 | api/meus-dados, /minhas-turmas | GET/PUT, GET | Próprio usuário; GET inclui `aceiteTermo` (RF43). minhas-turmas: vínculos de atribuição só para conta Professor ou administrativa (21.4, 7.1); o vínculo Aluno (matrícula) sempre. |
 
-Desde a 7.1: a autenticação é o padrão (FallbackPolicy `RequireAuthenticatedUser()`; só os endpoints com `[AllowAnonymous]` são públicos); os guardas de turma, matéria e aula seguem a ordem **existe para a igreja → perfil administrativo ou Professor (RNF 21.4) → atribuição ativa**; recurso inexistente devolve 404 `{ mensagem }` para qualquer perfil, pelo `RecursoNaoEncontradoFiltro` global. Desde a 7.3, o 403 de `[Authorize(Roles)]` também sai com `{ mensagem }` ("Você não tem permissão para esta operação.", `RespostaAutorizacaoHandler`), como os demais 403 da API; 401 inalterado.
+Desde a 7.1: a autenticação é o padrão (FallbackPolicy `RequireAuthenticatedUser()`; só os endpoints com `[AllowAnonymous]` são públicos); os guardas de turma, matéria e aula seguem a ordem **existe para a igreja → perfil administrativo ou Professor (RNF 21.4) → atribuição ativa**; recurso inexistente devolve 404 `{ mensagem }` para qualquer perfil, pelo `RecursoNaoEncontradoFiltro` global. Desde a 7.3, o 403 de `[Authorize(Roles)]` também sai com `{ mensagem }` ("Você não tem permissão para esta operação.", `RespostaAutorizacaoHandler`), como os demais 403 da API; 401 inalterado. Desde 23/10/2026 (correção do SonarCloud), requisição malformada — aula sem `data`; id ausente ou menor que 1 em aula (matéria, professor), matéria (turma), matrícula (aluno) e usuário (pessoa); item da chamada sem `presente` — recebe o 400 `ValidationProblemDetails` padrão do `[ApiController]` (`errors[campo]`, mensagem em português), no lugar do 404/400 `{ mensagem }` de antes; para dados válidos, nada muda.
 
 ## 3. O que já está conforme (não refazer)
 
@@ -243,7 +244,7 @@ Legenda: **OK** = faz o que a monografia diz · **Parcial** = existe, falta regr
 
 ## 5. Ordem de execução e definição de pronto
 
-**Estado em 10/10/2026** (verificado contra o código):
+**Estado em 25/10/2026** (verificado contra o código):
 
 | **Etapa** | **Estado** |
 | --- | --- |
@@ -254,7 +255,8 @@ Legenda: **OK** = faz o que a monografia diz · **Parcial** = existe, falta regr
 | 4. Relatórios | **Concluída** (30/09/2026) — só Consolidadas em cinco relatórios, pendentes, gate de exportação, painel do aluno corrigido. |
 | 5. Termo de uso | **Concluída** (5.1 em 01/10, 5.2 e 5.3 em 03/10/2026) — RF42/RF43, gates, filtro global na API (decisão do autor), Playwright E2E-01 a E2E-03. |
 | 6. Acabamento, RF44, responsividade e turma | **Concluída em 17/10/2026** — 6.1 (06/10), 6.2 RF44 (07/10), 6.3 responsividade (08/10) **6.4 concluída em 14/10/2026** (A em 09/10, B em 10/10, corretiva de desktop em 12/10, ajuste em 13/10, C em 14/10: xUnit 114; Vitest 102; Playwright 3 + 7) e **6.5 concluída em 16/10/2026** (RF45, no Claude Code: xUnit 123; Vitest 105; Playwright 3 + 7) e **6.6 concluída em 17/10/2026** (RF12 parentesco derivado: xUnit 136; Vitest 111; Playwright 3 + 7). **Etapa 6 concluída.** A etapa foi reaberta em 08/10/2026 pela avaliação pré-Etapa 7 (`docs/decisoes/avaliacao-pre-etapa7.md`): responsividade e RF20 eram requisitos escritos e não atendidos; RF45 e RNF 12.3 entraram na monografia. |
-| 7. Autorização, E2E e Resultados | **Concluída em 22/10/2026** — **7.1 concluída em 18/10/2026** (xUnit 146; Vitest 118; Playwright 3 + 7), **7.2 concluída em 19/10/2026** (E2E-04 a E2E-08 e corretiva do dia civil da igreja: xUnit 151; Vitest 119; Playwright 10 + 8) e **7.3 concluída em 22/10/2026** (resultados, testes de Segurança, corretiva de CSU14/CSU24/40.2/403: xUnit 170; Vitest 126 (24 arquivos); Playwright 10 + 8; cópia e restauração e roteiros D1–D10 executados pelo autor em 22/10). Próximos passos fora das etapas: SonarCloud (entrega separada) e conversão do texto para TCC 2 (seção 9). |
+| 7. Autorização, E2E e Resultados | **Concluída em 22/10/2026** — **7.1 concluída em 18/10/2026** (xUnit 146; Vitest 118; Playwright 3 + 7), **7.2 concluída em 19/10/2026** (E2E-04 a E2E-08 e corretiva do dia civil da igreja: xUnit 151; Vitest 119; Playwright 10 + 8) e **7.3 concluída em 22/10/2026** (resultados, testes de Segurança, corretiva de CSU14/CSU24/40.2/403: xUnit 170; Vitest 126 (24 arquivos); Playwright 10 + 8; cópia e restauração e roteiros D1–D10 executados pelo autor em 22/10). Próximos passos fora das etapas: conversão do texto para TCC 2 (seção 9). |
+| SonarCloud (fora das etapas) | **Concluída em 24/10/2026** (docs/testes.md, blocos "SonarCloud — primeira análise" e "SonarCloud — correção dos apontamentos"; docs/decisoes/sonarcloud.md) — workflow `.github/workflows/sonarcloud.yml`, jobs `api` e `web` em push e PR para a main; Migrations fora da análise. Primeira análise (23/10, run #1): API 6.742 linhas, cobertura 74,5%, 170 testes, Security 3 (E), Reliability 12 (C), Maintainability 45 (A); Web 13.627 linhas, cobertura 48,0%, Security 0 (A), Reliability 85 (C), Maintainability 128 (A); 0 hotspots. Correção (23/10) e triagem na interface (24/10): API 41 apontamentos → 7 abertos (S3776), 19 aceitos, 15 falsos positivos (CA1862); Web 106 → 90 abertos (S3776, S3358 e `!important` do `style.css`/`LayoutPrincipal.vue`), 16 aceitos. Pós-correção (24/10, runs #3 e #4): A em Security, Reliability e Maintainability nos dois projetos; API cobertura 74,5% (código novo 92,3%), 178 testes, Quality Gate **Passed**; Web cobertura 46,3% (código novo 82,4%; queda pelos templates novos), Quality Gate **Passed**. Pendente, em entrega própria: `npm audit` (15 vulnerabilidades em dependências, 9 high). |
 
 | **Etapa** | **Conteúdo** | **Definição de pronto** |
 | --- | --- | --- |
@@ -280,7 +282,7 @@ Decisões discutidas e aprovadas. O assistente deve implementá-las como estão,
 
 ### 6.1 Migração para .NET 10 — CONCLUÍDA (etapa 0)
 
-Versões resolvidas e fixadas no csproj: net10.0; Microsoft.AspNetCore.Authentication.JwtBearer 10.0.12; Microsoft.EntityFrameworkCore.Tools 10.0.12; Microsoft.EntityFrameworkCore.Design 10.0.12 (referência explícita obrigatória a partir do EF Tools 10.0.6 — dotnet/efcore#38124); Npgsql.EntityFrameworkCore.PostgreSQL 10.0.3; Swashbuckle.AspNetCore 10.2.3; BCrypt.Net-Next 4.0.3. `public partial class Program { }` ao final de Program.cs para os testes de integração. Levar essas versões para o texto da monografia (seção 9).
+Versões resolvidas e fixadas no csproj: net10.0; Microsoft.AspNetCore.Authentication.JwtBearer 10.0.12; Microsoft.EntityFrameworkCore.Tools 10.0.12; Microsoft.EntityFrameworkCore.Design 10.0.12 (referência explícita obrigatória a partir do EF Tools 10.0.6 — dotnet/efcore#38124); Npgsql.EntityFrameworkCore.PostgreSQL 10.0.3; Swashbuckle.AspNetCore 10.2.3; BCrypt.Net-Next 4.0.3. O `public partial class Program { }` da etapa 0 saiu em 23/10/2026 (SonarCloud, S1118 e ASP0027): no .NET 10 o gerador do SDK já torna público o `Program` usado pela `WebApplicationFactory<Program>` dos testes. Levar essas versões para o texto da monografia (seção 9).
 
 ### 6.2 Situação da aula (RF31, RF32, RF33) — CONCLUÍDA (etapas 1 e 3)
 
@@ -436,19 +438,20 @@ Executar uma vez, com evidência, o procedimento: `pg_dump` do banco (formato cu
 
 ## 7. Estratégia de testes
 
-Três ferramentas, três responsabilidades. Cada etapa da seção 5 só está pronta quando os testes indicados aqui existem e passam.
+Três ferramentas de teste, três responsabilidades, e uma de análise estática. Cada etapa da seção 5 só está pronta quando os testes indicados aqui existem e passam.
 
 | **Ferramenta** | **Camada** | **O que testa** | **O que não testa** |
 | --- | --- | --- | --- |
 | xUnit (.NET) | API | Regras de negócio e autorização por endpoint (403/400) com WebApplicationFactory. | Telas; comportamento do navegador. |
 | Vitest + @vue/test-utils | Front | Funções puras e composables, stores, guards de rota, componentes isolados com props. | PrimeVue internamente; chamadas reais à API (mockadas). |
 | Playwright | Ponta a ponta | Os fluxos que a banca vai ver, no desktop e no celular (360 × 640). | Regras já cobertas por xUnit; combinações de dados. |
+| SonarCloud (CI) | API e front, sem executar | Apontamentos de Security, Reliability e Maintainability, hotspots, cobertura importada dos testes e duplicação | Comportamento em execução (é o que os testes provam); Migrations (fora da análise) |
 
 ### 7.1 xUnit — projeto de testes da API
 
 Projeto KoinoniaHub.API.Tests (Microsoft.AspNetCore.Mvc.Testing 10.0.12, Microsoft.EntityFrameworkCore.Sqlite 10.0.12, xunit 2.9.3), ambiente `Testing`, **SQLite em memória** (conexão aberta durante o teste, EnsureCreated) — o provedor InMemory não aplica índices únicos nem chaves estrangeiras, e 27.2 e 32.3 são exatamente o que se quer provar. Sementes criam o aceite do termo por padrão (`aceitarTermo: false` para contas pendentes). Uma classe por RF ou regra, métodos Metodo_Cenario_ResultadoEsperado em português; testes de integração (login por cookie, asserção de status) preferidos quando a regra também é de Segurança.
 
-**Existentes — 28 classes, 170 casos verdes:**
+**Existentes — 29 classes, 178 casos verdes:**
 
 | **Classe** | **RNFs / foco** |
 | --- | --- |
@@ -461,17 +464,18 @@ Projeto KoinoniaHub.API.Tests (Microsoft.AspNetCore.Mvc.Testing 10.0.12, Microso
 | RF14_UltimoAdminTests | 14.3 |
 | RF27_MatriculaTests | 27.2 |
 | RF28_DisponiveisTests | 28.3 |
-| RF32_ChamadaTests | 32.2, 32.3; `Registrado` por matrícula na chamada completa (6.4-C) |
+| RF32_ChamadaTests | 32.2, 32.3; `Registrado` por matrícula na chamada completa (6.4-C); item sem `presente` → 400, sem gravar nada do lote (32.6; SonarCloud) |
 | RF33_ConsolidarAulaTests | 32.6, 33.1, 33.2, 33.3 |
 | RF33_NaoRealizadaTests | 33.1, 33.2, 33.4, 33.7 |
 | RF33_ReabrirAulaTests | 33.5 (Professor, Pastor e Superintendente → 403), 33.6 |
 | RF34_PresencasPessoaTests | 34.3 |
-| RF35_RelatorioTests | 35.5, 37.5, 38.1, 38.4 (e RF6) |
+| RF35_RelatorioTests | 35.5, 37.5, 38.1, 38.4 (e RF6); período invertido (`dataFim` < `dataInicio`) → 400 nos quatro relatórios de período (4 casos; SonarCloud) |
 | RF39_RF40_ConviteTests | 15.2, 15.3, 39.1–39.4, 40.1–40.3 (e CSU20); 7.3: token fora das leituras; inativar descarta o convite e reativar não o recria; conta inativada fora da API → 400 e reativação descarta o hash antigo (11 casos) |
 | RF41_ImportacaoTests | 41.2–41.4 |
 | RF42_TermoTests | 1.5, 2.5, 40.5, 42.1–42.8 |
 | RF44_IgrejaTests | 44.1 (Professor, Pastor e Superintendente), 44.2, 44.3, 44.5; PUT substitui os cinco campos (`Atualizar_CampoOmitido_ViraNulo`) (8 casos) |
-| RF45_EditarAulaTests | 45.1, 45.2, 45.4, 45.5 (9 casos) |
+| RF45_EditarAulaTests | 45.1 a 45.5 (10 casos; 45.3: editar sem data → 400 e a data não muda) |
+| RF30_CadastrarAulaTests | 30.2: aula sem data → 400 sem gravar (antes gravava 0001-01-01); sem matéria → 400 com `errors.MateriaId` (antes 404) (2 casos; SonarCloud) |
 | RF12_ParentescoDerivadoTests | 12.3, 12.4, 11.3 (13 casos: Pai e Mãe → Filho(a); Filho(a) por sexo Masculino/Feminino/sem sexo; Irmão(ã) e Cônjuge simétricos; Responsável → Dependente; texto livre; omissão com registro inverso; DELETE pelo lado derivado → 400 e pelo de origem → 204; id inexistente → 404; derivada no DTO reduzido do Professor) |
 | RF21_PerfilOperacionalTests | 21.4, 21.5; FallbackPolicy (401/200 em rota sem atributo); 404 de turma/matéria/aula; POST /api/igrejas removido; minhas-turmas sem vínculo de atribuição para o perfil Usuário; 21.3: conta Professor com função Auxiliar opera a turma e Auxiliar como responsável da aula → 400 (12 casos) |
 | RF35_FusoHorarioTests | Dia civil da igreja (RF35–RF38, RF6, RNF 31.3): instantes UTC do dia local e `HojeLocal` às 21h; `DataCivil` (id Windows na configuração); matrícula às 23h locais entra no relatório do dia; aula de hoje às 21h locais não é pendente (aula, Frequência e Resumo do dia); aula de ontem é (5 casos; `FabricaComRelogioFixo` fixa 18/10/2026 21h em Porto Velho) |
@@ -485,7 +489,7 @@ Projeto KoinoniaHub.API.Tests (Microsoft.AspNetCore.Mvc.Testing 10.0.12, Microso
 
 Instalado na etapa 3 (`vitest`, `@vue/test-utils`, `jsdom`, `@vitest/coverage-v8`; bloco `test` no vite.config.ts; scripts `test`, `test:watch`, `test:cov`). Arquivos `*.spec.ts` ao lado do código. Chamadas HTTP mockadas (`vi.mock`); nada de subir a API.
 
-**Existentes — 24 arquivos, 126 casos verdes:**
+**Existentes — 26 arquivos, 131 casos verdes:**
 
 | **Alvo (arquivo)** | **Casos** | **Etapa** |
 | --- | --- | --- |
@@ -511,7 +515,9 @@ Instalado na etapa 3 (`vitest`, `@vue/test-utils`, `jsdom`, `@vitest/coverage-v8
 | Aba Alunos em cartões (`PaginaMatriculasTurma.spec`) | ordem, chips, Responsáveis, ⋮ em todo cartão (Remover só na matrícula ativa); remover reconta o cabeçalho; Histórico pelo ⋮ abre o diálogo e carrega pela pessoa do aluno (CSU14) | 6.4-C, 7.3 |
 | Histórico de presenças (`DialogHistoricoPresencas.spec`) | carrega ao abrir; totais só de Consolidadas; cartões no celular (mais recente primeiro); tabela no desktop; fechado não carrega (4) | 7.3 |
 | Aba Matérias em cartões (`PaginaMateriasTurma.spec`) | ordem, chips, Editar, ⋮; criar e inativar recontam o cabeçalho | 6.4-C |
-| Aba Aulas — Editar e Excluir (`PaginaAulasTurma.spec`) | Editar só Em aberto e Excluir só sem presenças (três estados); Editar abre o diálogo preenchido e Salvar chama atualizarAula e reconta o cabeçalho; Excluir pela confirmação comum chama excluirAula e reconta | 6.5 |
+| Aba Aulas — Editar e Excluir (`PaginaAulasTurma.spec`) | Editar só Em aberto e Excluir só sem presenças (três estados); Editar abre o diálogo preenchido e Salvar chama atualizarAula e reconta o cabeçalho; Excluir pela confirmação comum chama excluirAula e reconta; rótulos do diálogo ligados ao campo certo e Dropdowns nomeados pelo rótulo (SonarCloud) | 6.5, SonarCloud |
+| Minha Frequência (`meusDadosServico.spec`) | resposta PascalCase, camelCase e sem a lista de aulas (3) | SonarCloud |
+| Cadastro Inicial (`PaginaCadastroInicial.spec`) | cada campo com `<label for>` ligado ao input pelo id; placeholder mantido (1) | SonarCloud |
 | Tabela de parentescos (`TabelaParentescos.spec`) | explícita com botão de remover; derivada com tag "derivado", sem botão, ⓘ fechado e nota; ⓘ abre a explicação na própria linha e fecha ao clicar de novo; recarga da lista fecha a explicação; remover emite o item; lista vazia (6 casos) | 6.6 |
 
 **A criar:**
@@ -532,8 +538,8 @@ Configuração real (etapa 5.3 e 6.3):
 
 | **Cenário** | **Passos** | **Verifica** | **CSU** | **Estado** |
 | --- | --- | --- | --- | --- |
-| E2E-01 Cadastro inicial com termo | Preencher igreja e admin; tentar concluir sem o termo; marcar; concluir | Botão desabilitado sem aceite; após concluir, painel e aceite em Meus Dados | CSU01, CSU23 | ✔ desktop e celular |
-| E2E-02 Login com termo pendente | Conta sem aceite faz login | Redireciona para /termo; nenhuma outra rota abre; após aceitar, painel | CSU02, CSU23 | ✔ desktop e celular |
+| E2E-01 Cadastro inicial com termo | Preencher igreja e admin; tentar concluir sem o termo; marcar; concluir | Botão desabilitado sem aceite; após concluir, painel e aceite em Meus Dados; rótulo "Nome da igreja *" ligado ao campo; no celular, `semRolagemHorizontal` estrito no Cadastro Inicial e print `RNF-responsividade-cadastro-inicial.png` (23/10/2026) | CSU01, CSU23 | ✔ desktop e celular |
+| E2E-02 Login com termo pendente | Conta sem aceite faz login | Redireciona para /termo; nenhuma outra rota abre; após aceitar, painel; rótulo "Senha" ligado ao campo | CSU02, CSU23 | ✔ desktop e celular |
 | E2E-03 Convite e ativação | Admin gera convite; abrir link; definir senha e aceitar | Conta ativa; segundo uso do link recusado | CSU19, CSU22 | ✔ desktop |
 | E2E-M1 Fluxo do professor e do aluno no celular (3 casos) | Projeto mobile: login; professor — Painel (cartão "Fazer chamada") → Drawer → Minhas Turmas (cartão, "Abrir turma") → Página da Turma (cabeçalho; abas Alunos e Matérias em cartões, alvos ≥ 40 px, ⋮) → aba Aulas (cartão, "Fazer chamada", ⋮) → Chamada (voltar com o nome da turma; "Sem registro" desde a carga e baixa ao tocar; toque no meio da linha; "+ observação"; dois toques crus em Salvar → um POST e um aviso; Consolidar com os nomes dentro da tela → "Salvar e consolidar"; barra some; confirmação ao sair com "Continuar na chamada") → Presenças em cartões → Meus Dados; aluno — Painel → Minha Frequência | `semRolagemHorizontal` estrito em cada tela (nenhum container interno rola); ação principal nomeada em cada cartão; barra visível; aula consolidada ao fim; 15 prints RNF-responsividade-*.png | CSU07, CSU09, CSU10, CSU11, RNFs de responsividade | ✔ 6.4-C (14/10/2026) |
 | E2E-M2 Largura do documento nas telas administrativas (2 casos) | Projeto mobile, Admin: Pessoas, Usuários, Igreja, Relatórios, Turmas EBD, Importação aberta; abas da turma, Chamada e Presenças | `scrollWidth` do documento e do `body` = 360 em todas | RNFs de responsividade (seção 6.12, administrativas) | ✔ 6.4 ajuste (13/10/2026) |
@@ -547,18 +553,24 @@ Configuração real (etapa 5.3 e 6.3):
 
 ```powershell
 # API
-cd api; dotnet build; dotnet test                  # 170
+cd api; dotnet build; dotnet test                  # 178
 
 # Front
-cd web; npx vue-tsc -b; npm run test               # 126 (24 arquivos)
+cd web; npx vue-tsc -b; npm run test               # 131 (26 arquivos)
 cd web; npm run build
 
 # E2E (API no ar no perfil e2e e banco koinoniahub_e2e)
 cd api/KoinoniaHub.API; dotnet run --launch-profile e2e      # terminal 1
 cd web; npm run test:e2e                                      # terminal 2 — 18 (10 + 8)
+
+# Cobertura local, igual à que o CI importa (opcional; TestResults/ e coverage/ ficam fora do git)
+cd api; dotnet test --logger trx --collect:"XPlat Code Coverage" --results-directory TestResults -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+cd web; npx vitest run --coverage --coverage.reporter=lcov --coverage.reporter=text-summary
 ```
 
 Se o E2E falhar por conexão ("transient failure", porta 5433), o `appsettings.E2E.json` voltou ao original: recolocar a string local em `ConnectionStrings:Postgres`.
+
+**CI.** Depois do push na main, ou num PR para a main, o workflow SonarCloud (`.github/workflows/sonarcloud.yml`) repete no ubuntu-24.04 o build, os testes com cobertura e o `vue-tsc -b` e envia as duas análises; ele deve terminar verde e os dois Quality Gates, Passed. A análise do SonarCloud só roda no CI (o token fica no GitHub). No PowerShell, use `npx vitest run …` e não `npm run test:cov -- …`: o `npm.ps1` descarta os argumentos depois do `--`.
 
 ### 7.5 Ligação com a monografia (seção 5.1 e objetivo específico 4)
 
@@ -571,13 +583,15 @@ A monografia avalia o sistema pelas características Adequação Funcional, Usab
 | Segurança | Testes de integração de 403/400, Origin, filtro do termo, perfil × atribuição; prints das respostas | Tabela RNF → teste → evidência (`docs/resultados.md`, seção 3; lacunas de prova na seção 5) |
 | Usabilidade | Não automatizada; prints a 360 px como evidência das RNFs de responsividade | Avaliação com o professor e o PO, conforme 5.1, feita no celular sobre as telas da 6.4 |
 
-Convenções de evidência em `docs/evidencias/`: `RNF-<n.m>-<descricao>.png`, `RF<n>-<descricao>.png`, `CSU<nn>-<descricao>.png`; responsividade: `RNF-responsividade-<tela>.png`. Já capturadas: RNF-2.6 (2), RNF-11.3 (2), RNF-14.3, RNF-15.3, RNF-28.3, RNF-33.5, RNF-34.3 (2), RNF-35.4, RNF-35.5 e 33.6 (antes/depois da reabertura), RNF-38.4, RNF-42.1, RNF-44.1/44.2/44.3, RF42 (registro de aceite), RF43 (2), RF44 (2), RF3, RF20, RF31/CSU09, RF32 (desktop 1920, alterações não salvas, toque duplo, recarregar), RF33 (consolidada), RF34 (presenças desktop), RNF-32.5, RNF-32.6 (2), CSU11-FA1 (2), CSU11 passos 2–4 (nomes a 360), RNF-dialogos-tema (2), RF45 (nova aula com conteúdo, editar desktop e 360, confirmar excluir desktop e 360), RNF-45.2 (PUT e DELETE em Consolidada → 400), RNF-45.5 (sem Excluir com presença; capturado na 7.3, roteiro D8), RNF-21.5 (3: tags no desktop e a 360), RNF-21.4 (403 no POST de presenças, minhas-turmas da conta Usuário, 404 de aula e de matéria), RNF-2.1 (401 sem sessão), RF1 (404 do POST /api/igrejas removido); 7.2: RF35 (relatório com matrícula feita à noite), RNF-31.3 (aula de hoje não pendente às 23h), CSU11 (confirmação com os sem registro, reabrir preserva, reconsolidada), CSU15 (frequência após consolidar; gravado na 7.2 como CSU12), RNF-21.4 (conta Usuário com atribuição em Minhas Turmas), RNF-35.4 (Professor sem exportação), RNF-41.3 (importação para conferência), RNF-14.3 (perfil do último Admin) e os 6 RNF-responsividade-e2e04-* do projeto mobile; 7.3 (roteiros C e D1–D10, 22/10/2026, 30 prints): RNF-39.2 (token exibido uma vez; listagem sem token), RNF-39.3 (hash do convite no banco), RNF-39.4 (convite anterior invalidado), RNF-40.2 (convite já utilizado; convite de conta inativa; conta inativa sem a tag; conta reativada sem convite; link recusado após reativar), RNF-2.2 (SenhaHash BCrypt no banco; contagem fora do formato = 0), RNF-13.4 (conta com senha manual entra e cai no termo), RNF-13.1 (403 de Professor em /api/usuarios, console e Network), RNF-21.3 (seletor só com professores; 400 com Auxiliar responsável), RNF-2.3 (redirecionamento 307; cookie Secure/HttpOnly), RNF-45.5, CSU14 (histórico pelo Professor no desktop e a 360, menu ⋮), CSU24-FA2 (aviso de recurso restrito) e Confiabilidade-restauracao-1 a -6 (7 arquivos). O inventário das evidências de Segurança está em `docs/testes.md`, Etapa 7.1 (capturadas × faltantes; as faltantes foram capturadas na 7.3), RNF-responsividade usuarios/pessoas a 360 e os 15 RNF-responsividade gerados pelo projeto mobile na 6.4-C. `docs/testes.md` guarda a saída das validações de cada entrega; `docs/decisoes/` guarda os resumos por etapa. Todas as evidências usam a semente de teste (dados fictícios), nunca dados reais de membros.
+**Análise estática (complementar).** O SonarCloud analisa a API e o front a cada push e PR (seção 7.4) e entrega apontamentos por qualidade (Security, Reliability, Maintainability), hotspots, a cobertura importada dos testes (OpenCover e lcov) e a duplicação. A primeira análise (23/10/2026) e a análise pós-correção (24/10/2026) estão em `docs/testes.md`; as decisões, os aceites e o que ficou como dívida, em `docs/decisoes/sonarcloud.md`. Ela complementa as evidências de Confiabilidade e de Segurança, mas não as substitui: a monografia avalia essas características por testes técnicos (5.1) e declara a manutenibilidade sem medição formal (4.10). Enquanto a seção 9 não for aplicada, os números do Sonar entram no capítulo de Resultados só como informação de engenharia.
+
+Convenções de evidência em `docs/evidencias/`: `RNF-<n.m>-<descricao>.png`, `RF<n>-<descricao>.png`, `CSU<nn>-<descricao>.png`; responsividade: `RNF-responsividade-<tela>.png`; análise estática: `SONAR-<descricao>.png`. Já capturadas: RNF-2.6 (2), RNF-11.3 (2), RNF-14.3, RNF-15.3, RNF-28.3, RNF-33.5, RNF-34.3 (2), RNF-35.4, RNF-35.5 e 33.6 (antes/depois da reabertura), RNF-38.4, RNF-42.1, RNF-44.1/44.2/44.3, RF42 (registro de aceite), RF43 (2), RF44 (2), RF3, RF20, RF31/CSU09, RF32 (desktop 1920, alterações não salvas, toque duplo, recarregar), RF33 (consolidada), RF34 (presenças desktop), RNF-32.5, RNF-32.6 (2), CSU11-FA1 (2), CSU11 passos 2–4 (nomes a 360), RNF-dialogos-tema (2), RF45 (nova aula com conteúdo, editar desktop e 360, confirmar excluir desktop e 360), RNF-45.2 (PUT e DELETE em Consolidada → 400), RNF-45.5 (sem Excluir com presença; capturado na 7.3, roteiro D8), RNF-21.5 (3: tags no desktop e a 360), RNF-21.4 (403 no POST de presenças, minhas-turmas da conta Usuário, 404 de aula e de matéria), RNF-2.1 (401 sem sessão), RF1 (404 do POST /api/igrejas removido); 7.2: RF35 (relatório com matrícula feita à noite), RNF-31.3 (aula de hoje não pendente às 23h), CSU11 (confirmação com os sem registro, reabrir preserva, reconsolidada), CSU15 (frequência após consolidar; gravado na 7.2 como CSU12), RNF-21.4 (conta Usuário com atribuição em Minhas Turmas), RNF-35.4 (Professor sem exportação), RNF-41.3 (importação para conferência), RNF-14.3 (perfil do último Admin) e os 6 RNF-responsividade-e2e04-* do projeto mobile; 7.3 (roteiros C e D1–D10, 22/10/2026, 30 prints): RNF-39.2 (token exibido uma vez; listagem sem token), RNF-39.3 (hash do convite no banco), RNF-39.4 (convite anterior invalidado), RNF-40.2 (convite já utilizado; convite de conta inativa; conta inativa sem a tag; conta reativada sem convite; link recusado após reativar), RNF-2.2 (SenhaHash BCrypt no banco; contagem fora do formato = 0), RNF-13.4 (conta com senha manual entra e cai no termo), RNF-13.1 (403 de Professor em /api/usuarios, console e Network), RNF-21.3 (seletor só com professores; 400 com Auxiliar responsável), RNF-2.3 (redirecionamento 307; cookie Secure/HttpOnly), RNF-45.5, CSU14 (histórico pelo Professor no desktop e a 360, menu ⋮), CSU24-FA2 (aviso de recurso restrito) e Confiabilidade-restauracao-1 a -6 (7 arquivos). SonarCloud (23–24/10/2026): 17 prints da primeira análise (run verde, logs, visão geral, Reliability, Maintainability, hotspots e cobertura dos dois projetos, testes da API, API sem Migrations), `RNF-responsividade-cadastro-inicial.png` (E2E-01, projeto mobile), `RF1-cadastro-inicial-labels` (desktop e 360), `RNF-30.2-400-aula-sem-data.png` e 12 `SONAR-correcao-*` (run verde, visões gerais, Reliability, Maintainability, Summary e issues abertas dos dois projetos, Quality Gate da API). O inventário das evidências de Segurança está em `docs/testes.md`, Etapa 7.1 (capturadas × faltantes; as faltantes foram capturadas na 7.3), RNF-responsividade usuarios/pessoas a 360 e os 15 RNF-responsividade gerados pelo projeto mobile na 6.4-C. `docs/testes.md` guarda a saída das validações de cada entrega; `docs/decisoes/` guarda os resumos por etapa. Todas as evidências usam a semente de teste (dados fictícios), nunca dados reais de membros.
 
 ## 8. Como pedir ajuda ao assistente do projeto
 
 | **Situação** | **Pedido** |
 | --- | --- |
-| Iniciar uma entrega (no Claude Code, a partir da 6.5) | "Entrega SonarCloud (fora das etapas). Configure a análise estática do repositório no SonarCloud (API .NET e front Vue) como commit separado, sem alterar regra de negócio; registre em docs/testes.md o resultado da primeira análise (bugs, vulnerabilidades, code smells, cobertura) e o que foi corrigido. Antes de codar, liste os arquivos. Ao final, validações da seção 7.4 e registro para o Plano." |
+| Iniciar uma entrega (no Claude Code, a partir da 6.5) | "Entrega npm audit (fora das etapas). Liste as 15 vulnerabilidades reportadas pelo `npm ci` no CI, separe dependências de desenvolvimento e de produção, confira o axios e o vue, e proponha por pacote: atualizar, aceitar com justificativa ou adiar — sem atualizar nada antes do meu ok. Ao final, validações da seção 7.4, workflow verde e registro para o Plano." |
 | Revisar código existente contra a monografia | "Compare AulaServico com o RF45 e as RNFs 45.1 a 45.5. Liste divergências e proponha o diff mínimo." |
 | Escrever testes | "Escreva o cenário Playwright do CSU20 (Redefinir acesso) conforme a lacuna da seção 2.2 de docs/resultados.md, reaproveitando o apoio em web/e2e/apoio e a semente." |
 | Verificar antes de avançar | "Antes de eu converter o texto para TCC 2, confira se a Etapa 7 atende às definições de pronto da seção 5 e se docs/resultados.md cobre o que a seção 7.5 promete; liste o que falta." |
@@ -592,11 +606,14 @@ Itens decididos e ainda não aplicados no .docx, ou que só entram na conversão
 | CSU01, passo 5 | "5. O sistema direciona o usuário para a tela de login." → "5. O sistema inicia a sessão do Administrador e exibe o Painel." (comportamento desde a Etapa 2.4; o E2E-01 afirma isso; divergência encontrada pela tabela CSU → teste da 7.3) | Próxima revisão do .docx |
 | CSU09, passo 4 | "O usuário informa a data, a matéria, o professor responsável e o tema." → "O usuário informa a data, a matéria, o professor responsável e, opcionalmente, o tema e o conteúdo." (RF45 e CSU09 FA1 declaram o conteúdo editável; a 6.5 o expôs no diálogo, nos dois modos) | Próxima revisão do .docx |
 | RF20 / protótipo | Figura "Tela de Turma" (abas) feita a partir da tela real (`RF20-pagina-turma-desktop.png`), com a descrição da seção 1.8 de `docs/decisoes/etapa-6.md`; renumeração das figuras seguintes | Antes da defesa |
-| 4.5 / 4.7 / Apêndice | Versões resolvidas na etapa 0: .NET 10 (net10.0); JwtBearer, EF Core Tools e EF Core Design 10.0.12; Npgsql.EntityFrameworkCore.PostgreSQL 10.0.3; Swashbuckle.AspNetCore 10.2.3; BCrypt.Net-Next 4.0.3. | Pronto para entrar |
+| 4.5 / 4.7 / Apêndice | Versões resolvidas na etapa 0: .NET 10 (net10.0); JwtBearer, EF Core Tools e EF Core Design 10.0.12; Npgsql.EntityFrameworkCore.PostgreSQL 10.0.3; Swashbuckle.AspNetCore 10.2.3; BCrypt.Net-Next 4.0.3. Verificação contínua (23/10/2026): GitHub Actions; SonarCloud com SonarScanner for .NET 12.0.0 e sonarqube-scan-action 8.3.0; coverlet.collector 10.1.0. | Pronto para entrar |
+| 4.10, último parágrafo | "A manutenibilidade é buscada pela arquitetura em camadas descrita na seção 4.4, sem medição formal neste trabalho." → "A manutenibilidade é buscada pela arquitetura em camadas descrita na seção 4.4 e acompanhada por análise estática do código no SonarCloud, sem avaliação na escala da norma." | Se a análise estática entrar em Resultados |
+| 5.1, último parágrafo | "A Confiabilidade e a Segurança serão avaliadas por meio de testes técnicos conduzidos pelo autor." → "… conduzidos pelo autor, complementados pela análise estática do código no SonarCloud a cada alteração do repositório." (no TCC 2, com os verbos no passado) | Se a análise estática entrar em Resultados |
+| Dependências do front | `npm audit` no CI reporta 15 vulnerabilidades (1 low, 5 moderate, 9 high), em cadeias de desenvolvimento e também em axios e vue (`@vue/server-renderer`, que a SPA não usa); tratar em entrega própria antes da implantação. | Antes da defesa |
 | Implantação | IP do aceite = `RemoteIpAddress`; atrás de proxy reverso exige `ForwardedHeaders` (RNF 42.8). Front servido em HTTPS e HSTS na API (hoje só `UseHttpsRedirection`, que devolve 307; `UseHsts` ignora `localhost` e só faz sentido publicado num domínio com certificado). Fuso da igreja em `Igreja:FusoHorario` (7.2). | Ao descrever a implantação |
 | Todo o texto | Conversão para TCC 2: folha de rosto ("Trabalho de Conclusão de Curso"), verbos no passado, cronograma sai, Reuniões das Sprints com datas reais, 5.1 com o número real de participantes. | Agora (Etapa 7 concluída) |
 | Novos capítulos | Resultados (arquitetura implementada, telas reais, tabela CSU → teste e tabelas RNF de `docs/resultados.md`, avaliação ISO 25010 com os participantes, cópia e restauração da seção 6.17), Considerações finais, Resumo/Abstract. | Agora (material pronto em docs/resultados.md) |
-| Trabalhos futuros | Fluxo guiado de configuração da turma (wizard); responsividade polida das telas administrativas (os filtros de Pessoas, Usuários e Atribuições são mais largos que 360 px e rolam dentro do conteúdo); "Limpar chamada" que remove os registros de presença de aula Em aberto (hoje uma chamada salva na aula errada só sai por consolidação ou reabertura); formulário do diálogo de Parentescos a 360 px (Parente, Relacionamento e Adicionar numa linha só; o botão fica cortado — empilhar os campos abaixo de 768 px); cobertura de prova pendente registrada em `docs/resultados.md`: cenários Playwright faltantes da seção 2.2 (CSU03, CSU05, CSU08, CSU12, CSU16, CSU17, CSU18, CSU20, CSU21) e as RNFs de Segurança sem teste próprio da seção 5 (12.1, 17.1, 18.1, 7.1/8.1/9.1/21.1/22.1/41.1 só no front, 7.2/8.2 só leitura, 24.1–37.1 pelo guarda comum, 7.4 e 17.3 de isolamento); mensagem única para convite inexistente, substituído ou já usado. | Seção de trabalhos futuros do TCC 2 |
+| Trabalhos futuros | Fluxo guiado de configuração da turma (wizard); responsividade polida das telas administrativas (os filtros de Pessoas, Usuários e Atribuições são mais largos que 360 px e rolam dentro do conteúdo); "Limpar chamada" que remove os registros de presença de aula Em aberto (hoje uma chamada salva na aula errada só sai por consolidação ou reabertura); formulário do diálogo de Parentescos a 360 px (Parente, Relacionamento e Adicionar numa linha só; o botão fica cortado — empilhar os campos abaixo de 768 px); cobertura de prova pendente registrada em `docs/resultados.md`: cenários Playwright faltantes da seção 2.2 (CSU03, CSU05, CSU08, CSU12, CSU16, CSU17, CSU18, CSU20, CSU21) e as RNFs de Segurança sem teste próprio da seção 5 (12.1, 17.1, 18.1, 7.1/8.1/9.1/21.1/22.1/41.1 só no front, 7.2/8.2 só leitura, 24.1–37.1 pelo guarda comum, 7.4 e 17.3 de isolamento); mensagem única para convite inexistente, substituído ou já usado; dívida de manutenção apontada pelo SonarCloud e mantida aberta com justificativa: complexidade cognitiva (S3776: sete métodos de `PessoaServico`, `PessoaImportacaoServico` e `RelatorioEbdServico` e o `clienteHttp.ts`) e ternário aninhado (S3358); `!important` no `style.css` (boa parte em seletores do PrimeVue 3 que não casam com nada no PrimeVue 4); controles interativos dentro da linha da chamada (`role="button"`); troca dos componentes depreciados Dropdown e Calendar por Select e DatePicker; checagens de duplicidade com `lower()`, que não trata acento em maiúscula conforme a collation do banco; `Igreja:FusoHorario` inválido cai no fuso padrão sem aviso em log; o percentual do texto de Motivos do painel (`RelatorioEbdServico`) e o `toLocaleDateString()` sem locale (`PaginaAulasTurma.vue`) dependem da cultura do servidor ou do navegador. | Seção de trabalhos futuros do TCC 2 |
 | Capa e listas | Banca, processo SEI, data, Lista de Figuras. | Versão final |
 
 ## 10. Referências das ferramentas de teste
@@ -609,3 +626,5 @@ Itens decididos e ainda não aplicados no .docx, ou que só entram na conversão
 - Playwright — https://playwright.dev/
 - OWASP Cross-Site Request Forgery Prevention Cheat Sheet — https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
 - PostgreSQL — pg_dump / pg_restore — https://www.postgresql.org/docs/current/app-pgdump.html
+- SonarQube Cloud — análise por GitHub Actions — https://docs.sonarsource.com/sonarqube-cloud/advanced-setup/ci-based-analysis/github-actions-for-sonarcloud/
+- coverlet — https://github.com/coverlet-coverage/coverlet
