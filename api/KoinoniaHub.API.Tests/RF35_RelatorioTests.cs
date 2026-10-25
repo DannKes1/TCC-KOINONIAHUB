@@ -223,6 +223,26 @@ namespace KoinoniaHub.API.Tests
             Assert.False(turma.GetProperty("pendenteFechamento").GetBoolean());
         }
 
+        // Validação de entrada dos relatórios de período (RF6, RF35–RF37): dataFim anterior a
+        // dataInicio → 400 com a mensagem única, antes de consultar a turma ou o serviço.
+        [Theory]
+        [InlineData("frequencia-turma")]
+        [InlineData("acompanhamento")]
+        [InlineData("ranking-faltas")]
+        [InlineData("minha-frequencia")]
+        public async Task Relatorios_PeriodoInvertido_Retorna400(string relatorio)
+        {
+            var cenario = await CenarioAula.CriarAsync(_fabrica, $"rf35p-{relatorio}");
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+
+            var resposta = await admin.GetAsync(
+                $"/api/relatorios/ebd/{relatorio}?departamentoId={cenario.TurmaId}&dataInicio=2026-10-20&dataFim=2026-10-10");
+
+            Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+            using var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+            Assert.Equal("dataFim não pode ser menor que dataInicio.", json.RootElement.GetProperty("mensagem").GetString());
+        }
+
         [Fact]
         public async Task ResumoDia_ComoProfessor_Retorna403()
         {
