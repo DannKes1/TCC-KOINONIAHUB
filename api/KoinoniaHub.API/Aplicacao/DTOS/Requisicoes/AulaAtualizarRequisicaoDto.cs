@@ -7,8 +7,9 @@ namespace KoinoniaHub.API.Aplicacao.DTOs.Requisicoes
     // pertencem à chamada (RF32) e ao fechamento (RF33).
     public class AulaAtualizarRequisicaoDto
     {
-        [Required]
-        public DateTime Data { get; set; }
+        // Anulável para o [Required] valer (S6964), como no cadastro.
+        [Required(ErrorMessage = "Informe a data da aula.")]
+        public DateTime? Data { get; set; }
 
         [StringLength(200)]
         public string? Tema { get; set; }
@@ -17,9 +18,11 @@ namespace KoinoniaHub.API.Aplicacao.DTOs.Requisicoes
         public string? Conteudo { get; set; }
 
         [Required]
+        [Range(1, int.MaxValue, ErrorMessage = "Informe a matéria.")]
         public int MateriaId { get; set; }
 
         [Required]
+        [Range(1, int.MaxValue, ErrorMessage = "Informe o professor responsável.")]
         public int ProfessorId { get; set; } // PessoaId do professor
     }
 }

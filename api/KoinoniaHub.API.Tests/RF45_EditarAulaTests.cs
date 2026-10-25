@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace KoinoniaHub.API.Tests
 {
-    // RF45 — editar e excluir aula Em aberto (RNFs 45.1, 45.2, 45.4, 45.5; CSU09 FA1–FA3).
+    // RF45 — editar e excluir aula Em aberto (RNFs 45.1 a 45.5; CSU09 FA1–FA3).
     public class RF45_EditarAulaTests : IClassFixture<KoinoniaHubWebApplicationFactory>
     {
         private readonly KoinoniaHubWebApplicationFactory _fabrica;
@@ -128,6 +128,36 @@ namespace KoinoniaHub.API.Tests
         }
 
         [Fact]
+        public async Task Editar_SemData_Retorna400EDataNaoMuda()
+        {
+            // RNF 45.3 (S6964): sem a data, o PUT volta 400 com o campo em errors, em vez
+            // de gravar 0001-01-01 na aula.
+            var cenario = await CenarioAula.CriarAsync(_fabrica, "rf45j");
+            var aulaId = await cenario.CriarAulaAsync(_fabrica, SituacaoAula.EmAberto);
+            var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
+            var dataOriginal = await LerDataPelaApiAsync(professor, aulaId);
+
+            var resposta = await professor.PutAsJsonAsync($"/api/aulas/{aulaId}", new
+            {
+                Tema = "Sem data",
+                MateriaId = cenario.MateriaId,
+                ProfessorId = cenario.ProfessorPessoaId
+            });
+
+            Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+            using (var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync()))
+            {
+                var erros = json.RootElement.GetProperty("errors").GetProperty("Data");
+                Assert.Equal("Informe a data da aula.", Assert.Single(erros.EnumerateArray()).GetString());
+            }
+
+            Assert.Equal(dataOriginal, await LerDataPelaApiAsync(professor, aulaId));
+            var lida = await CenarioAula.LerAulaAsync(_fabrica, aulaId);
+            Assert.Null(lida.Tema);
+            Assert.Null(lida.AtualizadoEm);
+        }
+
+        [Fact]
         public async Task Editar_ProfessorDeOutraTurma_Retorna403()
         {
             // RNF 45.1.
@@ -229,6 +259,14 @@ namespace KoinoniaHub.API.Tests
         {
             using var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
             return json.RootElement.GetProperty("mensagem").GetString();
+        }
+
+        private static async Task<string?> LerDataPelaApiAsync(HttpClient cliente, int aulaId)
+        {
+            var get = await cliente.GetAsync($"/api/aulas/{aulaId}");
+            Assert.Equal(HttpStatusCode.OK, get.StatusCode);
+            using var json = JsonDocument.Parse(await get.Content.ReadAsStringAsync());
+            return json.RootElement.GetProperty("data").GetString();
         }
     }
 }

@@ -76,6 +76,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                     .ThenInclude(x => x.Parente)
                 .Include(p => p.ParentescosComoParente)
                     .ThenInclude(x => x.Pessoa)
+                // Uma pessoa só: o produto Parentescos × ParentescosComoParente é pequeno; uma ida ao banco (S8733 avaliado).
+                .AsSingleQuery()
                 .FirstOrDefaultAsync(p => p.IgrejaId == igrejaId && p.Id == pessoaId);
 
             if (pessoa is null) return null;

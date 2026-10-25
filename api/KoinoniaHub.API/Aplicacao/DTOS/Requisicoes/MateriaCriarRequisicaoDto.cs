@@ -19,6 +19,7 @@ namespace KoinoniaHub.API.Aplicacao.DTOs.Requisicoes
         public bool Ativo { get; set; } = true;
 
         [Required]
+        [Range(1, int.MaxValue, ErrorMessage = "Informe a turma.")]
         public int DepartamentoId { get; set; }
     }
 }

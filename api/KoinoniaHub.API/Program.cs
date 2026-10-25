@@ -204,7 +204,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+await app.RunAsync();
 
 // Torna a classe gerada pelos top-level statements visível ao projeto de testes
 // (WebApplicationFactory<Program> em KoinoniaHub.API.Tests).

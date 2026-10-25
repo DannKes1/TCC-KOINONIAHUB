@@ -47,9 +47,11 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (professor is null)
                 throw new InvalidOperationException("Professor não encontrado ou sem atribuição ativa de Professor neste departamento.");
 
+            // Data! : o [Required] do DTO garante o valor; sem ele o [ApiController]
+            // devolve 400 antes de a ação rodar (S6964).
             var aula = new Aula
             {
-                Data = dto.Data,
+                Data = dto.Data!.Value,
                 Tema = dto.Tema,
                 Conteudo = dto.Conteudo,
                 Observacoes = dto.Observacoes,
@@ -130,7 +132,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (professor is null)
                 throw new InvalidOperationException("Professor não encontrado ou sem atribuição ativa de Professor neste departamento.");
 
-            aula.Data = dto.Data;
+            aula.Data = dto.Data!.Value; // [Required] no DTO, como no cadastro
             aula.Tema = dto.Tema;
             aula.Conteudo = dto.Conteudo;
             aula.MateriaId = materia.Id;

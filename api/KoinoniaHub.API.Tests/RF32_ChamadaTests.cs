@@ -85,6 +85,39 @@ namespace KoinoniaHub.API.Tests
         }
 
         [Fact]
+        public async Task Registrar_ItemSemPresente_Retorna400ENaoGrava()
+        {
+            // RNF 32.6 (S6964): presença ou ausência é registro explícito. Um item sem o
+            // campo presente não vira ausência: a requisição inteira volta 400, com o campo
+            // do item em errors, e nada é gravado — nem o item válido nem os visitantes.
+            var cenario = await CenarioAula.CriarAsync(_fabrica, "rf32e");
+            var aulaId = await cenario.CriarAulaAsync(_fabrica, SituacaoAula.EmAberto);
+            var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
+
+            var resposta = await professor.PostAsJsonAsync($"/api/aulas/{aulaId}/presencas", new
+            {
+                Itens = new object[]
+                {
+                    new { AlunoDepartamentoId = cenario.MatriculaAId, Presente = true },
+                    new { AlunoDepartamentoId = cenario.MatriculaBId }
+                },
+                QuantidadeVisitantes = 3
+            });
+
+            Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+            using (var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync()))
+            {
+                var erros = json.RootElement.GetProperty("errors");
+                var doItem = erros.GetProperty("Itens[1].Presente");
+                Assert.Equal("Informe se o aluno está presente.", Assert.Single(doItem.EnumerateArray()).GetString());
+                Assert.False(erros.TryGetProperty("Itens[0].Presente", out _));
+            }
+
+            Assert.Empty(await CenarioAula.LerPresencasAsync(_fabrica, aulaId));
+            Assert.Equal(0, (await CenarioAula.LerAulaAsync(_fabrica, aulaId)).QuantidadeVisitantes);
+        }
+
+        [Fact]
         public async Task ChamadaCompleta_InformaRegistrado_PorMatricula()
         {
             // Etapa 6.4-C (RNFs 32.6/33.3): a chamada completa distingue "ausente" de

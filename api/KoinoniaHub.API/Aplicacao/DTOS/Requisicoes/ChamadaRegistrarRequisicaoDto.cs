@@ -17,7 +17,10 @@ namespace KoinoniaHub.API.Aplicacao.DTOs.Requisicoes
         [Required]
         public int AlunoDepartamentoId { get; set; } // matrícula
 
-        public bool Presente { get; set; }
+        // RF32 / RNF 32.6: presença ou ausência é registro explícito; anulável para o
+        // [Required] valer — item sem o campo volta 400 em vez de virar ausência.
+        [Required(ErrorMessage = "Informe se o aluno está presente.")]
+        public bool? Presente { get; set; }
 
         [StringLength(500)]
         public string? Observacao { get; set; }

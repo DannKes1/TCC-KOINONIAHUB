@@ -104,6 +104,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             var respostas = new List<PresencaRespostaDto>();
 
+            // Presente! : o [Required] do item garante o valor; item sem ele volta 400
+            // pelo [ApiController] antes de a ação rodar (RNF 32.6).
             foreach (var item in dto.Itens)
             {
                 var matricula = matriculas.First(m => m.Id == item.AlunoDepartamentoId);
@@ -115,7 +117,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                     {
                         AulaId = aulaId,
                         AlunoDepartamentoId = item.AlunoDepartamentoId,
-                        Presente = item.Presente,
+                        Presente = item.Presente!.Value,
                         Observacao = item.Observacao
                     };
 
@@ -135,7 +137,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 }
                 else
                 {
-                    existente.Presente = item.Presente;
+                    existente.Presente = item.Presente!.Value;
                     existente.Observacao = item.Observacao;
 
                     await _presencaRepositorio.AtualizarAsync(existente);
