@@ -175,7 +175,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (usuario is null) return false;
 
 
-            if (dto.Ativo.HasValue && dto.Ativo.Value == false && usuarioId == usuarioLogadoId)
+            if (dto.Ativo.HasValue && !dto.Ativo.Value && usuarioId == usuarioLogadoId)
                 throw new InvalidOperationException("Você não pode desativar o seu próprio usuário.");
 
             var perdeAdmin = usuario.Ativo && usuario.Perfil == Perfis.Admin &&

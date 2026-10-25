@@ -78,7 +78,7 @@ builder.Services.AddDbContext<KoinoniaHubDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
 
 // JWT: valida o token e o lê a partir do cookie httpOnly "kh_token"
-var chave = builder.Configuration["Jwt:ChaveSecreta"] ?? throw new Exception("Jwt:ChaveSecreta não configurado.");
+var chave = builder.Configuration["Jwt:ChaveSecreta"] ?? throw new InvalidOperationException("Jwt:ChaveSecreta não configurado.");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -206,6 +206,4 @@ app.MapControllers();
 
 await app.RunAsync();
 
-// Torna a classe gerada pelos top-level statements visível ao projeto de testes
-// (WebApplicationFactory<Program> em KoinoniaHub.API.Tests).
-public partial class Program { }
+// Program é público pelo gerador do SDK do .NET 10 (WebApplicationFactory<Program> nos testes).

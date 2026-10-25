@@ -76,7 +76,7 @@ namespace KoinoniaHub.API.Aplicacao.Tempo
                 if (TimeZoneInfo.TryConvertIanaIdToWindowsId(id, out var idWindows))
                 {
                     try { return TimeZoneInfo.FindSystemTimeZoneById(idWindows); }
-                    catch (Exception ex2) when (ex2 is TimeZoneNotFoundException or InvalidTimeZoneException) { }
+                    catch (Exception ex2) when (ex2 is TimeZoneNotFoundException or InvalidTimeZoneException) { /* o id do Windows também não resolveu: segue para o fuso padrão abaixo */ }
                 }
 
                 return TimeZoneInfo.FindSystemTimeZoneById(FusoPadraoWindows);

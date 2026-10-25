@@ -115,7 +115,7 @@ namespace KoinoniaHub.API.Controllers
         }
 
 
-        private CookieOptions OpcoesCookie(DateTime expiraEm) => new()
+        private static CookieOptions OpcoesCookie(DateTime expiraEm) => new()
         {
             HttpOnly = true,
             Secure = true,

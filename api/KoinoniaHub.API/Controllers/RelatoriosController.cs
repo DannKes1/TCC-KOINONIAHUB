@@ -12,6 +12,8 @@ namespace KoinoniaHub.API.Controllers
     [Authorize]
     public class RelatoriosController : ControllerBase
     {
+        private const string MensagemPeriodoInvalido = "dataFim não pode ser menor que dataInicio.";
+
         private readonly IRelatorioEbdServico _servico;
         private readonly IAutorizacaoEbdServico _autorizacao;
         private readonly RelogioIgreja _relogio;
@@ -46,7 +48,7 @@ namespace KoinoniaHub.API.Controllers
             var (inicio, fim) = Periodo(dataInicio, dataFim, 30);
 
             if (fim < inicio)
-                return BadRequest(new { mensagem = "dataFim não pode ser menor que dataInicio." });
+                return BadRequest(new { mensagem = MensagemPeriodoInvalido });
 
             try
             {
@@ -81,7 +83,7 @@ namespace KoinoniaHub.API.Controllers
             var (inicio, fim) = Periodo(dataInicio, dataFim, 60);
 
             if (fim < inicio)
-                return BadRequest(new { mensagem = "dataFim não pode ser menor que dataInicio." });
+                return BadRequest(new { mensagem = MensagemPeriodoInvalido });
 
             try
             {
@@ -118,7 +120,7 @@ namespace KoinoniaHub.API.Controllers
             var (inicio, fim) = Periodo(dataInicio, dataFim, 30);
 
             if (fim < inicio)
-                return BadRequest(new { mensagem = "dataFim não pode ser menor que dataInicio." });
+                return BadRequest(new { mensagem = MensagemPeriodoInvalido });
 
             try
             {
@@ -168,7 +170,7 @@ namespace KoinoniaHub.API.Controllers
             var (inicio, fim) = Periodo(dataInicio, dataFim, 90);
 
             if (fim < inicio)
-                return BadRequest(new { mensagem = "dataFim não pode ser menor que dataInicio." });
+                return BadRequest(new { mensagem = MensagemPeriodoInvalido });
 
             try
             {

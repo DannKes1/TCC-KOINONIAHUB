@@ -212,7 +212,6 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             var alunosBase = await _db.AlunosDepartamentos
                 .AsNoTracking()
-                .Include(m => m.Pessoa)
                 .Where(m =>
                     m.DepartamentoId == departamentoId &&
                     m.Departamento.IgrejaId == igrejaId &&
