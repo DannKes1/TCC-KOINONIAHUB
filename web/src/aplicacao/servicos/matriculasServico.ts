@@ -1,6 +1,6 @@
-import type { PessoaVM } from "../modelos/dtos";
 import { clienteHttp } from "./clienteHttp";
 import type {
+  PessoaVM,
   MatriculaCriarDTO,
   MatriculaRespostaVM,
   AlunoDaClasseVM,

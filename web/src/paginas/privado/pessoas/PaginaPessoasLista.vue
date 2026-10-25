@@ -187,7 +187,7 @@ function abrirHistorico(pessoa: PessoaVM) {
 
 function textoOuNull(valor?: string | null) {
   const texto = String(valor ?? "").trim();
-  return texto ? texto : null;
+  return texto || null;
 }
 
 function dataParaEnvio(data: Date | null) {

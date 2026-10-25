@@ -24,30 +24,14 @@ describe("TagSituacaoAula (RF31 / RNF 31.3)", () => {
     expect(wrapper.get('[data-testid="tag-pendente"]').classes()).toContain("p-tag-warn");
   });
 
-  it("Em aberto: rótulo da monografia e sem tag Pendente", () => {
-    const wrapper = montar({ situacao: "EmAberto" });
+  it.each([
+    ["Em aberto", "EmAberto"],
+    ["Consolidada", "Consolidada"],
+    ["Não realizada", "NaoRealizada"],
+  ] as const)("%s: rótulo da monografia e sem tag Pendente", (rotulo, situacao) => {
+    const wrapper = montar({ situacao });
 
-    expect(wrapper.get('[data-testid="tag-situacao"]').text()).toBe(
-      "Em aberto",
-    );
-    expect(wrapper.find('[data-testid="tag-pendente"]').exists()).toBe(false);
-  });
-
-  it("Consolidada: rótulo da monografia e sem tag Pendente", () => {
-    const wrapper = montar({ situacao: "Consolidada" });
-
-    expect(wrapper.get('[data-testid="tag-situacao"]').text()).toBe(
-      "Consolidada",
-    );
-    expect(wrapper.find('[data-testid="tag-pendente"]').exists()).toBe(false);
-  });
-
-  it("Não realizada: rótulo da monografia e sem tag Pendente", () => {
-    const wrapper = montar({ situacao: "NaoRealizada" });
-
-    expect(wrapper.get('[data-testid="tag-situacao"]').text()).toBe(
-      "Não realizada",
-    );
+    expect(wrapper.get('[data-testid="tag-situacao"]').text()).toBe(rotulo);
     expect(wrapper.find('[data-testid="tag-pendente"]').exists()).toBe(false);
   });
 

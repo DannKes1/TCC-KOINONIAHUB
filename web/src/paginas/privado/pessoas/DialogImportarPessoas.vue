@@ -67,7 +67,7 @@ function baixarModelo() {
   link.download = "modelo-importacao-pessoas.csv";
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
+  link.remove();
   URL.revokeObjectURL(url);
 }
 

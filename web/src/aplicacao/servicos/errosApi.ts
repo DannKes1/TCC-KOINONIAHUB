@@ -11,7 +11,7 @@ export function extrairMensagemErroApi(
   if (data?.errors && typeof data.errors === "object") {
     const mensagens = Object.values(data.errors)
       .flat()
-      .map((m) => String(m))
+      .map(String)
       .filter(Boolean);
 
     if (mensagens.length) return mensagens.join(" ");

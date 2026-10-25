@@ -198,7 +198,7 @@ function validarEdicao(): string {
 
 function textoOuNull(valor?: string | null) {
   const texto = String(valor ?? "").trim();
-  return texto ? texto : null;
+  return texto || null;
 }
 
 function rotuloStatus(ativo: boolean) {
@@ -296,7 +296,7 @@ async function copiarLinkConvite() {
     document.body.appendChild(campo);
     campo.select();
     document.execCommand("copy");
-    document.body.removeChild(campo);
+    campo.remove();
     toastSuccess("Link copiado para a área de transferência.", "Copiado");
   }
 }

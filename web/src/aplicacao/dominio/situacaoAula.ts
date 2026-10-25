@@ -21,7 +21,7 @@ export type SeveridadeTag =
   | "contrast";
 
 export function normalizarSituacaoAula(valor: unknown): SituacaoAula {
-  const texto = String(valor ?? "");
+  const texto = typeof valor === "string" ? valor : "";
   return (SITUACOES_AULA as string[]).includes(texto)
     ? (texto as SituacaoAula)
     : "EmAberto";

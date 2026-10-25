@@ -1,8 +1,6 @@
 import { clienteHttp } from "./clienteHttp";
-import type { AulaResumidaVM } from "../modelos/dtos";
+import type { AceiteTermoVM, AulaResumidaVM, PessoaVM } from "../modelos/dtos";
 import { normalizarListaAulasResumidas } from "./relatoriosServico";
-import type { PessoaVM } from "../modelos/dtos";
-import type { AceiteTermoVM } from "../modelos/dtos";
 import { normalizarAceiteTermo } from "./termoServico";
 
 export type MeusDadosAtualizarDTO = {

@@ -193,7 +193,12 @@ function sair() {
   color: var(--ipb-cinza, #4d4d4d);
   font-size: 14px;
   font-weight: 500;
-  transition: all 0.15s ease;
+  /* Só o que muda no :hover e no .ativo. */
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    font-weight 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .sidebar-link:hover {
@@ -230,7 +235,10 @@ function sair() {
   cursor: pointer;
   font-size: 13px;
   font-family: var(--font-body, sans-serif);
-  transition: all 0.15s ease;
+  /* Só o que muda no :hover. */
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .sidebar-sair:hover {

@@ -128,8 +128,10 @@ const emit = defineEmits<{ (e: "abrir-menu"): void }>();
     display: inline-flex;
   }
 
+  /* A marca não encolhe: quem encolhe é o bloco do usuário (abaixo). */
   .header-marca {
     gap: 10px;
+    flex-shrink: 0;
   }
 
   .header-logo {
@@ -145,11 +147,7 @@ const emit = defineEmits<{ (e: "abrir-menu"): void }>();
   }
 
   /* O bloco do usuário encolhe (min-width: 0 libera o flex) e o e-mail recebe
-     reticências; a marca não encolhe. */
-  .header-marca {
-    flex-shrink: 0;
-  }
-
+     reticências. */
   .header-usuario {
     flex: 1 1 auto;
     min-width: 0;

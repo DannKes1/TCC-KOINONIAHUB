@@ -131,10 +131,11 @@ const resumoAceiteTermo = computed(() => {
         minute: "2-digit",
       });
   const meio = rotuloMeioAceite(aceite.meio);
+  const sufixoMeio = meio ? ` (${meio})` : "";
   return {
     versao: aceite.versao,
     vigente: aceite.vigente,
-    texto: `Versão ${aceite.versao}, aceito em ${quando}${meio ? ` (${meio})` : ""}`,
+    texto: `Versão ${aceite.versao}, aceito em ${quando}${sufixoMeio}`,
   };
 });
 
