@@ -1878,11 +1878,52 @@ BarraTopo (cabeçalho, marca, botão do menu, logo, textos, usuário) e das 21 t
 diferença é a declarada pelo S9449: a transição dos links do menu passou de `all` para
 `background-color, color, font-weight, box-shadow`, e a do Sair para `border-color, color`.
 
-**Testes manuais (perfil `https`):** M1 a M8 do relato da entrega, a executar pelo autor.
+**Testes manuais (perfil `https`):** M1 ✔ · M2 ✔ · M3 ✔ · M4 ✔ · M5 ✔ · M6 ✔ · M7 ✔ · M8 ✔,
+executados pelo autor em 24/10/2026 (commit `1043a5d`): `RF1-cadastro-inicial-labels.png`,
+`RF1-cadastro-inicial-labels-360.png` e `RNF-30.2-400-aula-sem-data.png`.
 
-**Prints (`docs/evidencias/`):** `RNF-responsividade-cadastro-inicial.png` (E2E-01, projeto
-`mobile`). A tirar: `RF1-cadastro-inicial-labels.png` (desktop) e, depois da nova análise,
-`SONAR-correcao-api-overview.png` e `SONAR-correcao-web-overview.png`.
+**Análise depois da correção (run #3 do workflow, commit `1043a5d`, 24/10/2026):** os dois jobs
+verdes. Números antes → depois, com a triagem aplicada na interface em 24/10 (CA1862 como False
+positive; as demais regras da seção 5 do `sonarcloud.md` como Accept):
 
-**Registro para o Plano (v1.10):** `docs/decisoes/sonarcloud.md`, seção 4, itens 11 a 20 (seções 2.3,
+| Métrica | API: antes → depois | Web: antes → depois |
+| --- | --- | --- |
+| Linhas de código | 6.742 → 6.750 | 13.627 → 13.774 |
+| Apontamentos (total) | 60 → 41 (19 fechados); após a triagem: **7 abertos**, 19 aceitos, 15 falsos positivos | 212 → 106 (109 fechados); após a triagem: **90 abertos**, 16 aceitos |
+| Security | 3 (E) → 0 abertos, 3 aceitos · **A** | 0 · A |
+| Reliability | 12 (C) → 1 (S8949, aceito) · **A**; 11 fechados | 85 (C) → 1 (S6845, aceito) · **A**; 84 fechados |
+| Maintainability | 45 → 37 (8 fechados) · A; abertos: 7 × S3776 | 131 → 106 (25 fechados) · A; abertos: S9423 ×88, S3776, S3358 |
+| Security Hotspots | 0 | 0 |
+| Coverage | 74,5% → **74,5%** (linhas 77,0%; condições 60,5%) | 48,0% → **46,3%** (linhas 41,1% → 42,3%; condições 63,3% → 53,0%; a cobrir 2.542 → 2.709; descobertas 1.498 → 1.563) |
+| Cobertura do código novo | 76,92% em 18 linhas | 82,35% em 27 linhas |
+| Duplications | 3,0% | 0,9% |
+| Testes importados | 170 → 174 | — |
+| Quality Gate | não computado → **FAILED** (cobertura do código novo 76,92% < 80%) | não computado → **PASSED** |
+
+- *Quality Gate da API.* Das 18 linhas novas, 5 ficaram sem cobertura (os quatro `return BadRequest`
+  da constante `MensagemPeriodoInvalido` em `RelatoriosController` e o `catch` interno de
+  `RelogioIgreja.ResolverFuso`), mais uma condição (o `?? throw` da chave JWT em `Program.cs`).
+  Nenhum teste exercitava o período invertido dos relatórios. **Fechado em 24/10/2026:**
+  `RF35_RelatorioTests.Relatorios_PeriodoInvertido_Retorna400` (`[Theory]`, 4 casos, um por
+  relatório de período: frequência da turma, acompanhamento, ranking de faltas e minha frequência;
+  `dataFim` anterior a `dataInicio` → 400 com "dataFim não pode ser menor que dataInicio."). `dotnet
+  build` limpo e `dotnet test` = **178 aprovados**; o OpenCover local confirma as quatro linhas
+  visitadas. Cobertura esperada do código novo na próxima análise: 24 de 26 = 92,3%. Ficam sem
+  cobertura, por decisão: o `catch` do `RelogioIgreja` (inalcançável com ICU e tzdata) e a condição
+  da chave JWT ausente (exigiria subir um host sem a chave).
+- *Cobertura do web.* A queda de 48,0% para 46,3% é efeito dos templates novos: os rótulos e
+  atributos acrescentados em páginas que não têm spec entram como linhas a cobrir sem teste
+  (a cobrir +167; descobertas +65). O código novo medido pelo Sonar ficou em 82,35%.
+- *`npm audit` (24/10/2026):* 15 vulnerabilidades (1 low, 5 moderate, 9 high), em cadeias de
+  dependências de desenvolvimento (vite, vitest, playwright) e nos pacotes `axios` e `vue`
+  (este último por `@vue/server-renderer`, que a SPA não usa). Fica como item para entrega
+  própria, com plano antes: atualização de versões e conferência de cada aviso contra o uso real.
+
+**Prints (`docs/evidencias/`, 11 arquivos):** `SONAR-correcao-actions-verde.png`,
+`SONAR-correcao-api-overview.png`, `-api-summary.png`, `-api-reliability.png`,
+`-api-maintainability.png`, `-api-issues-abertas.png`, `SONAR-correcao-web-overview.png`,
+`-web-summary.png`, `-web-reliability.png`, `-web-maintainability.png`, `-web-issues-abertas.png`;
+mais `RNF-responsividade-cadastro-inicial.png` (E2E-01, projeto `mobile`) e os três dos testes manuais.
+
+**Registro para o Plano (v1.10):** `docs/decisoes/sonarcloud.md`, seção 4, itens 11 a 21 (seções 2.3,
 2.4, 6.1, 7.1 a 7.5 e 9).
