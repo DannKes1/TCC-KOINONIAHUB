@@ -51,12 +51,12 @@ const route = useRoute();
 const confirm = useConfirm();
 
 // Etapa 6.4-C (RF20 / RF27–RF28): abaixo de 768 px a lista vira cartões — um por
-// aluno, com "Responsáveis" como ação principal e "Remover matrícula" no ⋮, dez por
+// aluno, com "Responsáveis" como ação principal e "Inativar matrícula" no ⋮, dez por
 // vez; no desktop a tabela continua igual.
 const compacta = usarTelaCompacta();
 
 // Dentro da Página da Turma (RF20), avisa o cabeçalho para atualizar o contador de
-// alunos ativos depois de matricular ou remover.
+// alunos ativos depois de matricular ou inativar.
 const recarregarResumoDaTurma = inject<(() => Promise<void>) | null>(
   "turmaRecarregarResumo",
   null,
@@ -80,7 +80,9 @@ const {
 } = usarMostrarMais(alunosOrdenados, 10);
 
 // Ações secundárias do cartão (celular). O histórico vale também para matrícula
-// inativa (as presenças ficam preservadas, RF29); remover, só para a ativa.
+// inativa (as presenças ficam preservadas, RF29); inativar, só para a ativa. O verbo
+// da tela é o do RF29 ("Inativar matrícula"): a rota continua DELETE, que só registra
+// a data de saída.
 function itensAcoes(aluno: AlunoDaClasseVM): MenuItem[] {
   return [
     {
@@ -89,8 +91,8 @@ function itensAcoes(aluno: AlunoDaClasseVM): MenuItem[] {
       command: () => abrirHistorico(aluno),
     },
     {
-      label: "Remover matrícula",
-      icon: "pi pi-trash",
+      label: "Inativar matrícula",
+      icon: "pi pi-user-minus",
       visible: aluno.matriculaAtiva,
       command: () => confirmarRemover(aluno),
     },
@@ -171,20 +173,20 @@ function confirmarRemover(aluno: AlunoDaClasseVM) {
   if (!aluno.matriculaAtiva) return;
 
   confirm.require({
-    header: "Remover matrícula",
-    message: `Deseja remover a matrícula de "${aluno.nome}" desta turma?`,
+    header: "Inativar matrícula",
+    message: `Deseja inativar a matrícula de "${aluno.nome}" nesta turma? As presenças já registradas ficam preservadas.`,
     icon: "pi pi-exclamation-triangle",
-    acceptLabel: "Remover",
+    acceptLabel: "Inativar",
     rejectLabel: "Cancelar",
     accept: async () => {
       await run(async () => {
         await removerMatricula(departamentoId.value, aluno.matriculaId);
 
-        toastSuccess("Matrícula removida com sucesso.", "Removido");
+        toastSuccess("Matrícula inativada com sucesso.", "Inativada");
 
         alunos.value = await listarAlunosDaTurma(departamentoId.value);
         await recarregarResumoDaTurma?.();
-      }, "Não foi possível remover a matrícula.");
+      }, "Não foi possível inativar a matrícula.");
     },
   });
 }
@@ -344,10 +346,10 @@ onMounted(carregarTudo);
               />
               <Button
                 v-if="data.matriculaAtiva"
-                icon="pi pi-trash"
+                icon="pi pi-user-minus"
                 severity="danger"
                 :disabled="carregando"
-                v-tooltip.top="'Remover matrícula'"
+                v-tooltip.top="'Inativar matrícula'"
                 @click="confirmarRemover(data)"
               />
             </div>

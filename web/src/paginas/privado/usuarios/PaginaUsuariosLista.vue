@@ -24,6 +24,7 @@ import {
   atualizarUsuario,
   gerarConviteUsuario,
 } from "../../../aplicacao/servicos/usuariosServico";
+import { resumirTermoUsuario } from "../../../aplicacao/dominio/termoUsuario";
 
 import type { PessoaVM, UsuarioVM } from "../../../aplicacao/modelos/dtos";
 
@@ -209,35 +210,10 @@ function severityStatus(ativo: boolean) {
   return ativo ? "success" : "danger";
 }
 
-// RF43: situação do aceite do Termo de Uso e Sigilo de cada conta.
-function rotuloTermo(usuario: UsuarioVM) {
-  const aceite = usuario.aceiteTermo;
-  if (!aceite) return "Pendente";
-  return aceite.vigente ? `Aceito v${aceite.versao}` : `Versão anterior (v${aceite.versao})`;
-}
-
-function severityTermo(usuario: UsuarioVM) {
-  const aceite = usuario.aceiteTermo;
-  if (!aceite) return "warn";
-  return aceite.vigente ? "success" : "warn";
-}
-
-function tooltipTermo(usuario: UsuarioVM) {
-  const aceite = usuario.aceiteTermo;
-  if (!aceite) return "A pessoa ainda não aceitou o Termo de Uso e Sigilo.";
-  const data = new Date(aceite.aceitoEm);
-  const quando = Number.isNaN(data.getTime())
-    ? ""
-    : data.toLocaleString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-  return aceite.vigente
-    ? `Aceito em ${quando}.`
-    : `Aceitou a versão ${aceite.versao} em ${quando}; a versão vigente ainda está pendente.`;
+// RF43 / RNF 43.1: situação do aceite do Termo de Uso e Sigilo de cada conta, com a
+// versão na tag e a data e hora visíveis na coluna (o tooltip não existe no celular).
+function termoDoUsuario(usuario: UsuarioVM) {
+  return resumirTermoUsuario(usuario.aceiteTermo);
 }
 
 function severityPerfil(perfil: string) {
@@ -510,13 +486,22 @@ onMounted(carregarDados);
           </template>
         </Column>
 
-        <Column header="Termo" style="width: 170px">
+        <Column header="Termo" style="width: 190px">
           <template #body="{ data }">
-            <Tag
-              :value="rotuloTermo(data)"
-              :severity="severityTermo(data)"
-              v-tooltip.top="tooltipTermo(data)"
-            />
+            <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start">
+              <Tag
+                :value="termoDoUsuario(data).rotulo"
+                :severity="termoDoUsuario(data).severidade"
+                v-tooltip.top="termoDoUsuario(data).dica"
+              />
+              <small
+                v-if="termoDoUsuario(data).quando"
+                data-testid="usuario-termo-data"
+                style="font-size: 12px; opacity: 0.8"
+              >
+                em {{ termoDoUsuario(data).quando }}
+              </small>
+            </div>
           </template>
         </Column>
 

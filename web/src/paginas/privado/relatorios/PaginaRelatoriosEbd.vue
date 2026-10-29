@@ -71,7 +71,10 @@ const tabelaResumoRef = ref();
 
 const topRanking = ref<number>(10);
 
+// RF36: os dois limiares e as faltas consecutivas do crítico são ajustáveis na tela;
+// os padrões são os da API (75 %, 50 % e 3).
 const limiarAtencao = ref<number>(75);
+const limiarCritico = ref<number>(50);
 const faltasConsecutivasCritico = ref<number>(3);
 
 const CORES = {
@@ -299,6 +302,7 @@ async function buscarAcompanhamento() {
       dataInicio: toYmd(dataInicio.value),
       dataFim: toYmd(dataFim.value),
       limiarAtencao: limiarAtencao.value,
+      limiarCritico: limiarCritico.value,
       faltasConsecutivasCritico: faltasConsecutivasCritico.value,
     });
   }, "Não foi possível carregar o acompanhamento.");
@@ -473,13 +477,23 @@ onMounted(async () => {
 
       <template v-if="abaAtiva === 'acompanhamento'">
         <div class="filtro-campo">
-          <label for="relatorio-filtro-limiar-atencao">Mín. frequência (%)</label>
+          <label for="relatorio-filtro-limiar-atencao">Atenção: freq. ≤ (%)</label>
           <InputNumber
             v-model="limiarAtencao"
             :min="0"
             :max="100"
             suffix=" %"
             inputId="relatorio-filtro-limiar-atencao"
+          />
+        </div>
+        <div class="filtro-campo">
+          <label for="relatorio-filtro-limiar-critico">Crítico: freq. ≤ (%)</label>
+          <InputNumber
+            v-model="limiarCritico"
+            :min="0"
+            :max="100"
+            suffix=" %"
+            inputId="relatorio-filtro-limiar-critico"
           />
         </div>
         <div class="filtro-campo">

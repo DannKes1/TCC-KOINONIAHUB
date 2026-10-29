@@ -167,7 +167,7 @@ describe("PaginaAulasTurma — Editar e Excluir aula Em aberto (RF45, 6.5)", () 
     document.body.innerHTML = "";
   });
 
-  it("Editar só em aula Em aberto; Excluir só em Em aberto sem presenças (CSU09 FA3)", async () => {
+  it("Editar só em aula Em aberto; Excluir e Não realizada só em Em aberto sem presenças (CSU09 FA3, CSU11 FA2)", async () => {
     const { wrapper } = await montar();
     wrapperAtual = wrapper;
 
@@ -178,14 +178,18 @@ describe("PaginaAulasTurma — Editar e Excluir aula Em aberto (RF45, 6.5)", () 
     const semPresencas = rotulosDoMenu(wrapper, 0);
     expect(semPresencas).toContain("Editar aula");
     expect(semPresencas).toContain("Excluir aula");
+    expect(semPresencas).toContain("Marcar como Não realizada");
 
+    // Com presenças: a API recusaria (RNF 33.7), então o ⋮ não oferece (CSU11 FA2).
     const comPresencas = rotulosDoMenu(wrapper, 1);
     expect(comPresencas).toContain("Editar aula");
     expect(comPresencas).not.toContain("Excluir aula");
+    expect(comPresencas).not.toContain("Marcar como Não realizada");
 
     const consolidada = rotulosDoMenu(wrapper, 2);
     expect(consolidada).not.toContain("Editar aula");
     expect(consolidada).not.toContain("Excluir aula");
+    expect(consolidada).not.toContain("Marcar como Não realizada");
   });
 
   it("Editar abre o diálogo preenchido e Salvar chama atualizarAula e reconta o cabeçalho (FA1)", async () => {

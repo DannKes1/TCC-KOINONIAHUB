@@ -158,7 +158,8 @@ function rotuloChamada(aula: AulaVM) {
 
 // Ações secundárias do ⋮ (as mesmas nos dois layouts). `visible` segue a situação
 // da aula e o perfil (RF33: consolidar/não realizada só Em aberto; reabrir só Admin;
-// RF45: editar só Em aberto, excluir só Em aberto e sem registro de presença — CSU09 FA3).
+// RF45: editar só Em aberto, excluir só Em aberto e sem registro de presença — CSU09 FA3;
+// RNF 33.7 / CSU11 FA2: Não realizada só Em aberto e sem registro de presença).
 function itensAcoes(aula: AulaVM): MenuItem[] {
   const emAberto = aula.situacao === "EmAberto";
   return [
@@ -182,7 +183,7 @@ function itensAcoes(aula: AulaVM): MenuItem[] {
     {
       label: "Marcar como Não realizada",
       icon: "pi pi-ban",
-      visible: emAberto,
+      visible: emAberto && !aula.possuiPresencas,
       command: () => confirmarNaoRealizada(aula),
     },
     {

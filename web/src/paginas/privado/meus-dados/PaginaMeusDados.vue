@@ -84,12 +84,43 @@ watch(
   },
 );
 
-async function salvar() {
-  clearErrors();
+// RNF 4.3: validação prévia com a mensagem junto ao campo; a API aplica as mesmas
+// regras (formato do e-mail e UF com 2 letras) e responde 400 por campo. O celular
+// (8 a 11 dígitos) é regra só do front; a API limita a 20 caracteres.
+const errosLocais = reactive<Record<string, string>>({});
+
+function limparErrosLocais() {
+  Object.keys(errosLocais).forEach((k) => delete errosLocais[k]);
+}
+
+function validarLocal(): boolean {
+  limparErrosLocais();
 
   const celDigitos = contarDigitos(form.celular);
   if (celDigitos > 0 && (celDigitos < 8 || celDigitos > 11)) {
-    erro.value = "Celular inválido. Informe DDD + número (8 a 11 dígitos).";
+    errosLocais.celular = "Celular inválido. Informe DDD + número (8 a 11 dígitos).";
+  }
+
+  // Mesma regra do [EmailAddress] da API: um único "@", que não seja o primeiro nem o
+  // último caractere; vazio é aceito (campo opcional, enviado como nulo).
+  const email = form.email.trim();
+  if (email && !/^[^@]+@[^@]+$/.test(email)) {
+    errosLocais.email = "Informe um e-mail válido.";
+  }
+
+  const uf = form.estado.trim();
+  if (uf && !/^[A-Za-z]{2}$/.test(uf)) {
+    errosLocais.estado = "Informe a UF com 2 letras (ex.: RO).";
+  }
+
+  return Object.keys(errosLocais).length === 0;
+}
+
+async function salvar() {
+  clearErrors();
+
+  if (!validarLocal()) {
+    erro.value = "Corrija os campos destacados.";
     return;
   }
 
@@ -100,7 +131,7 @@ async function salvar() {
       Endereco: limparOuNull(form.endereco),
       Bairro: limparOuNull(form.bairro),
       Cidade: limparOuNull(form.cidade),
-      Estado: limparOuNull(form.estado),
+      Estado: limparOuNull(form.estado)?.toUpperCase() ?? null,
       CEP: limparOuNull(form.cep),
     });
 
@@ -113,6 +144,7 @@ function descartarAlteracoes() {
   if (dadosOriginais.value) {
     popularForm(dadosOriginais.value);
     clearErrors();
+    limparErrosLocais();
   }
 }
 
@@ -243,6 +275,7 @@ onMounted(carregar);
           />
           <FieldError
             :texto="
+              errosLocais.celular ||
               firstFieldError(fieldErrors, 'Celular') ||
               firstFieldError(fieldErrors, 'celular')
             "
@@ -259,6 +292,7 @@ onMounted(carregar);
           />
           <FieldError
             :texto="
+              errosLocais.email ||
               firstFieldError(fieldErrors, 'Email') ||
               firstFieldError(fieldErrors, 'email')
             "
@@ -332,6 +366,7 @@ onMounted(carregar);
           />
           <FieldError
             :texto="
+              errosLocais.estado ||
               firstFieldError(fieldErrors, 'Estado') ||
               firstFieldError(fieldErrors, 'estado')
             "

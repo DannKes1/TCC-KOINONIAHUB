@@ -27,6 +27,10 @@ const props = withDefaults(
     erro?: string;
     mostrarBotao?: boolean;
     salvando?: boolean;
+    // RNF 42.1: além de desabilitar o botão de conclusão, informa que o aceite é
+    // obrigatório enquanto a caixa estiver desmarcada (CSU01 FA2, CSU22 FA2). As
+    // telas que embutem o termo ligam esta prop; a tela /termo tem aviso próprio.
+    avisoAceite?: boolean;
   }>(),
   {
     igreja: undefined,
@@ -34,6 +38,7 @@ const props = withDefaults(
     erro: "",
     mostrarBotao: true,
     salvando: false,
+    avisoAceite: false,
   },
 );
 
@@ -140,6 +145,14 @@ function aceitar() {
         </label>
       </div>
 
+      <small
+        v-if="avisoAceite && !aceito"
+        class="termo-aviso"
+        data-testid="termo-aceite-obrigatorio"
+      >
+        O aceite do termo é obrigatório para concluir.
+      </small>
+
       <Button
         v-if="mostrarBotao"
         data-testid="botao-aceitar-termo"
@@ -203,6 +216,11 @@ function aceitar() {
   gap: 8px;
 }
 
+/* O e-mail da igreja pode ser uma palavra longa: quebra em vez de alargar a coluna. */
+.termo-igreja > div {
+  min-width: 0;
+}
+
 .termo-igreja dt {
   font-size: 11px;
   text-transform: uppercase;
@@ -215,6 +233,7 @@ function aceitar() {
   font-size: 14px;
   font-weight: 600;
   color: var(--ipb-cinza, #4d4d4d);
+  overflow-wrap: anywhere;
 }
 
 .termo-texto {
@@ -242,5 +261,11 @@ function aceitar() {
 .termo-aceite label {
   cursor: pointer;
   line-height: 1.4;
+}
+
+.termo-aviso {
+  margin-top: -6px;
+  font-size: 12.5px;
+  color: var(--ipb-alerta, #8a5b00);
 }
 </style>

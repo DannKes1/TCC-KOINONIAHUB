@@ -102,6 +102,27 @@ describe("TermoUsoSigilo", () => {
     );
   });
 
+  it("com avisoAceite, informa que o aceite é obrigatório enquanto a caixa está desmarcada (RNF 42.1)", async () => {
+    const wrapper = montar({ mostrarBotao: false, avisoAceite: true });
+
+    expect(wrapper.get('[data-testid="termo-aceite-obrigatorio"]').text()).toBe(
+      "O aceite do termo é obrigatório para concluir.",
+    );
+
+    await wrapper.setProps({ modelValue: true });
+    expect(
+      wrapper.find('[data-testid="termo-aceite-obrigatorio"]').exists(),
+    ).toBe(false);
+  });
+
+  it("sem avisoAceite (tela /termo, que tem aviso próprio), não mostra o aviso", () => {
+    const wrapper = montar();
+
+    expect(
+      wrapper.find('[data-testid="termo-aceite-obrigatorio"]').exists(),
+    ).toBe(false);
+  });
+
   it("mostra o erro de carregamento no lugar do termo", () => {
     const wrapper = montar({ termo: null, erro: "Falhou" });
 

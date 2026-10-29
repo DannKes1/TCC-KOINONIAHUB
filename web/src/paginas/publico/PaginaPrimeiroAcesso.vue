@@ -249,6 +249,7 @@ function irParaLogin() {
             :carregando="termoCarregando"
             :erro="termoErro"
             :mostrar-botao="false"
+            aviso-aceite
           />
 
           <small v-if="erro" class="login-erro">{{ erro }}</small>

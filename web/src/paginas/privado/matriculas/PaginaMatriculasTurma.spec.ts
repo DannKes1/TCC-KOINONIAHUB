@@ -10,8 +10,8 @@ import { removerMatricula } from "../../../aplicacao/servicos/matriculasServico"
 import { listarHistoricoPresencasDaPessoa } from "../../../aplicacao/servicos/presencasPessoaServico";
 
 // Etapa 6.4-C (RF20 / RF27–RF28): no celular a aba Alunos vira cartões — um por
-// matrícula, "Responsáveis" como ação principal, "Remover matrícula" no ⋮ (só com
-// matrícula ativa) — e, dentro da Página da Turma, remover avisa o cabeçalho para
+// matrícula, "Responsáveis" como ação principal, "Inativar matrícula" no ⋮ (só com
+// matrícula ativa) — e, dentro da Página da Turma, inativar avisa o cabeçalho para
 // recontar os alunos ativos (`turmaRecarregarResumo`).
 vi.mock("../../../aplicacao/composables/usarTelaCompacta", () => ({
   usarTelaCompacta: () => ref(true),
@@ -87,7 +87,7 @@ describe("PaginaMatriculasTurma — cartões no celular (6.4-C)", () => {
     expect(cartoes[2]!.text()).toContain("Matrícula inativa");
     expect(cartoes[2]!.text()).toContain("Pessoa: Inativo");
     // O ⋮ aparece em todo cartão: o histórico vale também para a matrícula inativa
-    // (7.3); "Remover matrícula" continua só na ativa (conferido no caso abaixo).
+    // (7.3); "Inativar matrícula" continua só na ativa (conferido no caso abaixo).
     expect(cartoes[0]!.find('[data-testid="menu-acoes"]').exists()).toBe(true);
     expect(cartoes[2]!.find('[data-testid="menu-acoes"]').exists()).toBe(true);
     expect(wrapper.find(".p-datatable").exists()).toBe(false);
@@ -97,13 +97,13 @@ describe("PaginaMatriculasTurma — cartões no celular (6.4-C)", () => {
   it("Histórico de presenças pelo ⋮ abre o diálogo e carrega pela pessoa do aluno (CSU14)", async () => {
     const { wrapper } = await montar();
 
-    // Matrícula inativa (Caio): só o histórico no ⋮, sem "Remover matrícula".
+    // Matrícula inativa (Caio): só o histórico no ⋮, sem "Inativar matrícula".
     await wrapper.findAll('[data-testid="aluno-cartao"]')[2]!.get('[data-testid="menu-acoes"]').trigger("click");
     await flushPromises();
     const itens = Array.from(document.querySelectorAll<HTMLElement>(".p-menu-item-link, .p-menuitem-link"))
       .map((el) => el.textContent?.trim() ?? "");
     expect(itens).toContain("Histórico de presenças");
-    expect(itens).not.toContain("Remover matrícula");
+    expect(itens).not.toContain("Inativar matrícula");
 
     Array.from(document.querySelectorAll<HTMLElement>(".p-menu-item-link, .p-menuitem-link"))
       .find((el) => el.textContent?.includes("Histórico de presenças"))!
@@ -119,19 +119,20 @@ describe("PaginaMatriculasTurma — cartões no celular (6.4-C)", () => {
     wrapper.unmount();
   });
 
-  it("remover pelo ⋮ confirma, remove e manda o cabeçalho da turma recontar", async () => {
+  it("inativar pelo ⋮ confirma, inativa (RF29: data de saída, presenças preservadas) e manda o cabeçalho da turma recontar", async () => {
     const { wrapper, recarregarResumo } = await montar();
 
     await wrapper.findAll('[data-testid="aluno-cartao"]')[0]!.get('[data-testid="menu-acoes"]').trigger("click");
     await flushPromises();
     const remover = Array.from(document.querySelectorAll<HTMLElement>(".p-menu-item-link, .p-menuitem-link"))
-      .find((el) => el.textContent?.includes("Remover matrícula"));
+      .find((el) => el.textContent?.includes("Inativar matrícula"));
     expect(remover).toBeDefined();
     remover!.click();
     await flushPromises();
 
     const opcoes = requireConfirmacao.mock.calls[requireConfirmacao.mock.calls.length - 1]![0];
-    expect(opcoes.header).toBe("Remover matrícula");
+    expect(opcoes.header).toBe("Inativar matrícula");
+    expect(opcoes.acceptLabel).toBe("Inativar");
     expect(opcoes.message).toContain("Ana");
     await opcoes.accept!();
     await flushPromises();
