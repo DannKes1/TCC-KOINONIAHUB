@@ -1927,3 +1927,56 @@ mais `RNF-responsividade-cadastro-inicial.png` (E2E-01, projeto `mobile`) e os t
 
 **Registro para o Plano (v1.10):** `docs/decisoes/sonarcloud.md`, seção 4, itens 11 a 21 (seções 2.3,
 2.4, 6.1, 7.1 a 7.5 e 9).
+
+## Aderência à monografia — Entrega A: seis correções de interface e validação (28 e 29/10/2026)
+
+**Escopo.** Auditoria da monografia contra o sistema (28/10/2026) e primeira das três entregas em
+que o código passou a seguir o texto: RF36 (limiar crítico ajustável na tela), RF43 / RNF 43.1
+(data e hora do aceite na lista de Usuários), RNF 42.1 / CSU01 FA2 / CSU22 FA2 (aviso de aceite
+obrigatório), RNF 4.3 (validação de Meus Dados, 400 por campo), CSU11 FA2 / RNF 33.7 ("Marcar
+como Não realizada" só sem presenças) e RF29 / CSU12 FA1 (verbo "inativar"). Decisões, critério
+e lista do que existe no código sem RF em `docs/decisoes/aderencia-monografia.md` (seções 1, 2 e
+5). Nenhuma rota, DTO de resposta ou migration alterados; o contrato de `PUT /api/meus-dados`
+passa a responder 400 `ValidationProblemDetails` por campo a e-mail inválido e UF fora de 2 letras,
+com e-mail vazio aceito como nulo. Blocos de commit: api · front · e2e · docs · prints.
+
+**Validação automatizada (29/10/2026, ambiente do autor):** `dotnet build` com 0 avisos e 0 erros ·
+`dotnet test` = **182 aprovados** (178 + `RF4_MeusDadosTests` 4: e-mail inválido → 400 com
+`errors.Email` e nada gravado; UF "ROO" → 400 com `errors.Estado`; e-mail vazio → 204 e nulo
+gravado, com a prova de que `[EmailAddress]` sozinho recusa a string vazia; PUT válido → 204 e o
+GET reflete) · `vue-tsc -b` limpo · `npm run test` = **28 arquivos, 139 casos** (131 +
+`termoUsuario.spec` 4 + `PaginaRelatoriosEbd.spec` 2: a aba Acompanhamento expõe os três campos
+com 75/50/3 e envia 80/40/3 depois de alterados + `TermoUsoSigilo.spec` +2: aviso com a caixa
+desmarcada e ausente depois de marcar; sem a prop, sem aviso; `PaginaAulasTurma.spec` e
+`PaginaMatriculasTurma.spec` com os casos existentes ajustados) · `npm run build` ok ·
+`npm run test:e2e` = **18 aprovados** (10 `chromium` + 8 `mobile`; o E2E-01 confere o aviso
+"O aceite do termo é obrigatório para concluir." antes do aceite e a ausência dele depois; a API
+sobe pelo config com `E2E_INICIAR_API=1`). Suíte completa executada antes (178 / 131 / 18) e
+depois da entrega.
+
+**Testes manuais (perfil `https` + `npm run dev`, desktop e 360 × 640), executados pelo autor em
+29/10/2026:** T1 ✔ Relatórios › Acompanhamento com os três limiares (Atenção, Crítico e faltas
+seguidas), o campo Crítico enviado na consulta e a classificação mudando com ele · T2 ✔ Usuários
+com a data e hora do aceite abaixo da tag "Termo", também nos cartões do celular · T3 ✔ aviso de
+aceite obrigatório no Cadastro Inicial e no Primeiro Acesso, sumindo ao marcar a caixa · T4 ✔
+Meus Dados: e-mail inválido e UF com três letras barrados no campo; UF minúscula gravada em
+maiúsculas; e-mail vazio salvo como vazio; o 400 por campo da API visto no console do navegador ·
+T5 ✔ aba Aulas: aula Em aberto com presença não oferece "Marcar como Não realizada" no ⋮; sem
+presença, oferece e a situação muda · T6 ✔ aba Alunos: "Inativar matrícula" no ⋮, no botão e na
+confirmação, com o texto de preservação das presenças; depois de inativar, o histórico da aluna
+continua acessível à gestão. Observação do T6, registrada para a Entrega B: a Professora da turma
+recebe 403 ao abrir o histórico da matrícula recém-inativada (CSU12 FA1 diz que o histórico fica
+preservado; o guarda exige matrícula ativa).
+
+**Prints (`docs/evidencias/`, 19 arquivos):** `RF36-limiar-critico-tela.png`,
+`RF36-limiar-critico-360.png`, `RF36-limiar-critico-rede.png`, `RNF-43.1-usuarios-data-aceite.png`,
+`RNF-43.1-usuarios-data-aceite-360.png`, `RNF-42.1-aviso-aceite-cadastro.png`,
+`RNF-42.1-aviso-aceite-primeiro-acesso.png`, `RNF-42.1-aviso-aceite-primeiro-acesso-360.png`,
+`RNF-4.3-meus-dados-email-invalido.png`, `RNF-4.3-meus-dados-email-invalido-360.png`,
+`RNF-4.3-meus-dados-uf-invalida.png`, `RNF-4.3-meus-dados-uf-normalizada.png`,
+`RNF-4.3-meus-dados-email-vazio.png`, `RNF-4.3-400-uf-api.png` (400 por campo visto no console do
+front), `RNF-33.7-sem-nao-realizada-com-presenca.png`, `RNF-33.7-nao-realizada-sem-presenca.png`,
+`RF29-inativar-matricula-confirmacao.png`, `RF29-inativar-matricula-confirmacao-360.png`,
+`CSU12-historico-matricula-inativa-professor.png` (o 403 da observação do T6).
+
+**Registro para o Plano (v1.11):** `docs/decisoes/aderencia-monografia.md`, seção 8.
