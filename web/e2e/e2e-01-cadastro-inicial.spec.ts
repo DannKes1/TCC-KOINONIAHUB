@@ -34,12 +34,15 @@ test("E2E-01 cadastro inicial: botão desabilitado até o aceite, termo com a ig
   await page.getByTestId("cadastro-email-admin").fill(emailAdmin);
   await page.getByTestId("cadastro-senha-admin").fill(SENHA_PADRAO);
 
-  // Fluxo alternativo 2 do CSU01: sem o aceite, o botão de conclusão fica desabilitado.
+  // Fluxo alternativo 2 do CSU01: sem o aceite, o botão de conclusão fica desabilitado
+  // e a tela informa que o aceite é obrigatório (RNF 42.1).
   const concluir = page.getByTestId("cadastro-concluir");
   await expect(concluir).toBeDisabled();
+  await expect(termo.getByTestId("termo-aceite-obrigatorio")).toHaveText("O aceite do termo é obrigatório para concluir.");
 
   await page.getByText("Li e aceito o Termo de Uso e Sigilo do KoinoniaHub.").click();
   await expect(concluir).toBeEnabled();
+  await expect(termo.getByTestId("termo-aceite-obrigatorio")).toHaveCount(0);
 
   // No celular, o formulário preenchido (com os rótulos) cabe nos 360 px e vira evidência.
   if (testInfo.project.name === "mobile") {
