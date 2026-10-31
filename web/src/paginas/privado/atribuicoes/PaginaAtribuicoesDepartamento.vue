@@ -96,6 +96,7 @@ const atribuicoesFiltradas = computed(() => {
   );
 });
 
+// RF21: função em lista fechada (a API recusa outro valor com 400 em errors.Funcao).
 const opcoesFuncao = [
   { label: "Professor", value: "Professor" },
   { label: "Auxiliar", value: "Auxiliar" },
@@ -176,8 +177,8 @@ function severityFuncao(funcao: string) {
 
   if (valor === "professor") return "info";
   if (valor === "auxiliar") return "contrast";
-  if (valor === "lider") return "warn";
 
+  // Valor gravado antes da lista fechada (RF21): só exibido, até ser editado ou encerrado.
   return "secondary";
 }
 
@@ -334,7 +335,7 @@ onMounted(carregarTela);
   <div class="page-container">
     <PageHeader
       :titulo="`Atribuições - ${departamento?.nome ?? 'Turma'}`"
-      subtitulo="Gestão de professores, auxiliares, líderes e demais funções da turma"
+      subtitulo="Gestão de professores e auxiliares da turma"
     >
       <template #acoes>
         <Button
@@ -355,14 +356,7 @@ onMounted(carregarTela);
 
     <InlineMessage :texto="erro" tipo="erro" />
 
-    <div
-      style="
-        display: grid;
-        grid-template-columns: 1.4fr 220px 180px auto auto;
-        gap: 10px;
-        align-items: end;
-      "
-    >
+    <div class="atribuicoes-filtros">
       <div style="display: flex; flex-direction: column; gap: 6px">
         <label for="atribuicao-filtro-busca">Buscar</label>
         <InputText
@@ -534,14 +528,7 @@ onMounted(carregarTela);
           />
         </div>
 
-        <div
-          style="
-            display: grid;
-            grid-template-columns: 1fr 180px 140px;
-            gap: 12px;
-            align-items: start;
-          "
-        >
+        <div class="atribuicao-form-linha atribuicao-form-linha--tres">
           <div style="display: flex; flex-direction: column; gap: 6px">
             <label for="atribuicao-criacao-funcao">Função *</label>
             <Dropdown
@@ -550,8 +537,7 @@ onMounted(carregarTela);
               :options="opcoesFuncao"
               optionLabel="label"
               optionValue="value"
-              editable
-              placeholder="Selecione ou digite"
+              placeholder="Selecione"
             />
             <FieldError
               :texto="
@@ -623,8 +609,7 @@ onMounted(carregarTela);
             :options="opcoesFuncao"
             optionLabel="label"
             optionValue="value"
-            editable
-            placeholder="Selecione ou digite"
+            placeholder="Selecione"
           />
           <FieldError
             :texto="
@@ -634,7 +619,7 @@ onMounted(carregarTela);
           />
         </div>
 
-        <div style="display: grid; grid-template-columns: 180px 1fr; gap: 12px">
+        <div class="atribuicao-form-linha atribuicao-form-linha--duas">
           <div style="display: flex; flex-direction: column; gap: 6px">
             <label id="atribuicao-edicao-status-rotulo" for="atribuicao-edicao-status">Status</label>
             <Dropdown
@@ -688,6 +673,51 @@ onMounted(carregarTela);
 </template>
 
 <style scoped>
+/* Filtros (Buscar · Função · Status · botões) e linhas dos diálogos. Abaixo de 576 px os
+   campos empilham numa coluna: a 360 px as colunas fixas estouravam a largura do diálogo
+   ("Status inicial" cortado) e a dos filtros (Dropdown "Todas" cortado na borda). */
+.atribuicoes-filtros {
+  display: grid;
+  grid-template-columns: 1.4fr 220px 180px auto auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.atribuicao-form-linha {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+}
+
+.atribuicao-form-linha--tres {
+  grid-template-columns: 1fr 180px 140px;
+}
+
+.atribuicao-form-linha--duas {
+  grid-template-columns: 180px 1fr;
+}
+
+@media (max-width: 575.98px) {
+  .atribuicoes-filtros,
+  .atribuicao-form-linha--tres,
+  .atribuicao-form-linha--duas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .atribuicoes-filtros > *,
+  .atribuicao-form-linha > * {
+    min-width: 0;
+  }
+
+  .atribuicoes-filtros :deep(.p-inputtext),
+  .atribuicoes-filtros :deep(.p-select),
+  .atribuicao-form-linha :deep(.p-select),
+  .atribuicao-form-linha :deep(.p-datepicker),
+  .atribuicao-form-linha :deep(.p-inputtext) {
+    width: 100%;
+  }
+}
+
 .atribuicao-pessoa {
   display: flex;
   flex-wrap: wrap;

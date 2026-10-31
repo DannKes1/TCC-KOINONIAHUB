@@ -1,8 +1,10 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import PrimeVue from "primevue/config";
+import Dropdown from "primevue/dropdown";
 import Tooltip from "primevue/tooltip";
 import { createMemoryHistory, createRouter } from "vue-router";
 
+import { obterAtribuicao } from "../../../aplicacao/servicos/atribuicoesServico";
 import PaginaAtribuicoesDepartamento from "./PaginaAtribuicoesDepartamento.vue";
 
 // Etapa 7.1 (RNF 21.5): na lista de atribuições da turma, a pessoa sem conta de
@@ -99,6 +101,63 @@ describe("PaginaAtribuicoesDepartamento — aviso da conta (RNF 21.5)", () => {
       .toBe("Conta com perfil Usuário — não acessa a turma");
     expect(porNome["Ana Souza"]!.find('[data-testid="atribuicao-aviso-conta"]').text()).toBe("Sem conta");
     expect(wrapper.findAll('[data-testid="atribuicao-aviso-conta"]')).toHaveLength(2);
+
+    wrapper.unmount();
+  });
+});
+
+// RF21: a função da atribuição é lista fechada (Professor ou Auxiliar). O campo não
+// aceita digitação nem no diálogo "Nova atribuição" nem no de edição, e a tela não
+// anuncia outras funções.
+describe("PaginaAtribuicoesDepartamento — função em lista fechada (RF21)", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  function conferirDropdownFechado(
+    wrapper: Awaited<ReturnType<typeof montar>>,
+    labelId: string,
+    valorExibido: string,
+  ) {
+    const dropdowns = wrapper.findAllComponents(Dropdown).filter((d) => d.props("labelId") === labelId);
+    expect(dropdowns, labelId).toHaveLength(1);
+
+    const dropdown = dropdowns[0]!;
+    expect(dropdown.props("editable")).toBe(false);
+    expect((dropdown.props("options") as Array<{ label: string }>).map((o) => o.label)).toEqual([
+      "Professor",
+      "Auxiliar",
+    ]);
+
+    // Sem `editable`, a etiqueta é um span: não há campo de texto para digitar outra função.
+    const etiqueta = document.getElementById(labelId);
+    expect(etiqueta?.tagName).toBe("SPAN");
+    expect(etiqueta?.textContent?.trim()).toBe(valorExibido);
+  }
+
+  it("Nova atribuição: Dropdown fechado só com Professor e Auxiliar; subtítulo sem líderes", async () => {
+    const wrapper = await montar();
+
+    expect(wrapper.text()).toContain("Gestão de professores e auxiliares da turma");
+    expect(wrapper.text()).not.toContain("líderes");
+
+    await wrapper.find("button[aria-label='Nova Atribuição']").trigger("click");
+    await flushPromises();
+
+    conferirDropdownFechado(wrapper, "atribuicao-criacao-funcao", "Professor");
+
+    wrapper.unmount();
+  });
+
+  it("Editar atribuição: Dropdown fechado só com Professor e Auxiliar", async () => {
+    const wrapper = await montar();
+    vi.mocked(obterAtribuicao).mockResolvedValueOnce(atribuicao(1, "Paula Lima", "Professor"));
+
+    await wrapper.find("tbody tr .pi-pencil").trigger("click");
+    await flushPromises();
+
+    // A atribuição carregada é Auxiliar: o campo mostra o valor gravado.
+    conferirDropdownFechado(wrapper, "atribuicao-edicao-funcao", "Auxiliar");
 
     wrapper.unmount();
   });
