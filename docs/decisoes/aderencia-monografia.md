@@ -148,9 +148,41 @@ diálogo "Nova atribuição" e o da edição não são editáveis, listam só Pr
 rótulo é um span; subtítulo sem "líderes"; a edição mostra o valor gravado). E2E inalterados.
 Totais depois da entrega: xUnit 189 · Vitest 141 (28 arquivos) · Playwright 18.
 
-## 4. Entrega C — RF35, percentual por aula sobre os registros efetivos (planejada)
+## 4. Entrega C — RF35 / CSU15, percentual por aula sobre os registros efetivos (30/10/2026)
 
-Registro ao fechar a entrega.
+**Escopo.** Item 8 da revisão. O CSU15 descreve a frequência consolidada como "percentual de
+presença sobre os registros efetivos, detalhamento por aluno e por aula e gráfico de evolução".
+O percentual geral e o de cada aluno já dividiam presentes pelos registros efetivos (presentes +
+ausentes marcados); só o percentual **por aula** dividia pelo total de alunos com matrícula ativa
+hoje. Como consolidar exige registro de todos os ativos, os dois números coincidem no dia da
+consolidação e se separam quando entra uma matrícula nova: a aula consolidada antes dela era
+rebaixada e o gráfico de evolução, que lê o mesmo campo, mudava retroativamente. Suíte completa
+antes (189 · 141 · 18, estado da Entrega B) e depois.
+
+**Mudança.** Só na API (`RelatorioEbdServico.ObterFrequenciaTurmaAsync`): o denominador do
+percentual por aula passou a ser os registros da própria aula; aula sem registro continua 0.
+Rota, DTO e front inalterados (tabela de aulas e gráfico usam o mesmo campo `percentualPresenca`).
+
+**Decisões do autor (30/10/2026), registradas para a banca.** (1) `naoRegistrado` por aula
+continua `totalAlunos − registros`: descreve quantos alunos do quadro atual não têm registro
+naquela aula e não entra no percentual. (2) Os registros por aula continuam filtrados por
+matrícula ativa, por coerência com o geral e o por aluno (seção 5). Consequência assumida: a
+**saída** de um aluno da turma ainda altera o percentual das aulas anteriores (os registros dele
+deixam de contar), porque o relatório retrata o quadro atual de alunos, do mesmo modo que o
+percentual geral e o por aluno; a **entrada** de um aluno não altera mais nada além do total de
+alunos e de "não registrado".
+
+**Testes.** Nenhum caso de `RF35_RelatorioTests` mudou de valor esperado: a semente tem duas
+matrículas ativas registradas nas duas Consolidadas (1 de 2 dá 50 % nos dois cálculos) e nenhum
+caso afirmava o percentual por aula. Dois casos novos, obrigatórios:
+`FrequenciaTurma_MatriculaCriadaDepoisDaAulaConsolidada_NaoAlteraPercentualDaAula` (consulta o
+relatório, matricula um terceiro aluno pela API e consulta de novo: `totalAlunos` 2 → 3, as duas
+aulas mantêm 50 % com 1 presente, 1 ausente e `naoRegistrado` 1, a lista `aulas` — fonte do
+gráfico — é idêntica em ids, ordem e percentuais, o aluno novo aparece com 0 registros e
+`naoRegistrado` 2, geral segue 50 %) e `FrequenciaTurma_AulaConsolidadaSemRegistro_PercentualZero`
+(Consolidada sem presenças: 0 %, `naoRegistrado` 2, sem divisão por zero). Vitest e Playwright
+inalterados (o front não muda; o E2E-04 confere total de aulas e tema). Totais: xUnit 191 ·
+Vitest 141 (28 arquivos) · Playwright 18.
 
 ## 5. Existe no código e não consta da monografia (sem RF novo; decisão do autor, 28/10/2026)
 
@@ -242,6 +274,14 @@ subtítulo, tag; filtros e linhas dos diálogos empilhados abaixo de 576 px) e
 
 Docs — este arquivo (seções 1, 3, 5 a 8); `docs/testes.md` (bloco "Aderência — Entrega B").
 
+### Entrega C
+
+API — `Aplicacao/Servicos/Implementacoes/RelatorioEbdServico.cs` (denominador do percentual por aula).
+
+Testes xUnit — `RF35_RelatorioTests.cs` (+2). Total: 191.
+
+Docs — este arquivo (seções 4, 6 a 8); `docs/testes.md` (bloco "Aderência — Entrega C").
+
 ## 7. O que o autor deve saber explicar na banca
 
 - Por que a conferência foi feita antes da conversão para o TCC 2: o capítulo de Resultados
@@ -264,6 +304,12 @@ Docs — este arquivo (seções 1, 3, 5 a 8); `docs/testes.md` (bloco "Aderênci
   turma (RNF 21.4) e Minhas Turmas só reconhecem Professor e Auxiliar; aceitar outro texto criava
   uma atribuição sem efeito. Um único ponto de verdade (`FuncoesAtribuicao`) é usado pela
   validação, pela autorização e pela listagem, e a tela só oferece o que a API aceita.
+- RF35 / CSU15: por que o percentual por aula mudou e o que ele retrata. Os três percentuais
+  (geral, por aluno, por aula) dividem presentes pelos registros efetivos; a entrada de um aluno
+  novo não altera aulas já consolidadas nem o gráfico. Por decisão, o relatório retrata o quadro
+  atual de alunos: a saída de um aluno (matrícula inativada) retira os registros dele e ainda
+  altera o percentual das aulas anteriores, coerente com o geral e o por aluno; "não registrado"
+  por aula conta os alunos atuais sem registro naquela aula.
 - CSU12 FA1: "preservar o histórico" inclui quem consulta. A inativação registra a data de saída e
   mantém as presenças; o Professor da turma continua vendo o histórico do ex-aluno, e a RNF 34.3
   passou a dizer isso. A fronteira continua sendo a turma com atribuição ativa.
@@ -280,11 +326,17 @@ inativa para o Professor da turma (guarda de pessoa sem exigir matrícula ativa,
 Seção 6.16 (autorização): acrescentar "A consulta de pessoa, parentescos e histórico pelo
 Professor exige matrícula (ativa ou inativa) do aluno em turma com atribuição ativa dele
 (Entrega B, item 9)".
+Seção 5: acrescentar a linha "Aderência — Entrega C (30/10/2026): RF35/CSU15 percentual por aula
+sobre os registros efetivos da aula; `naoRegistrado` e o filtro de matrícula ativa mantidos".
+Seção 6.9: acrescentar "Percentual por aula = presentes / registros efetivos da aula (Entrega C);
+os três percentuais do relatório de frequência usam o mesmo denominador".
+Seção 7.1: RF35 "(4 casos; SonarCloud)" → acrescentar "; CSU15: matrícula criada depois da aula
+consolidada não altera o percentual da aula nem a lista do gráfico; Consolidada sem registro = 0 %".
 Seção 7.1: linhas `RF21_FuncaoAtribuicaoTests | RF21: função fora da lista → 400 em criar e editar; Professor e Auxiliar aceitos (4 casos)`;
 RF34 "(3 casos)" → "(5 casos; matrícula inativa: 200 na turma do professor, 403 fora dela)";
 RF11 "+1: DTO reduzido do ex-aluno da turma".
 Seção 7.2: `PaginaAtribuicoesDepartamento.spec` (1 → 3: Dropdown de função fechado nos dois diálogos).
-Seção 7.4: "178 aprovados" → "189"; "131 (26 arquivos)" → "141 (28 arquivos)".
+Seção 7.4: "178 aprovados" → "191"; "131 (26 arquivos)" → "141 (28 arquivos)".
 Seção 9: retirar as linhas CSU01 passo 5 e CSU09 passo 4 quando o autor aplicar o .docx;
 acrescentar as dez correções de texto restantes da seção 1 deste arquivo (inclusive a RNF 34.3)
 até serem aplicadas.
