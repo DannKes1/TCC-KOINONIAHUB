@@ -2026,3 +2026,43 @@ professor de outra turma (perfil Professor) recebe 403 em `GET /api/pessoas/{id}
 `CSU12-historico-matricula-inativa-professor-ok-360.png`, `RNF-34.3-403-outra-turma.png`.
 
 **Registro para o Plano (v1.11):** `docs/decisoes/aderencia-monografia.md`, seção 8.
+
+## Aderência à monografia — Entrega C: RF35 / CSU15, percentual por aula sobre os registros efetivos (30/10/2026)
+
+**Escopo.** Item 8 da revisão: o CSU15 descreve o percentual de presença "sobre os registros
+efetivos"; o percentual por aula dividia pelo total de alunos com matrícula ativa hoje, e uma
+matrícula criada depois da consolidação rebaixava a aula e movia o gráfico de evolução. Decisão
+em `docs/decisoes/aderencia-monografia.md`, seção 4: o denominador passou a ser os registros da
+própria aula; `naoRegistrado` continua `totalAlunos − registros` e os registros seguem filtrados
+por matrícula ativa, então a saída de um aluno ainda altera as aulas anteriores (o relatório
+retrata o quadro atual, coerente com o geral e o por aluno). Só a API mudou; rota, DTO e front
+inalterados. Blocos de commit: api · docs · prints.
+
+**Validação automatizada (30/10/2026, ambiente do autor):** `dotnet build` com 0 avisos e 0 erros ·
+`dotnet test` = **191 aprovados** (189 + `RF35_RelatorioTests` 2:
+`FrequenciaTurma_MatriculaCriadaDepoisDaAulaConsolidada_NaoAlteraPercentualDaAula` — total de
+alunos 2 → 3, as duas Consolidadas mantêm 50 % com 1 presente, 1 ausente e `naoRegistrado` 1, a
+lista `aulas` é idêntica em ids, ordem e percentuais, o aluno novo tem 0 registros e
+`naoRegistrado` 2, geral 50 %; `FrequenciaTurma_AulaConsolidadaSemRegistro_PercentualZero` — 0 %
+sem divisão por zero). Nenhum caso existente mudou de valor esperado (a semente dá 50 % nos dois
+cálculos e nenhum caso afirmava o percentual por aula) · `vue-tsc -b` limpo · `npm run test` =
+**28 arquivos, 141 casos** · `npm run build` ok · `npm run test:e2e` = **18 aprovados** (10
+`chromium` + 8 `mobile`). Suíte completa executada antes (189 / 141 / 18, estado da Entrega B) e
+depois.
+
+**Testes manuais (perfil `https` + `npm run dev`, Admin, desktop e 360 × 640), executados pelo
+autor em 30/10/2026, turma Adolescentes, aula de 22/10:** T9 ✔ antes da matrícula a aula tinha
+8 presentes, 5 ausentes, 0 não registrados e 61,5 % com 13 alunos; depois de matricular um aluno,
+8 / 5 / 1 e **61,5 %** com 14 alunos, geral 63,3 % nos dois momentos, gráfico de evolução igual,
+aluno novo com 0 registros e 16 não registrados; JSON de `frequencia-turma` com `presentes`,
+`ausentesMarcados` e `percentualPresenca` iguais e `totalAlunos` e `naoRegistrado` maiores em 1 ·
+T10 ✔ ao inativar a matrícula de um aluno presente, a aula passou a 7 / 5 / 1 e 58,3 % e o geral
+a 64,4 %, como registrado na seção 4 (os registros do aluno que saiu deixam de contar).
+
+**Prints (`docs/evidencias/`, 9 arquivos):** `RF35-percentual-aula-antes.png`,
+`RF35-percentual-aula-antes-tabela-360.png`, `RF35-percentual-aula-depois.png`,
+`RF35-percentual-aula-depois-resumo.png`, `RF35-percentual-aula-depois-360.png`,
+`RF35-percentual-aula-depois-aluno-novo-360.png`, `RF35-percentual-aula-json.png`,
+`RF35-percentual-aula-saida.png`, `RF35-percentual-aula-saida-resumo.png`.
+
+**Registro para o Plano (v1.11):** `docs/decisoes/aderencia-monografia.md`, seção 8.
