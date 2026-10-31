@@ -1,6 +1,9 @@
 using System.Net;
 using System.Text.Json;
+using KoinoniaHub.API.Infraestrutura.Dados;
 using KoinoniaHub.API.Tests.Infraestrutura;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KoinoniaHub.API.Tests
 {
@@ -93,6 +96,31 @@ namespace KoinoniaHub.API.Tests
 
             Assert.Equal(HttpStatusCode.Forbidden, fora.StatusCode);
             Assert.Equal(HttpStatusCode.OK, dentro.StatusCode);
+        }
+
+        // RNF 11.3 com matrícula inativa: o aluno que saiu da turma continua consultável
+        // pelo Professor dela, no mesmo DTO reduzido (mesma regra do histórico, CSU12 FA1).
+        [Fact]
+        public async Task ObterPessoa_ProfessorNaTurma_MatriculaInativa_RetornaDtoReduzido()
+        {
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf11f");
+            using (var escopo = _fabrica.Services.CreateScope())
+            {
+                var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+                var matricula = await db.AlunosDepartamentos
+                    .SingleAsync(m => m.PessoaId == cenario.AlunoDentroId && m.DepartamentoId == cenario.TurmaComAtribuicaoId);
+                matricula.Ativo = false;
+                matricula.DataSaida = DateTime.UtcNow;
+                await db.SaveChangesAsync();
+            }
+            var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
+
+            var resposta = await professor.GetAsync($"/api/pessoas/{cenario.AlunoDentroId}");
+
+            Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+            using var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+            Assert.Equal("Aluno Dentro rf11f", json.RootElement.GetProperty("nome").GetString());
+            Assert.False(json.RootElement.TryGetProperty("email", out _));
         }
     }
 }

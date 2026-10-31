@@ -1,5 +1,6 @@
 ﻿using KoinoniaHub.API.Aplicacao.Excecoes;
 using KoinoniaHub.API.Dominio.Entidades;
+using KoinoniaHub.API.Dominio.Regras;
 using KoinoniaHub.API.Infraestrutura.Dados;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,8 +15,6 @@ namespace KoinoniaHub.API.Aplicacao.Seguranca
     public class AutorizacaoEbdServico : IAutorizacaoEbdServico
     {
         public const string MensagemPerfilOperacional = "Esta operação exige perfil Professor ou administrativo.";
-
-        private static readonly string[] FuncoesDeAtribuicao = { "Professor", "Auxiliar" };
 
         private readonly KoinoniaHubDbContext _db;
 
@@ -80,9 +79,11 @@ namespace KoinoniaHub.API.Aplicacao.Seguranca
 
             var departamentos = await ListarDepartamentosDaPessoaAsync(igrejaId, usuario.PessoaId.Value);
 
+            // A matrícula pode estar ativa ou inativa: o aluno que saiu da turma continua
+            // consultável pelo professor dela (RF29 e CSU12 FA1 preservam o histórico; a
+            // RNF 34.3 restringe por turma, não pela situação da matrícula).
             var permitido = departamentos.Count > 0 && await _db.AlunosDepartamentos.AsNoTracking()
                 .AnyAsync(m =>
-                    m.Ativo &&
                     m.PessoaId == pessoaId &&
                     m.Departamento.IgrejaId == igrejaId &&
                     departamentos.Contains(m.DepartamentoId));
@@ -114,7 +115,7 @@ namespace KoinoniaHub.API.Aplicacao.Seguranca
                     a.Ativo &&
                     a.DepartamentoId == departamentoId &&
                     a.PessoaId == pessoaId &&
-                    FuncoesDeAtribuicao.Contains(a.Funcao));
+                    FuncoesAtribuicao.Todas.Contains(a.Funcao));
 
             if (!possuiAtribuicao)
                 throw new UnauthorizedAccessException("Você não tem permissão para operar esta turma (sem atribuição ativa).");
@@ -127,7 +128,7 @@ namespace KoinoniaHub.API.Aplicacao.Seguranca
                     a.Ativo &&
                     a.PessoaId == pessoaId &&
                     a.Departamento.IgrejaId == igrejaId &&
-                    FuncoesDeAtribuicao.Contains(a.Funcao))
+                    FuncoesAtribuicao.Todas.Contains(a.Funcao))
                 .Select(a => a.DepartamentoId)
                 .Distinct()
                 .ToListAsync();

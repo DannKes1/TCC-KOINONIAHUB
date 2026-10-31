@@ -9,7 +9,7 @@ namespace KoinoniaHub.API.Dominio.Entidades
         [Required]
         [StringLength(50)]
         public string Funcao { get; set; } = string.Empty;
-        // Valores: Professor, Auxiliar
+        // Valores: Professor, Auxiliar (lista fechada em Dominio/Regras/FuncoesAtribuicao, RF21)
 
         public DateTime DataInicio { get; set; } = DateTime.UtcNow;
 

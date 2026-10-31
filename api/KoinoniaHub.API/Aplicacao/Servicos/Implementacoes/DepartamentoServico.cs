@@ -3,6 +3,7 @@ using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
 using KoinoniaHub.API.Dominio.Entidades;
 using KoinoniaHub.API.Dominio.Interfaces.Repositorios;
+using KoinoniaHub.API.Dominio.Regras;
 using KoinoniaHub.API.Infraestrutura.Dados;
 using Microsoft.EntityFrameworkCore;
 
@@ -65,13 +66,12 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 return new List<DepartamentoRespostaDto>();
 
             var pessoaId = usuario.PessoaId.Value;
-            var funcoesPermitidas = new[] { "Professor", "Auxiliar" };
 
             var departamentoIds = await _db.Atribuicoes.AsNoTracking()
                 .Where(a =>
                     a.Ativo &&
                     a.PessoaId == pessoaId &&
-                    funcoesPermitidas.Contains(a.Funcao))
+                    FuncoesAtribuicao.Todas.Contains(a.Funcao))
                 .Select(a => a.DepartamentoId)
                 .Distinct()
                 .ToListAsync();

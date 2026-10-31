@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using KoinoniaHub.API.Aplicacao.DTOs.Validacao;
 
 namespace KoinoniaHub.API.Aplicacao.DTOs.Requisicoes
 {
@@ -12,8 +13,10 @@ namespace KoinoniaHub.API.Aplicacao.DTOs.Requisicoes
         [Range(1, int.MaxValue, ErrorMessage = "DepartamentoId inválido.")]
         public int DepartamentoId { get; set; }
 
+        // RF21: Professor ou Auxiliar (lista fechada, Dominio/Regras/FuncoesAtribuicao).
         [Required]
         [StringLength(50)]
+        [FuncaoAtribuicao]
         public string Funcao { get; set; } = "Professor";
 
         public DateTime? DataInicio { get; set; }

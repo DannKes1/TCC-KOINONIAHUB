@@ -1,6 +1,9 @@
 using System.Net;
 using System.Text.Json;
+using KoinoniaHub.API.Infraestrutura.Dados;
 using KoinoniaHub.API.Tests.Infraestrutura;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KoinoniaHub.API.Tests
 {
@@ -63,6 +66,48 @@ namespace KoinoniaHub.API.Tests
 
             Assert.Equal(HttpStatusCode.Forbidden, outra.StatusCode);
             Assert.Equal(HttpStatusCode.OK, propria.StatusCode);
+        }
+
+        // CSU12 FA1 / RF29: a inativação preserva o histórico, e o Professor da turma
+        // continua a consultá-lo (RNF 34.3 restringe por turma, não pela situação da
+        // matrícula). Professor de outra turma segue recebendo 403.
+        [Fact]
+        public async Task Presencas_ProfessorNaTurma_MatriculaInativa_Retorna200ComAsPresencasDaTurma()
+        {
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf34d");
+            await InativarMatriculaAsync(cenario.AlunoDentroId, cenario.TurmaComAtribuicaoId);
+            var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
+
+            var resposta = await professor.GetAsync($"/api/pessoas/{cenario.AlunoDentroId}/presencas");
+
+            Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+            using var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+            var itens = json.RootElement.EnumerateArray().ToList();
+            Assert.Single(itens);
+            Assert.Equal(cenario.TurmaComAtribuicaoId, itens[0].GetProperty("departamentoId").GetInt32());
+        }
+
+        [Fact]
+        public async Task Presencas_ProfessorForaDaTurma_MatriculaInativa_Retorna403()
+        {
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf34e");
+            await InativarMatriculaAsync(cenario.AlunoForaId, cenario.TurmaSemAtribuicaoId);
+            var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
+
+            var resposta = await professor.GetAsync($"/api/pessoas/{cenario.AlunoForaId}/presencas");
+
+            Assert.Equal(HttpStatusCode.Forbidden, resposta.StatusCode);
+        }
+
+        private async Task InativarMatriculaAsync(int pessoaId, int departamentoId)
+        {
+            using var escopo = _fabrica.Services.CreateScope();
+            var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+            var matricula = await db.AlunosDepartamentos
+                .SingleAsync(m => m.PessoaId == pessoaId && m.DepartamentoId == departamentoId);
+            matricula.Ativo = false;
+            matricula.DataSaida = DateTime.UtcNow;
+            await db.SaveChangesAsync();
         }
     }
 }
