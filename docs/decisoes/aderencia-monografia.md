@@ -5,12 +5,13 @@ sistema implementado: RF1 a RF45 com as RNFs numeradas, CSU01 a CSU24 passo a pa
 principal e alternativos), o DER e o diagrama de casos de uso, a seção 4.8 (JWT, cookie, CORS,
 Origin, BCrypt), as telas do protótipo contra as rotas do front e as versões das ferramentas
 contra os manifestos. A verificação mostrou que nenhuma regra de negócio central diverge
-(situações da aula, perfil × atribuição, termo, isolamento por igreja, LGPD). Sobraram onze
-pontos em que o texto deve descrever o que o sistema faz (seção 1), oito em que o código deve
-seguir o texto (seções 2 a 4) e uma lista do que existe no código sem constar da monografia
-(seção 5). Decisão do autor em 28/10/2026: código ajustado nos oito itens, em três entregas (A,
-B e C), cada uma com plano prévio, suíte completa antes e depois e testes manuais; o texto é
-alterado pelo autor no .docx; nenhum RF novo.
+(situações da aula, perfil × atribuição, termo, isolamento por igreja, LGPD). Sobraram doze
+pontos em que o texto deve descrever o que o sistema faz (seção 1), nove em que o código deve
+seguir o texto (seções 2 a 4; o nono, CSU12 FA1, apareceu nos testes manuais da Entrega A) e
+uma lista do que existe no código sem constar da monografia (seção 5). Decisão do autor em
+28/10/2026: código ajustado nos itens, em três entregas (A, B e C), cada uma com plano prévio,
+suíte completa antes e depois e testes manuais; o texto é alterado pelo autor no .docx; nenhum
+RF novo.
 
 ## 1. Correções de texto aprovadas (o autor aplica no .docx)
 
@@ -27,6 +28,7 @@ alterado pelo autor no .docx; nenhum RF novo.
 | CSU07, passo 1 | "O usuário acessa a opção Minha Frequência." → "O usuário aciona Minha frequência na turma desejada, a partir de Minhas Turmas ou do Painel." | Não existe item de menu; o acesso é por turma. |
 | CSU04, passo 3 | "o histórico dos últimos três meses" → "o histórico dos últimos 90 dias" | Janela fixa de 90 dias no Painel e em Minha Frequência. |
 | RNFs 10.2, 16.2, 19.2, 23.2 e 31.2 | "A listagem deve ser paginada e permitir busca e filtros." → "A listagem deve ser paginada em tela e permitir busca e filtros." | A paginação é feita em tela (PrimeVue, dez linhas; "Mostrar mais" no celular); a API devolve a lista inteira da igreja. Para a banca: o porte da base (cerca de 200 pessoas e 8 turmas) dispensa paginação no servidor. |
+| RNF 34.3 | "…alunos das turmas nas quais possui atribuição ativa" → "…alunos das turmas nas quais possui atribuição ativa, inclusive os de matrícula já inativada" | Decisão da Entrega B (seção 3, item 9): o aluno que saiu da turma continua consultável pelo Professor dela, porque o CSU12 FA1 preserva o histórico. |
 
 ## 2. Entrega A — seis correções de aderência (28/10/2026)
 
@@ -93,9 +95,58 @@ Não realizada" nos três estados), `PaginaMatriculasTurma.spec` (rótulos "Inat
 `acceptLabel` "Inativar"). E2E-01: duas asserções no bloco do FA2 (aviso visível antes do aceite
 e ausente depois). Totais depois da entrega: xUnit 182 · Vitest 139 (28 arquivos) · Playwright 18.
 
-## 3. Entrega B — RF21, função da atribuição em lista fechada (planejada)
+## 3. Entrega B — RF21, função em lista fechada; CSU12 FA1, histórico da matrícula inativa (29/10/2026)
 
-Registro ao fechar a entrega.
+**Escopo.** Item 7 da revisão (RF21) e item 9, surgido no teste manual T6 da Entrega A. Suíte
+completa antes (o estado da Entrega A: 182 · 139 · 18) e depois. Nenhuma rota, DTO de resposta
+ou migration alterados; o contrato de `POST` e `PUT /api/atribuicoes` passa a recusar função
+fora da lista com 400 `ValidationProblemDetails` em `errors.Funcao`.
+
+**Item 7 — RF21, função da atribuição em lista fechada.** O texto diz "Vincula uma pessoa a uma
+função na turma (Professor, Auxiliar)"; a API aceitava qualquer texto até 50 caracteres e os
+dois Dropdowns da tela eram editáveis ("Selecione ou digite"), com o subtítulo anunciando
+"líderes e demais funções". Como a autorização por turma e Minhas Turmas só reconhecem
+Professor e Auxiliar, uma função digitada criava uma atribuição que não dava acesso a nada. A
+lista passou a existir num só lugar, `Dominio/Regras/FuncoesAtribuicao` (mesmo padrão de
+`ParentescoInverso`), usada pela autorização, por Minhas Turmas e pelo atributo de validação
+`[FuncaoAtribuicao]` dos DTOs de criar e editar. Comparação exata ("professor" em minúsculas
+também é recusado), porque a lista é fechada e a tela só oferece os dois valores. Na tela, os
+Dropdowns deixaram de ser editáveis ("Selecione"), o subtítulo virou "Gestão de professores e
+auxiliares da turma" e a tag de função perdeu o ramo "líder"; valor antigo gravado antes da
+lista continua listado com a tag cinza até ser editado ou encerrado. Conferência prévia: a
+semente do E2E (`criarAtribuicao`, tipada Professor | Auxiliar), as fixtures e os xUnit só usam
+os dois valores; no banco local do autor havia uma linha "Secretário", exibida com a tag cinza e
+editada para Auxiliar pela tela em 30/10/2026 (teste manual T7b), sem migration.
+
+**Item 9 — CSU12 FA1 / RNF 34.3, histórico do aluno com matrícula inativa.** No T6 da Entrega
+A, a Professora da turma inativou uma matrícula e, ao abrir o histórico da aluna, recebeu 403
+"Você só pode consultar alunos das turmas em que possui atribuição ativa." O CSU12 FA1 diz que a
+inativação preserva o histórico de presenças e o ator do CSU12 é o Professor; a RNF 34.3 (e a
+11.3) restringem por turma, não pela situação da matrícula. O guarda `GarantirAcessoPessoaAsync`
+deixou de exigir matrícula ativa: basta a pessoa ter (ou ter tido) matrícula numa turma em que
+o professor possui atribuição ativa. Decisão do autor: vale para as três rotas que usam o guarda
+(histórico, `GET /api/pessoas/{id}` em DTO reduzido e parentescos), porque o cartão da matrícula
+inativa na aba Alunos também oferece "Responsáveis", que recebia o mesmo 403. Professor de outra
+turma e conta Usuario não mudam; a mensagem continua a mesma. O front não mudou. A RNF 34.3
+ganha a frase "inclusive os de matrícula já inativada" (seção 1).
+
+**Acabamento a 360 px, encontrado no teste manual T7.** Na tela de Atribuições, a linha de
+filtros (Buscar · Função · Status · botões) e as linhas dos diálogos "Nova atribuição" (Função ·
+Data de início · Status inicial) e "Editar atribuição" (Status · Data fim) usavam colunas fixas e
+estouravam a largura, com "Status inicial" e o Dropdown "Todas" cortados. Os estilos saíram do
+`style` inline para classes e, abaixo de 576 px, os campos empilham numa coluna com largura
+total, como nas demais listas. Sem mudança de comportamento; E2E-M2 (abas da turma) continua
+sem rolagem horizontal.
+
+**Testes.** xUnit `RF21_FuncaoAtribuicaoTests` (novo, 4: POST "Coordenador" → 400 com a mensagem
+em `errors.Funcao` e nada gravado; PUT "Lider" → 400 e a função gravada não muda; Theory
+Professor/Auxiliar → 200 com a função gravada), `RF34_PresencasPessoaTests` (+2: Professor da
+turma vê o histórico da matrícula inativada, só com a presença daquela turma; Professor de
+outra turma continua 403 com a matrícula inativada) e `RF11_PessoaAcessoTests` (+1: DTO reduzido
+do ex-aluno da turma). Vitest `PaginaAtribuicoesDepartamento.spec` (+2: o Dropdown de função do
+diálogo "Nova atribuição" e o da edição não são editáveis, listam só Professor e Auxiliar e o
+rótulo é um span; subtítulo sem "líderes"; a edição mostra o valor gravado). E2E inalterados.
+Totais depois da entrega: xUnit 189 · Vitest 141 (28 arquivos) · Playwright 18.
 
 ## 4. Entrega C — RF35, percentual por aula sobre os registros efetivos (planejada)
 
@@ -148,10 +199,12 @@ pré-formatada no convite; sessão (só metadados) em `localStorage` para detect
 proxy (`ForwardedHeaders`); HSTS; relatórios RF35/RF36 consideram só matrículas ativas (aluno
 que saiu da turma some do período); o histórico do aluno (CSU14) calcula o percentual sem
 janela e Minha Frequência usa 90 dias; o Resumo do dia conta aulas de turmas inativas nos
-totais de aulas, mas não nos de presença; o Professor recebe 403 ao abrir o histórico de
-matrícula inativa.
+totais de aulas, mas não nos de presença. (O 403 do Professor ao abrir o histórico de matrícula
+inativa, anotado aqui em 28/10, foi corrigido na Entrega B, item 9.)
 
-## 6. Arquivos (Entrega A)
+## 6. Arquivos
+
+### Entrega A
 
 API — `Aplicacao/DTOS/Requisicoes/MeusDadosAtualizarRequisicaoDto.cs` (anotações).
 
@@ -172,6 +225,23 @@ E2E — `e2e/e2e-01-cadastro-inicial.spec.ts` (+2 asserções). Playwright: 18.
 
 Docs — este arquivo (novo); `docs/testes.md` (bloco "Aderência — Entrega A").
 
+### Entrega B
+
+API — `Dominio/Regras/FuncoesAtribuicao.cs` (novo); `Aplicacao/DTOS/Validacao/FuncaoAtribuicaoAttribute.cs`
+(novo); `Aplicacao/DTOS/Requisicoes/AtribuicaoCriarRequisicaoDto.cs` e `AtribuicaoAtualizarRequisicaoDto.cs`
+(atributo); `Aplicacao/Seguranca/AutorizacaoEbdServico.cs` (lista do domínio; guarda de pessoa sem
+exigir matrícula ativa); `Aplicacao/Servicos/Implementacoes/DepartamentoServico.cs` (lista do
+domínio); `Dominio/Entidades/Models/Atribuicao.cs` (comentário).
+
+Testes xUnit — `RF21_FuncaoAtribuicaoTests.cs` (novo, 4); `RF34_PresencasPessoaTests.cs` (+2);
+`RF11_PessoaAcessoTests.cs` (+1). Total: 189.
+
+Front — `paginas/privado/atribuicoes/PaginaAtribuicoesDepartamento.vue` (Dropdowns fechados,
+subtítulo, tag; filtros e linhas dos diálogos empilhados abaixo de 576 px) e
+`PaginaAtribuicoesDepartamento.spec.ts` (+2). Vitest: 141 casos (28 arquivos).
+
+Docs — este arquivo (seções 1, 3, 5 a 8); `docs/testes.md` (bloco "Aderência — Entrega B").
+
 ## 7. O que o autor deve saber explicar na banca
 
 - Por que a conferência foi feita antes da conversão para o TCC 2: o capítulo de Resultados
@@ -190,6 +260,13 @@ Docs — este arquivo (novo); `docs/testes.md` (bloco "Aderência — Entrega A"
   utilizável para quem tem pouca familiaridade com tecnologia (problemática, seção 1.2).
 - RF29: "remover" e "inativar" são operações diferentes para o usuário; a tela precisa dizer o
   que o sistema faz (data de saída, presenças preservadas), que é o que o requisito especifica.
+- RF21: por que a função é lista fechada e por que a lista vive no domínio. A autorização por
+  turma (RNF 21.4) e Minhas Turmas só reconhecem Professor e Auxiliar; aceitar outro texto criava
+  uma atribuição sem efeito. Um único ponto de verdade (`FuncoesAtribuicao`) é usado pela
+  validação, pela autorização e pela listagem, e a tela só oferece o que a API aceita.
+- CSU12 FA1: "preservar o histórico" inclui quem consulta. A inativação registra a data de saída e
+  mantém as presenças; o Professor da turma continua vendo o histórico do ex-aluno, e a RNF 34.3
+  passou a dizer isso. A fronteira continua sendo a turma com atribuição ativa.
 
 ## 8. Registro para o Plano (v1.11)
 
@@ -197,6 +274,17 @@ Seção 5: acrescentar a linha "Aderência — Entrega A (28/10/2026): seis corr
 RNF 42.1, RNF 4.3, CSU11 FA2, RF29); registro em `docs/decisoes/aderencia-monografia.md`".
 Seção 7.1: linha `RF4_MeusDadosTests | RNF 4.3: 400 por campo (e-mail, UF), e-mail vazio opcional e 204 válido (4 casos)`.
 Seção 7.2: `termoUsuario.spec` (4), `PaginaRelatoriosEbd.spec` (2), `TermoUsoSigilo.spec` (7 → 9).
-Seção 7.4: "178 aprovados" → "182"; "131 (26 arquivos)" → "139 (28 arquivos)".
+Seção 5: acrescentar a linha "Aderência — Entrega B (29/10/2026): RF21 função em lista fechada
+(`Dominio/Regras/FuncoesAtribuicao`, 400 em `errors.Funcao`) e CSU12 FA1 histórico da matrícula
+inativa para o Professor da turma (guarda de pessoa sem exigir matrícula ativa, três rotas)".
+Seção 6.16 (autorização): acrescentar "A consulta de pessoa, parentescos e histórico pelo
+Professor exige matrícula (ativa ou inativa) do aluno em turma com atribuição ativa dele
+(Entrega B, item 9)".
+Seção 7.1: linhas `RF21_FuncaoAtribuicaoTests | RF21: função fora da lista → 400 em criar e editar; Professor e Auxiliar aceitos (4 casos)`;
+RF34 "(3 casos)" → "(5 casos; matrícula inativa: 200 na turma do professor, 403 fora dela)";
+RF11 "+1: DTO reduzido do ex-aluno da turma".
+Seção 7.2: `PaginaAtribuicoesDepartamento.spec` (1 → 3: Dropdown de função fechado nos dois diálogos).
+Seção 7.4: "178 aprovados" → "189"; "131 (26 arquivos)" → "141 (28 arquivos)".
 Seção 9: retirar as linhas CSU01 passo 5 e CSU09 passo 4 quando o autor aplicar o .docx;
-acrescentar as nove correções de texto restantes da seção 1 deste arquivo até serem aplicadas.
+acrescentar as dez correções de texto restantes da seção 1 deste arquivo (inclusive a RNF 34.3)
+até serem aplicadas.
