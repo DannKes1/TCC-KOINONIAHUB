@@ -346,9 +346,13 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
                 var naoRegistrado = totalAlunos - registros;
 
-                var percentual = totalAlunos == 0
+                // CSU15: percentual sobre os registros efetivos da aula (presentes + ausentes
+                // marcados), como no geral e no por aluno. Matrícula criada depois da
+                // consolidação não rebaixa a aula nem move o gráfico de evolução;
+                // naoRegistrado continua descrevendo o quadro atual de alunos.
+                var percentual = registros == 0
                     ? 0
-                    : Math.Round((decimal)presentes / totalAlunos * 100m, 2);
+                    : Math.Round((decimal)presentes / registros * 100m, 2);
 
                 return new FrequenciaAulaRespostaDto
                 {

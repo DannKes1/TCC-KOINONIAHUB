@@ -1,7 +1,10 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using KoinoniaHub.API.Dominio.Entidades;
+using KoinoniaHub.API.Infraestrutura.Dados;
 using KoinoniaHub.API.Tests.Infraestrutura;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KoinoniaHub.API.Tests
 {
@@ -65,6 +68,96 @@ namespace KoinoniaHub.API.Tests
             Assert.Equal(0, alunoB.GetProperty("presentes").GetInt32());
             Assert.Equal(2, alunoB.GetProperty("ausentesMarcados").GetInt32());
             Assert.Equal(0m, alunoB.GetProperty("percentualPresenca").GetDecimal());
+        }
+
+        // CSU15 (Entrega C da aderência): o percentual de cada aula é calculado sobre os
+        // registros efetivos daquela aula. Uma matrícula criada depois da consolidação entra
+        // no total de alunos e em "não registrado", mas não rebaixa o percentual da aula nem
+        // move o gráfico de evolução (que lê o mesmo campo).
+        [Fact]
+        public async Task FrequenciaTurma_MatriculaCriadaDepoisDaAulaConsolidada_NaoAlteraPercentualDaAula()
+        {
+            var cenario = await CenarioAula.CriarAsync(_fabrica, "rf35h");
+            await SemearAulasAsync(_fabrica, cenario);
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+            var rota = $"/api/relatorios/ebd/frequencia-turma?{Periodo(cenario.TurmaId)}";
+
+            var antes = await LerAulasDoRelatorioAsync(admin, rota);
+            Assert.Equal(2, antes.Count);
+            Assert.All(antes, a => Assert.Equal(50m, a.Percentual));
+
+            var pessoaNovaId = await CriarPessoaAsync(cenario.IgrejaId, "Aluno Novo rf35h");
+            var matricula = await admin.PostAsJsonAsync($"/api/departamentos/{cenario.TurmaId}/matriculas", new { PessoaId = pessoaNovaId });
+            Assert.Equal(HttpStatusCode.OK, matricula.StatusCode);
+
+            var resposta = await admin.GetAsync(rota);
+            Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+            using var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+            var raiz = json.RootElement;
+
+            Assert.Equal(3, raiz.GetProperty("totalAlunos").GetInt32());
+            Assert.Equal(50m, raiz.GetProperty("percentualPresencaGeral").GetDecimal());
+
+            // A lista de aulas (fonte do gráfico de evolução) é a mesma: ids, ordem e percentuais.
+            var depois = raiz.GetProperty("aulas").EnumerateArray()
+                .Select(a => (Id: a.GetProperty("aulaId").GetInt32(), Percentual: a.GetProperty("percentualPresenca").GetDecimal()))
+                .ToList();
+            Assert.Equal(antes, depois);
+
+            foreach (var aula in raiz.GetProperty("aulas").EnumerateArray())
+            {
+                Assert.Equal(3, aula.GetProperty("totalAlunos").GetInt32());
+                Assert.Equal(1, aula.GetProperty("presentes").GetInt32());
+                Assert.Equal(1, aula.GetProperty("ausentesMarcados").GetInt32());
+                Assert.Equal(1, aula.GetProperty("naoRegistrado").GetInt32());
+                Assert.Equal(50m, aula.GetProperty("percentualPresenca").GetDecimal());
+            }
+
+            var alunoNovo = raiz.GetProperty("alunos").EnumerateArray().Single(a => a.GetProperty("pessoaId").GetInt32() == pessoaNovaId);
+            Assert.Equal(0, alunoNovo.GetProperty("presentes").GetInt32());
+            Assert.Equal(0, alunoNovo.GetProperty("ausentesMarcados").GetInt32());
+            Assert.Equal(2, alunoNovo.GetProperty("naoRegistrado").GetInt32());
+            Assert.Equal(0m, alunoNovo.GetProperty("percentualPresenca").GetDecimal());
+        }
+
+        [Fact]
+        public async Task FrequenciaTurma_AulaConsolidadaSemRegistro_PercentualZero()
+        {
+            var cenario = await CenarioAula.CriarAsync(_fabrica, "rf35i");
+            var semRegistro = await cenario.CriarAulaEmAsync(_fabrica, DateTime.UtcNow.AddDays(-2), SituacaoAula.Consolidada, 0);
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+
+            var resposta = await admin.GetAsync($"/api/relatorios/ebd/frequencia-turma?{Periodo(cenario.TurmaId)}");
+
+            Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+            using var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+            var aula = json.RootElement.GetProperty("aulas").EnumerateArray().Single(a => a.GetProperty("aulaId").GetInt32() == semRegistro);
+
+            Assert.Equal(0, aula.GetProperty("presentes").GetInt32());
+            Assert.Equal(0, aula.GetProperty("ausentesMarcados").GetInt32());
+            Assert.Equal(2, aula.GetProperty("naoRegistrado").GetInt32());
+            Assert.Equal(0m, aula.GetProperty("percentualPresenca").GetDecimal());
+            Assert.Equal(0m, json.RootElement.GetProperty("percentualPresencaGeral").GetDecimal());
+        }
+
+        private static async Task<List<(int Id, decimal Percentual)>> LerAulasDoRelatorioAsync(HttpClient cliente, string rota)
+        {
+            var resposta = await cliente.GetAsync(rota);
+            Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+            using var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+            return json.RootElement.GetProperty("aulas").EnumerateArray()
+                .Select(a => (Id: a.GetProperty("aulaId").GetInt32(), Percentual: a.GetProperty("percentualPresenca").GetDecimal()))
+                .ToList();
+        }
+
+        private async Task<int> CriarPessoaAsync(int igrejaId, string nome)
+        {
+            using var escopo = _fabrica.Services.CreateScope();
+            var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+            var pessoa = new Pessoa { Nome = nome, IgrejaId = igrejaId };
+            db.Add(pessoa);
+            await db.SaveChangesAsync();
+            return pessoa.Id;
         }
 
         [Fact]
