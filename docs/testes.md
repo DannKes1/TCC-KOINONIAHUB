@@ -1980,3 +1980,49 @@ front), `RNF-33.7-sem-nao-realizada-com-presenca.png`, `RNF-33.7-nao-realizada-s
 `CSU12-historico-matricula-inativa-professor.png` (o 403 da observação do T6).
 
 **Registro para o Plano (v1.11):** `docs/decisoes/aderencia-monografia.md`, seção 8.
+
+## Aderência à monografia — Entrega B: RF21 função em lista fechada e CSU12 FA1 histórico da matrícula inativa (29 e 30/10/2026)
+
+**Escopo.** Item 7 da revisão (RF21: a função da atribuição é Professor ou Auxiliar, lista fechada
+na API e na tela) e item 9, surgido no teste manual T6 da Entrega A (CSU12 FA1 / RNF 34.3: o
+Professor da turma continua consultando o histórico, a pessoa em DTO reduzido e os responsáveis
+do aluno cuja matrícula foi inativada). Decisões em `docs/decisoes/aderencia-monografia.md`,
+seção 3. Contrato: `POST` e `PUT /api/atribuicoes` recusam função fora da lista com 400
+`ValidationProblemDetails` em `errors.Funcao` ("Função inválida: use Professor ou Auxiliar.");
+o guarda de pessoa aceita matrícula ativa ou inativa em turma com atribuição ativa do professor.
+Nenhuma rota, DTO de resposta ou migration alterados. Acabamento encontrado no T7: na tela de
+Atribuições, filtros e linhas dos diálogos empilhados abaixo de 576 px. Blocos de commit: api ·
+front · docs · prints.
+
+**Validação automatizada (29 e 30/10/2026, ambiente do autor):** `dotnet build` com 0 avisos e 0
+erros · `dotnet test` = **189 aprovados** (182 + `RF21_FuncaoAtribuicaoTests` 4: POST "Coordenador"
+→ 400 com a mensagem em `errors.Funcao` e nada gravado; PUT "Lider" → 400 e a função gravada não
+muda; Theory Professor/Auxiliar → 200 com a função gravada · `RF34_PresencasPessoaTests` +2:
+Professor da turma vê o histórico da matrícula inativada, só com a presença daquela turma;
+Professor de outra turma continua 403 · `RF11_PessoaAcessoTests` +1: DTO reduzido do ex-aluno da
+turma) · `vue-tsc -b` limpo · `npm run test` = **28 arquivos, 141 casos** (139 +
+`PaginaAtribuicoesDepartamento.spec` 2: o Dropdown de função dos diálogos "Nova atribuição" e
+"Editar atribuição" não é editável, lista só Professor e Auxiliar e o rótulo é um span; subtítulo
+sem "líderes"; a edição mostra o valor gravado) · `npm run build` ok · `npm run test:e2e` = **18
+aprovados** (10 `chromium` + 8 `mobile`), repetido o projeto `mobile` (8) depois da correção de
+responsividade, com o E2E-M2 das abas da turma sem rolagem horizontal. Suíte completa executada
+antes (182 / 139 / 18, estado da Entrega A) e depois da entrega.
+
+**Testes manuais (perfil `https` + `npm run dev`, desktop e 360 × 640), executados pelo autor em
+30/10/2026:** T7a ✔ subtítulo "Gestão de professores e auxiliares da turma" · T7b ✔ a atribuição
+antiga "Secretário" apareceu com a tag cinza e foi editada para Auxiliar pela tela (a lista
+fechada não exigiu migration) · T7c ✔ Dropdown de função sem digitação nos diálogos de criar e
+editar, só Professor e Auxiliar · T7d ✔ a 360 px, filtros e campos dos diálogos empilhados, sem
+corte nem rolagem horizontal; 400 com `errors.Funcao` para "Coordenador" visto no console do
+front como Admin · T8a ✔ Admin inativa a matrícula de um aluno com presenças · T8b ✔ a Professora
+da turma abre Histórico de presenças e Responsáveis do cartão inativo, desktop e 360 px · T8c ✔
+professor de outra turma (perfil Professor) recebe 403 em `GET /api/pessoas/{id}/presencas`.
+
+**Prints (`docs/evidencias/`, 10 arquivos):** `RF21-funcao-lista-fechada-nova.png`,
+`RF21-funcao-lista-fechada-editar.png`, `RF21-funcao-lista-fechada-360.png`,
+`RF21-funcao-antiga-tag-cinza.png`, `RF21-funcao-antiga-editada.png`,
+`RNF-21.2-400-funcao-invalida.png` (400 visto no console do front como Admin),
+`RNF-responsividade-atribuicoes-filtros-360.png`, `CSU12-historico-matricula-inativa-professor-ok.png`,
+`CSU12-historico-matricula-inativa-professor-ok-360.png`, `RNF-34.3-403-outra-turma.png`.
+
+**Registro para o Plano (v1.11):** `docs/decisoes/aderencia-monografia.md`, seção 8.
