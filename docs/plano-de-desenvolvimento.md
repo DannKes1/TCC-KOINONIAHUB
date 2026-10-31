@@ -1,4 +1,4 @@
-# KoinoniaHub · Plano de Desenvolvimento e Testes do TCC 2 · v1.10
+# KoinoniaHub · Plano de Desenvolvimento e Testes do TCC 2 · v1.11
 
 **KoinoniaHub — Plano de Desenvolvimento e Testes do TCC 2**
 
@@ -6,11 +6,11 @@
 
 Referência normativa: Monografia — versão de 10/10/2026 (RF1 a RF45, CSU01 a CSU24, com RF44, RF45, RNFs 12.3/12.4 e 21.3–21.5). Cópia de leitura em `docs/monografia.md`; a fonte oficial é o .docx do autor. Correções de redação ainda não aplicadas no .docx estão na seção 9.
 
-Estado do código analisado: repositório TCC-KOINONIAHUB, branch `main` após o fechamento da 7.3 (Resultados, testes de Segurança, cópia e restauração e corretiva de CSU14/CSU24/40.2/403, 19–22/10/2026). **Etapa 7 concluída.** Análise estática no SonarCloud por GitHub Actions desde 23/10/2026, com correção dos apontamentos em 23–24/10 (fora das etapas; seção 5). Última migration: PessoaEnxuta (26/09/2026) — nenhuma depois. Testes: **178 xUnit · 131 Vitest (26 arquivos) · 18 Playwright (10 desktop + 8 celular)**.
+Estado do código analisado: repositório TCC-KOINONIAHUB, branch `main` após o fechamento da 7.3 (Resultados, testes de Segurança, cópia e restauração e corretiva de CSU14/CSU24/40.2/403, 19–22/10/2026). **Etapa 7 concluída.** Análise estática no SonarCloud por GitHub Actions desde 23/10/2026, com correção dos apontamentos em 23–24/10 (fora das etapas; seção 5). Aderência da monografia ao sistema conferida em 28/10/2026 e corrigida no código em três entregas (A, B e C, 28–30/10/2026; `docs/decisoes/aderencia-monografia.md`). Última migration: PessoaEnxuta (26/09/2026) — nenhuma depois. Testes: **191 xUnit · 141 Vitest (28 arquivos) · 18 Playwright (10 desktop + 8 celular)**.
 
 Autor: Daniel Rocha · IFRO Campus Ji-Paraná · CST-ADS
 
-**Versão 1.10 — 25 de outubro de 2026**
+**Versão 1.11 — 31 de outubro de 2026**
 
 | Versão | Data | Mudanças |
 | --- | --- | --- |
@@ -25,6 +25,7 @@ Autor: Daniel Rocha · IFRO Campus Ji-Paraná · CST-ADS
 | 1.8 | 19/10/2026 | Fechamento da Etapa 7.2 (E2E-04 a E2E-08, 18–19/10/2026). Cinco specs novos (8 casos; E2E-04 também no projeto mobile); semente com turma própria por cenário que grava aula e fixture `importacao-pessoas.csv`; `data-testid` em Aulas, Relatórios, Importação e Usuários. Corretiva revelada pelo E2E-04 (opção A, decisão do autor): `Aplicacao/Tempo/RelogioIgreja` lê `Igreja:FusoHorario` (padrão `America/Porto_Velho`) e converte o dia civil da igreja em dois instantes UTC — usado nos quatro relatórios, em Minha Frequência e na pendência de fechamento; armazenamento, rotas e DTOs inalterados. Seção 6.2 e 6.9 com o critério de data corrigido; seção 7.3 com o E2E-04 descrevendo o CSU11 passos 2–4 reais; seções 7.1–7.3 com os totais 151 / 119 (23 arquivos) / 18. Próxima: 7.3. |
 | 1.9 | 22/10/2026 | Fechamento da Etapa 7.3 (19–22/10/2026) e da Etapa 7. `docs/resultados.md` com a tabela CSU → teste → resultado (15 Aprovados, 9 Parciais, nenhum Não coberto) e as tabelas RNF → teste → evidência de Segurança (24 de 28 cobertas) e Confiabilidade (20 de 20). 19 xUnit novos onde a regra existia sem teste (BCrypt custo ≥ 10, 403 de Professor/Pastor/Superintendente nas rotas só do Admin, HTTPS 307, RNF 21.3 nas duas metades, token fora das leituras, convite de conta inativa, `Atualizar_CampoOmitido_ViraNulo`). Corretiva de 20/10 (decisões do autor sobre as divergências da tabela): Histórico de presenças do aluno na aba Alunos (CSU14), aviso na guarda `requerAdmin` (CSU24 FA2), inativar conta descarta o convite pendente (RNF 40.2), 403 de `[Authorize(Roles)]` com `{ mensagem }`. Cópia e restauração executada em 22/10 (seção 6.17 atendida). Roteiros D1–D10 com 30 prints. Seção 9 com o CSU01 passo 5 (muda a monografia) e as lacunas de prova em Trabalhos futuros. Totais 170 / 126 (24 arquivos) / 18. Próxima: SonarCloud (entrega separada) e conversão do texto para TCC 2. |
 | 1.10 | 25/10/2026 | Entrega SonarCloud, fora das etapas (22–24/10/2026). CI: `.github/workflows/sonarcloud.yml` com os jobs `api` e `web` (push e PR para a main, ubuntu-24.04, actions fixadas por SHA, token só pelo segredo `SONAR_TOKEN`), `web/sonar-project.properties`, `coverlet.collector` 10.1.0 (OpenCover) e `.trx`; Migrations fora da análise (cobertura do código de autoria). Primeira análise em 23/10 (run #1): API 74,5% de cobertura, 170 testes, Security E (3), Reliability C (12), Maintainability A (45); Web 48,0%, Security A, Reliability C (85), Maintainability A (128). Correção em 23/10 (decisões do autor sobre a triagem): Data obrigatória e ids com `[Range]` (S6964) com 400 `ValidationProblemDetails` para requisição malformada, item da chamada sem `presente` → 400, `RunAsync`, `AsSingleQuery`; 72 rótulos associados aos campos e Cadastro Inicial com rótulos visíveis (S6853); Meus Dados com o perfil administrativo da store; Maintainability sem mudança de comportamento (8 na API, 20 no front); `public partial class Program` removido; 18 regras aceitas com justificativa e CA1862 como falso positivo. Análise pós-correção em 24/10 (run #3): A em Security, Reliability e Maintainability nos dois projetos; Quality Gate da API fechado com o teste do período invertido (run #4, cobertura do código novo 92,3%). Seção 5 com a linha SonarCloud; 2.3, 2.4, 6.1, 7.1–7.5 e 9 atualizadas. Totais 178 / 131 (26 arquivos) / 18. Próxima: conversão do texto para TCC 2. |
+| 1.11 | 31/10/2026 | Aderência da monografia ao sistema (28–30/10/2026, fora das etapas; `docs/decisoes/aderencia-monografia.md`). O .docx foi confrontado com o código, RF por RF e CSU passo a passo: nenhuma regra central diverge; doze pontos em que o texto deve descrever o sistema (seção 9) e nove em que o código passou a seguir o texto, em três entregas. **A** (28–29/10): limiar crítico ajustável na tela (RF36), data e hora do aceite na lista de Usuários (RNF 43.1), aviso de aceite obrigatório no Cadastro Inicial e no Primeiro Acesso (RNF 42.1), validação de Meus Dados com 400 por campo e e-mail vazio opcional (RNF 4.3), "Marcar como Não realizada" só sem presenças (CSU11 FA2), verbo "inativar" na aba Alunos (RF29). **B** (29–30/10): função da atribuição em lista fechada Professor/Auxiliar na API e na tela (RF21, `Dominio/Regras/FuncoesAtribuicao`, 400 em `errors.Funcao`); histórico, pessoa reduzida e parentescos do aluno com matrícula inativa continuam acessíveis ao Professor da turma (CSU12 FA1, RNF 34.3); filtros e diálogos de Atribuições empilhados abaixo de 576 px. **C** (30/10): percentual por aula sobre os registros efetivos da aula (CSU15), sem mover aulas consolidadas nem o gráfico quando entra uma matrícula. Totais 191 / 141 (28 arquivos) / 18; testes manuais do autor com 38 prints. Seções 5, 6.5, 6.9, 6.16, 7.1, 7.2, 7.4 e 9 atualizadas. |
 
 ---
 
@@ -244,7 +245,7 @@ Legenda: **OK** = faz o que a monografia diz · **Parcial** = existe, falta regr
 
 ## 5. Ordem de execução e definição de pronto
 
-**Estado em 25/10/2026** (verificado contra o código):
+**Estado em 31/10/2026** (verificado contra o código):
 
 | **Etapa** | **Estado** |
 | --- | --- |
@@ -257,6 +258,9 @@ Legenda: **OK** = faz o que a monografia diz · **Parcial** = existe, falta regr
 | 6. Acabamento, RF44, responsividade e turma | **Concluída em 17/10/2026** — 6.1 (06/10), 6.2 RF44 (07/10), 6.3 responsividade (08/10) **6.4 concluída em 14/10/2026** (A em 09/10, B em 10/10, corretiva de desktop em 12/10, ajuste em 13/10, C em 14/10: xUnit 114; Vitest 102; Playwright 3 + 7) e **6.5 concluída em 16/10/2026** (RF45, no Claude Code: xUnit 123; Vitest 105; Playwright 3 + 7) e **6.6 concluída em 17/10/2026** (RF12 parentesco derivado: xUnit 136; Vitest 111; Playwright 3 + 7). **Etapa 6 concluída.** A etapa foi reaberta em 08/10/2026 pela avaliação pré-Etapa 7 (`docs/decisoes/avaliacao-pre-etapa7.md`): responsividade e RF20 eram requisitos escritos e não atendidos; RF45 e RNF 12.3 entraram na monografia. |
 | 7. Autorização, E2E e Resultados | **Concluída em 22/10/2026** — **7.1 concluída em 18/10/2026** (xUnit 146; Vitest 118; Playwright 3 + 7), **7.2 concluída em 19/10/2026** (E2E-04 a E2E-08 e corretiva do dia civil da igreja: xUnit 151; Vitest 119; Playwright 10 + 8) e **7.3 concluída em 22/10/2026** (resultados, testes de Segurança, corretiva de CSU14/CSU24/40.2/403: xUnit 170; Vitest 126 (24 arquivos); Playwright 10 + 8; cópia e restauração e roteiros D1–D10 executados pelo autor em 22/10). Próximos passos fora das etapas: conversão do texto para TCC 2 (seção 9). |
 | SonarCloud (fora das etapas) | **Concluída em 24/10/2026** (docs/testes.md, blocos "SonarCloud — primeira análise" e "SonarCloud — correção dos apontamentos"; docs/decisoes/sonarcloud.md) — workflow `.github/workflows/sonarcloud.yml`, jobs `api` e `web` em push e PR para a main; Migrations fora da análise. Primeira análise (23/10, run #1): API 6.742 linhas, cobertura 74,5%, 170 testes, Security 3 (E), Reliability 12 (C), Maintainability 45 (A); Web 13.627 linhas, cobertura 48,0%, Security 0 (A), Reliability 85 (C), Maintainability 128 (A); 0 hotspots. Correção (23/10) e triagem na interface (24/10): API 41 apontamentos → 7 abertos (S3776), 19 aceitos, 15 falsos positivos (CA1862); Web 106 → 90 abertos (S3776, S3358 e `!important` do `style.css`/`LayoutPrincipal.vue`), 16 aceitos. Pós-correção (24/10, runs #3 e #4): A em Security, Reliability e Maintainability nos dois projetos; API cobertura 74,5% (código novo 92,3%), 178 testes, Quality Gate **Passed**; Web cobertura 46,3% (código novo 82,4%; queda pelos templates novos), Quality Gate **Passed**. Pendente, em entrega própria: `npm audit` (15 vulnerabilidades em dependências, 9 high). |
+| Aderência à monografia — Entrega A (fora das etapas) | **Concluída em 29/10/2026** (docs/testes.md, bloco "Aderência — Entrega A"; docs/decisoes/aderencia-monografia.md, seções 1, 2 e 5) — seis correções em que o código passou a seguir o texto: RF36 (limiar crítico ajustável), RF43/RNF 43.1 (data e hora do aceite na lista), RNF 42.1 (aviso de aceite obrigatório), RNF 4.3 (400 por campo em Meus Dados, e-mail vazio opcional), CSU11 FA2/RNF 33.7 (Não realizada só sem presenças), RF29 (verbo "inativar"). xUnit 182; Vitest 139 (28 arquivos); Playwright 18. Testes manuais T1–T6 com 19 prints. |
+| Aderência à monografia — Entrega B (fora das etapas) | **Concluída em 30/10/2026** (docs/testes.md, bloco "Aderência — Entrega B"; aderencia-monografia.md, seção 3) — RF21: função da atribuição em lista fechada (`Dominio/Regras/FuncoesAtribuicao`, atributo `[FuncaoAtribuicao]` nos DTOs, 400 em `errors.Funcao`; Dropdowns sem edição livre). CSU12 FA1/RNF 34.3: o guarda de pessoa aceita matrícula ativa ou inativa em turma com atribuição ativa do professor, nas três rotas (histórico, pessoa reduzida, parentescos). Filtros e diálogos de Atribuições empilhados abaixo de 576 px. xUnit 189; Vitest 141 (28 arquivos); Playwright 18. Testes manuais T7–T8 com 10 prints. |
+| Aderência à monografia — Entrega C (fora das etapas) | **Concluída em 30/10/2026** (docs/testes.md, bloco "Aderência — Entrega C"; aderencia-monografia.md, seção 4) — RF35/CSU15: percentual por aula = presentes / registros efetivos da aula; `naoRegistrado` (quadro atual) e o filtro de matrícula ativa mantidos por decisão do autor, então a saída de um aluno ainda altera aulas anteriores, coerente com o geral e o por aluno. Só a API mudou. xUnit 191; Vitest 141 (28 arquivos); Playwright 18. Testes manuais T9–T10 com 9 prints. |
 
 | **Etapa** | **Conteúdo** | **Definição de pronto** |
 | --- | --- | --- |
@@ -336,9 +340,9 @@ Campos da entidade exatamente como no DER: Id, Nome, Situacao, Sexo, DataNascime
 
 | **Endpoint** | **Regra para Professor** | **DTO** |
 | --- | --- | --- |
-| GET /api/pessoas/{id} | Só se a pessoa tiver matrícula ativa em turma com atribuição ativa do professor; senão 403. | PessoaTurmaRespostaDto: Id, Nome, Situacao, Celular, Parentescos[] { ParenteNome, TipoRelacionamento, ParenteCelular }. |
+| GET /api/pessoas/{id} | Só se a pessoa tiver matrícula (ativa ou inativa, desde a Entrega B da aderência) em turma com atribuição ativa do professor; senão 403. | PessoaTurmaRespostaDto: Id, Nome, Situacao, Celular, Parentescos[] { ParenteNome, TipoRelacionamento, ParenteCelular }. |
 | GET /api/departamentos/{id}/pessoas-disponiveis | Já exige atribuição; muda só o retorno. | PessoaDisponivelRespostaDto: Id, Nome, Situacao. |
-| GET /api/pessoas/{id}/presencas | Só com matrícula ativa em turma com atribuição ativa; resultado filtrado a essas turmas. | Mesmo DTO, filtrado. |
+| GET /api/pessoas/{id}/presencas | Só com matrícula (ativa ou inativa) em turma com atribuição ativa; resultado filtrado a essas turmas. | Mesmo DTO, filtrado. |
 
 ### 6.6 Defesa em profundidade contra CSRF (RNF 2.6) — CONCLUÍDA (etapa 2)
 
@@ -357,6 +361,8 @@ Rota, serviço, DTO e botão de reset com senha removidos; "Redefinir acesso" ch
 Todas as consultas de frequência, acompanhamento, ranking, resumo do dia e minha frequência filtram Situacao == Consolidada. Cada resposta traz `aulasPendentes[]` (`AulaResumidaRespostaDto`: Id, Data, Materia, Professor, DepartamentoId, Departamento) com as Em aberto já ocorridas **dentro do período consultado**; o resumo do dia lista também as Não realizadas, separadas dos totais. Exportação e impressão só para Admin, Pastor e Superintendente (restrição de interface, como a monografia descreve).
 
 **Período pelo dia civil da igreja (7.2).** O front envia datas sem fuso (`2026-10-18`); a API as converte, por `RelogioIgreja.InicioDoDiaUtc`/`FimDoDiaUtc`, nos instantes UTC que delimitam o dia local (em Porto Velho, 04h UTC do dia até 04h UTC do dia seguinte) e compara com `Aulas.Data`, `Matriculas.DataMatricula` e os registros de presença, todos armazenados em UTC. Antes da corretiva o dia era lido como dia UTC: uma matrícula ou presença gravada depois das 20h locais caía no dia seguinte e sumia do relatório do dia (defeito encontrado pelo E2E-04 às 21h38 de 18/10/2026). `DataCivil` aceita também o formato antigo (meia-noite UTC) como o próprio dia. Fuso único por instalação, sem campo por igreja (exigiria migration e não está na monografia). Vale para RF35–RF38 e para Minha Frequência (RF6), que compartilham o cálculo de período.
+
+**Percentual por aula sobre os registros efetivos (Entrega C da aderência, 30/10/2026).** Os três percentuais do relatório de frequência (geral, por aluno e por aula) dividem presentes pelos registros efetivos (presentes + ausentes marcados). Antes, o por aula dividia pelo total de alunos com matrícula ativa hoje: uma matrícula criada depois da consolidação rebaixava a aula e movia o gráfico de evolução. Por decisão do autor, `naoRegistrado` por aula continua `totalAlunos − registros` (quadro atual) e os registros seguem filtrados por matrícula ativa; a saída de um aluno ainda altera o percentual das aulas anteriores, coerente com o geral e o por aluno. Provado por `RF35_RelatorioTests` (matrícula posterior não altera a aula nem a lista do gráfico; Consolidada sem registro = 0 %).
 
 ### 6.10 Detalhes de interface — CONCLUÍDA (etapa 6.1)
 
@@ -421,7 +427,7 @@ A linha derivada vem com `derivado: true` e não pode ser removida por esse lado
 
 Desenho: **perfil = área do sistema que a conta alcança; atribuição ativa = sobre quais turmas ela age** (autorização por papéis para as áreas + autorização baseada em recurso para cada turma, como a 4.9 descreve).
 
-- **Um lugar só:** os três guardas (`GarantirAcessoDepartamentoAsync`, `GarantirAcessoMateriaAsync`, `GarantirAcessoAulaAsync`) passam pelo privado `GarantirOperacaoNaTurmaAsync`, na ordem **recurso existe para a igreja (senão `RecursoNaoEncontradoException` → 404) → perfil administrativo passa → perfil Professor, senão 403 "Esta operação exige perfil Professor ou administrativo." (21.4) → atribuição ativa na turma**. A verificação de existência roda também para a gestão (uma consulta a mais, uma resposta única). `GarantirAcessoPessoaAsync` já trata o Usuario à parte e não muda. No front, `PessoaServico.ListarMinhasTurmasAsync` só devolve vínculos de atribuição para conta Professor ou administrativa, e a rota `/departamentos/:id` tem `requerGestor` (perfil Usuário volta a Minhas Turmas com um aviso).
+- **Um lugar só:** os três guardas (`GarantirAcessoDepartamentoAsync`, `GarantirAcessoMateriaAsync`, `GarantirAcessoAulaAsync`) passam pelo privado `GarantirOperacaoNaTurmaAsync`, na ordem **recurso existe para a igreja (senão `RecursoNaoEncontradoException` → 404) → perfil administrativo passa → perfil Professor, senão 403 "Esta operação exige perfil Professor ou administrativo." (21.4) → atribuição ativa na turma**. A verificação de existência roda também para a gestão (uma consulta a mais, uma resposta única). `GarantirAcessoPessoaAsync` já trata o Usuario à parte; desde a Entrega B da aderência (30/10/2026) a consulta de pessoa, parentescos e histórico pelo Professor exige matrícula (ativa ou inativa) do aluno em turma com atribuição ativa dele — o CSU12 FA1 preserva o histórico de quem saiu da turma (RNF 34.3 ajustada na seção 9). No front, `PessoaServico.ListarMinhasTurmasAsync` só devolve vínculos de atribuição para conta Professor ou administrativa, e a rota `/departamentos/:id` tem `requerGestor` (perfil Usuário volta a Minhas Turmas com um aviso).
 - **404 por filtro global:** `RecursoNaoEncontradoException` (deriva de `Exception`, não de `InvalidOperationException`, para passar pelos `catch` de regra de negócio) é traduzida em 404 `{ mensagem }` pelo `RecursoNaoEncontradoFiltro`, `IExceptionFilter` registrado ao lado do `ExigeAceiteTermoFiltro`; nenhuma action alterada.
 - **`POST /api/igrejas` removido:** só a action; `IgrejaServico.CriarAsync` continua em uso pelo cadastro inicial (RF1). Teste de 404 com contagem de igrejas antes e depois.
 - **FallbackPolicy** em Program.cs: `RequireAuthenticatedUser()` como política padrão, para que um endpoint novo sem atributo nasça protegido; os públicos já têm `[AllowAnonymous]`.
@@ -451,7 +457,7 @@ Três ferramentas de teste, três responsabilidades, e uma de análise estática
 
 Projeto KoinoniaHub.API.Tests (Microsoft.AspNetCore.Mvc.Testing 10.0.12, Microsoft.EntityFrameworkCore.Sqlite 10.0.12, xunit 2.9.3), ambiente `Testing`, **SQLite em memória** (conexão aberta durante o teste, EnsureCreated) — o provedor InMemory não aplica índices únicos nem chaves estrangeiras, e 27.2 e 32.3 são exatamente o que se quer provar. Sementes criam o aceite do termo por padrão (`aceitarTermo: false` para contas pendentes). Uma classe por RF ou regra, métodos Metodo_Cenario_ResultadoEsperado em português; testes de integração (login por cookie, asserção de status) preferidos quando a regra também é de Segurança.
 
-**Existentes — 29 classes, 178 casos verdes:**
+**Existentes — 31 classes, 191 casos verdes:**
 
 | **Classe** | **RNFs / foco** |
 | --- | --- |
@@ -460,7 +466,7 @@ Projeto KoinoniaHub.API.Tests (Microsoft.AspNetCore.Mvc.Testing 10.0.12, Microso
 | RF2_OrigemTests | 2.6 |
 | RF2_TokenSomenteNoCookieTests | 4.8 (token fora do corpo) |
 | RF2_GateTermoTests | 2.5, 13.4 (filtro global) |
-| RF11_PessoaAcessoTests | 11.3 |
+| RF11_PessoaAcessoTests | 11.3; DTO reduzido do ex-aluno da turma (matrícula inativa) (6 casos; aderência B) |
 | RF14_UltimoAdminTests | 14.3 |
 | RF27_MatriculaTests | 27.2 |
 | RF28_DisponiveisTests | 28.3 |
@@ -468,8 +474,8 @@ Projeto KoinoniaHub.API.Tests (Microsoft.AspNetCore.Mvc.Testing 10.0.12, Microso
 | RF33_ConsolidarAulaTests | 32.6, 33.1, 33.2, 33.3 |
 | RF33_NaoRealizadaTests | 33.1, 33.2, 33.4, 33.7 |
 | RF33_ReabrirAulaTests | 33.5 (Professor, Pastor e Superintendente → 403), 33.6 |
-| RF34_PresencasPessoaTests | 34.3 |
-| RF35_RelatorioTests | 35.5, 37.5, 38.1, 38.4 (e RF6); período invertido (`dataFim` < `dataInicio`) → 400 nos quatro relatórios de período (4 casos; SonarCloud) |
+| RF34_PresencasPessoaTests | 34.3; matrícula inativa: 200 na turma do professor, 403 fora dela (5 casos; aderência B) |
+| RF35_RelatorioTests | 35.5, 37.5, 38.1, 38.4 (e RF6); período invertido (`dataFim` < `dataInicio`) → 400 nos quatro relatórios de período (4 casos; SonarCloud); CSU15: matrícula criada depois da aula consolidada não altera o percentual da aula nem a lista do gráfico; Consolidada sem registro = 0 % (2 casos; aderência C) |
 | RF39_RF40_ConviteTests | 15.2, 15.3, 39.1–39.4, 40.1–40.3 (e CSU20); 7.3: token fora das leituras; inativar descarta o convite e reativar não o recria; conta inativada fora da API → 400 e reativação descarta o hash antigo (11 casos) |
 | RF41_ImportacaoTests | 41.2–41.4 |
 | RF42_TermoTests | 1.5, 2.5, 40.5, 42.1–42.8 |
@@ -482,6 +488,8 @@ Projeto KoinoniaHub.API.Tests (Microsoft.AspNetCore.Mvc.Testing 10.0.12, Microso
 | RF1_CadastroInicialTests | 1.2, 2.2: senha do Admin do cadastro inicial só como hash BCrypt, custo ≥ 10 (`AfirmacoesSenha`) |
 | RF13_UsuarioTests | 13.1, 13.2, 14.1, 16.1: senha informada gravada só como hash; GET, POST e PATCH de /api/usuarios como Professor → 403; listagem como Pastor ou Superintendente → 403; ambos com o corpo `{ mensagem }` (6 casos) |
 | RF2_HttpsTests | 1.4, 2.3, 40.4, 42.4, 44.4: requisição http → 307 com `Location` https (`FabricaComPortaHttps`) |
+| RF4_MeusDadosTests | RNF 4.3: 400 `ValidationProblemDetails` por campo (e-mail inválido, UF com três letras) sem gravar; e-mail vazio normalizado para nulo (o `[EmailAddress]` sozinho recusaria ""); PUT válido → 204 (4 casos; aderência A) |
+| RF21_FuncaoAtribuicaoTests | RF21: função fora da lista → 400 em `errors.Funcao` em criar e editar, nada gravado; Professor e Auxiliar aceitos (4 casos; aderência B) |
 
 **A criar:** nenhuma — a tabela de lacunas de prova está em `docs/resultados.md`, seções 2.2 e 5.
 
@@ -489,7 +497,7 @@ Projeto KoinoniaHub.API.Tests (Microsoft.AspNetCore.Mvc.Testing 10.0.12, Microso
 
 Instalado na etapa 3 (`vitest`, `@vue/test-utils`, `jsdom`, `@vitest/coverage-v8`; bloco `test` no vite.config.ts; scripts `test`, `test:watch`, `test:cov`). Arquivos `*.spec.ts` ao lado do código. Chamadas HTTP mockadas (`vi.mock`); nada de subir a API.
 
-**Existentes — 26 arquivos, 131 casos verdes:**
+**Existentes — 28 arquivos, 141 casos verdes:**
 
 | **Alvo (arquivo)** | **Casos** | **Etapa** |
 | --- | --- | --- |
@@ -500,8 +508,10 @@ Instalado na etapa 3 (`vitest`, `@vue/test-utils`, `jsdom`, `@vitest/coverage-v8
 | Store de autenticação (`autenticacaoStore.spec`) | termoPendente do login, persistência, sair limpa | 5 |
 | Guards de rota (`guardas.spec`) | termo pendente redireciona para /termo com destino; /termo abre; liberação após aceite; `requerGestor`: perfil Usuário → /minhas-turmas com um aviso; Professor abre Aulas e continua barrado em Atribuições; `requerAdmin`: Professor em /igreja volta ao Painel com um único aviso, Admin abre sem aviso (CSU24 FA2) | 7 |
 | Aviso de conta na atribuição (`aplicacao/dominio/atribuicoes.spec`) | sem conta; perfil Usuário; texto curto na tela compacta; Professor e administrativos sem aviso | 6.16 / 7.1 |
-| Tela de Atribuições (`PaginaAtribuicoesDepartamento.spec`) | tag só para sem conta e perfil Usuário; nada para Professor | 7.1 |
-| Componente do termo (`TermoUsoSigilo.spec`) | igreja e contato fora do texto; não inventa contato; botão desabilitado até marcar | 5 |
+| Tela de Atribuições (`PaginaAtribuicoesDepartamento.spec`) | tag só para sem conta e perfil Usuário; nada para Professor; Dropdown de função fechado (só Professor e Auxiliar, sem digitação) nos diálogos de criar e editar; subtítulo sem "líderes" (3) | 7.1, aderência B |
+| Componente do termo (`TermoUsoSigilo.spec`) | igreja e contato fora do texto; não inventa contato; botão desabilitado até marcar; aviso "O aceite do termo é obrigatório para concluir." com a prop `avisoAceite` enquanto a caixa está desmarcada (9) | 5, aderência A |
+| Termo na lista de Usuários (`aplicacao/dominio/termoUsuario.spec`) | rótulo, severidade, data e hora do aceite e dica; pendente sem data (4) | aderência A |
+| Relatórios (`PaginaRelatoriosEbd.spec`) | aba Acompanhamento com os campos Atenção, Crítico e faltas seguidas nos padrões 75/50/3; alterar e buscar envia os três (2) | aderência A |
 | Indicadores do aluno (`indicadoresPresenca.spec`) | só Consolidadas; percentual nulo sem aula; janela de 90 dias | 6.1 |
 | Resultado da importação (`pessoasServico.spec`) | totais, itens, `paraConferencia`, resposta vazia | 6.1 |
 | Layout principal (`LayoutPrincipal.spec`) | menu de desktop no DOM e Drawer fechado; botão abre com os itens do perfil; navegar fecha; classe `conteudo-com-barra` só na rota com `barraAcoes` | 6.3, 6.4 |
@@ -512,10 +522,10 @@ Instalado na etapa 3 (`vitest`, `@vue/test-utils`, `jsdom`, `@vitest/coverage-v8
 | Linha da chamada (`LinhaChamada.spec`) | toque em qualquer ponto alterna (regressão da faixa de baixo); teclado; observação abre com a orientação 32.5 sem alternar; remover; somente leitura; sem registro | 6.4-B |
 | Ação única (`usarAcaoUnica.spec`) | segundo acionamento ignorado durante a execução e por 500 ms depois; liberação após erro | 6.4 corretiva/ajuste |
 | Chamada — página (`PaginaChamadaAula.spec`) | dois acionamentos de Salvar no mesmo tick e toque duplo após gravação concluída → uma gravação, um aviso; sem registro desde a carga e baixa ao tocar; Consolidar com nomes (gravar → consolidar); confirmação simples sem gravar; sair pela rota (recusa/aceite); `beforeunload`; Recarregar com confirmação | 6.4 ajuste, 6.4-C |
-| Aba Alunos em cartões (`PaginaMatriculasTurma.spec`) | ordem, chips, Responsáveis, ⋮ em todo cartão (Remover só na matrícula ativa); remover reconta o cabeçalho; Histórico pelo ⋮ abre o diálogo e carrega pela pessoa do aluno (CSU14) | 6.4-C, 7.3 |
+| Aba Alunos em cartões (`PaginaMatriculasTurma.spec`) | ordem, chips, Responsáveis, ⋮ em todo cartão ("Inativar matrícula" só na ativa, com `acceptLabel` "Inativar"); inativar reconta o cabeçalho; Histórico pelo ⋮ abre o diálogo e carrega pela pessoa do aluno (CSU14) | 6.4-C, 7.3, aderência A |
 | Histórico de presenças (`DialogHistoricoPresencas.spec`) | carrega ao abrir; totais só de Consolidadas; cartões no celular (mais recente primeiro); tabela no desktop; fechado não carrega (4) | 7.3 |
 | Aba Matérias em cartões (`PaginaMateriasTurma.spec`) | ordem, chips, Editar, ⋮; criar e inativar recontam o cabeçalho | 6.4-C |
-| Aba Aulas — Editar e Excluir (`PaginaAulasTurma.spec`) | Editar só Em aberto e Excluir só sem presenças (três estados); Editar abre o diálogo preenchido e Salvar chama atualizarAula e reconta o cabeçalho; Excluir pela confirmação comum chama excluirAula e reconta; rótulos do diálogo ligados ao campo certo e Dropdowns nomeados pelo rótulo (SonarCloud) | 6.5, SonarCloud |
+| Aba Aulas — Editar e Excluir (`PaginaAulasTurma.spec`) | Editar só Em aberto; Excluir e "Marcar como Não realizada" só sem presenças (três estados; CSU11 FA2); Editar abre o diálogo preenchido e Salvar chama atualizarAula e reconta o cabeçalho; Excluir pela confirmação comum chama excluirAula e reconta; rótulos do diálogo ligados ao campo certo e Dropdowns nomeados pelo rótulo (SonarCloud) | 6.5, SonarCloud |
 | Minha Frequência (`meusDadosServico.spec`) | resposta PascalCase, camelCase e sem a lista de aulas (3) | SonarCloud |
 | Cadastro Inicial (`PaginaCadastroInicial.spec`) | cada campo com `<label for>` ligado ao input pelo id; placeholder mantido (1) | SonarCloud |
 | Tabela de parentescos (`TabelaParentescos.spec`) | explícita com botão de remover; derivada com tag "derivado", sem botão, ⓘ fechado e nota; ⓘ abre a explicação na própria linha e fecha ao clicar de novo; recarga da lista fecha a explicação; remover emite o item; lista vazia (6 casos) | 6.6 |
@@ -553,10 +563,10 @@ Configuração real (etapa 5.3 e 6.3):
 
 ```powershell
 # API
-cd api; dotnet build; dotnet test                  # 178
+cd api; dotnet build; dotnet test                  # 191
 
 # Front
-cd web; npx vue-tsc -b; npm run test               # 131 (26 arquivos)
+cd web; npx vue-tsc -b; npm run test               # 141 (28 arquivos)
 cd web; npm run build
 
 # E2E (API no ar no perfil e2e e banco koinoniahub_e2e)
@@ -605,6 +615,16 @@ Itens decididos e ainda não aplicados no .docx, ou que só entram na conversão
 | --- | --- | --- |
 | CSU01, passo 5 | "5. O sistema direciona o usuário para a tela de login." → "5. O sistema inicia a sessão do Administrador e exibe o Painel." (comportamento desde a Etapa 2.4; o E2E-01 afirma isso; divergência encontrada pela tabela CSU → teste da 7.3) | Próxima revisão do .docx |
 | CSU09, passo 4 | "O usuário informa a data, a matéria, o professor responsável e o tema." → "O usuário informa a data, a matéria, o professor responsável e, opcionalmente, o tema e o conteúdo." (RF45 e CSU09 FA1 declaram o conteúdo editável; a 6.5 o expôs no diálogo, nos dois modos) | Próxima revisão do .docx |
+| RF17, descrição | "definindo nome, tipo e descrição" → "definindo nome e tipo" (a tela e a API não têm descrição; o CSU17 passo 4 já diz "nome e tipo"; aderência, 28/10/2026) | Próxima revisão do .docx |
+| CSU08, passo 4 | "O usuário informa nome, descrição e ordem de exibição." → "O usuário informa nome e ordem de exibição." (o RF24 já diz só isso) | Próxima revisão do .docx |
+| RF4, descrição | "consultar e atualizar os seus dados pessoais e de contato" → "consultar os seus dados e atualizar os dados de contato e endereço" (nome, nascimento, sexo e estado civil não são editáveis pelo próprio usuário; alinha com CSU05 e 4.9) | Próxima revisão do .docx |
+| RF14, descrição | "Permite alterar os dados de acesso e o perfil de um usuário." → "Permite alterar o perfil e a situação (ativo/inativo) de um usuário; o e-mail não é alterado após a criação e a senha só é redefinida por convite (RF15)." | Próxima revisão do .docx |
+| RF7 / CSU16, passo 4 | "…o celular, o e-mail, o endereço." → "…o celular, o e-mail e o endereço (logradouro, bairro, cidade, UF e CEP)." (cinco campos na entidade, no DTO, na tela e no CSV; RNF 7.5 mantida) | Próxima revisão do .docx |
+| RF11, descrição | "incluindo dados pessoais, vínculos e situação" → "incluindo dados pessoais, situação e vínculos de parentesco" (matrículas e atribuições não são exibidas em Pessoas) | Próxima revisão do .docx |
+| CSU07, passo 1 | "O usuário acessa a opção Minha Frequência." → "O usuário aciona Minha frequência na turma desejada, a partir de Minhas Turmas ou do Painel." (não há item de menu; o acesso é por turma) | Próxima revisão do .docx |
+| CSU04, passo 3 | "o histórico dos últimos três meses" → "o histórico dos últimos 90 dias" (janela fixa no Painel e em Minha Frequência) | Próxima revisão do .docx |
+| RNFs 10.2, 16.2, 19.2, 23.2 e 31.2 | "A listagem deve ser paginada e permitir busca e filtros." → "A listagem deve ser paginada em tela e permitir busca e filtros." (paginação no PrimeVue, dez linhas, "Mostrar mais" no celular; a API devolve a lista da igreja; o porte da base dispensa paginação no servidor) | Próxima revisão do .docx |
+| RNF 34.3 | "…alunos das turmas nas quais possui atribuição ativa" → "…alunos das turmas nas quais possui atribuição ativa, inclusive os de matrícula já inativada" (decisão da Entrega B: o CSU12 FA1 preserva o histórico de quem saiu da turma) | Próxima revisão do .docx |
 | RF20 / protótipo | Figura "Tela de Turma" (abas) feita a partir da tela real (`RF20-pagina-turma-desktop.png`), com a descrição da seção 1.8 de `docs/decisoes/etapa-6.md`; renumeração das figuras seguintes | Antes da defesa |
 | 4.5 / 4.7 / Apêndice | Versões resolvidas na etapa 0: .NET 10 (net10.0); JwtBearer, EF Core Tools e EF Core Design 10.0.12; Npgsql.EntityFrameworkCore.PostgreSQL 10.0.3; Swashbuckle.AspNetCore 10.2.3; BCrypt.Net-Next 4.0.3. Verificação contínua (23/10/2026): GitHub Actions; SonarCloud com SonarScanner for .NET 12.0.0 e sonarqube-scan-action 8.3.0; coverlet.collector 10.1.0. | Pronto para entrar |
 | 4.10, último parágrafo | "A manutenibilidade é buscada pela arquitetura em camadas descrita na seção 4.4, sem medição formal neste trabalho." → "A manutenibilidade é buscada pela arquitetura em camadas descrita na seção 4.4 e acompanhada por análise estática do código no SonarCloud, sem avaliação na escala da norma." | Se a análise estática entrar em Resultados |
@@ -613,7 +633,7 @@ Itens decididos e ainda não aplicados no .docx, ou que só entram na conversão
 | Implantação | IP do aceite = `RemoteIpAddress`; atrás de proxy reverso exige `ForwardedHeaders` (RNF 42.8). Front servido em HTTPS e HSTS na API (hoje só `UseHttpsRedirection`, que devolve 307; `UseHsts` ignora `localhost` e só faz sentido publicado num domínio com certificado). Fuso da igreja em `Igreja:FusoHorario` (7.2). | Ao descrever a implantação |
 | Todo o texto | Conversão para TCC 2: folha de rosto ("Trabalho de Conclusão de Curso"), verbos no passado, cronograma sai, Reuniões das Sprints com datas reais, 5.1 com o número real de participantes. | Agora (Etapa 7 concluída) |
 | Novos capítulos | Resultados (arquitetura implementada, telas reais, tabela CSU → teste e tabelas RNF de `docs/resultados.md`, avaliação ISO 25010 com os participantes, cópia e restauração da seção 6.17), Considerações finais, Resumo/Abstract. | Agora (material pronto em docs/resultados.md) |
-| Trabalhos futuros | Fluxo guiado de configuração da turma (wizard); responsividade polida das telas administrativas (os filtros de Pessoas, Usuários e Atribuições são mais largos que 360 px e rolam dentro do conteúdo); "Limpar chamada" que remove os registros de presença de aula Em aberto (hoje uma chamada salva na aula errada só sai por consolidação ou reabertura); formulário do diálogo de Parentescos a 360 px (Parente, Relacionamento e Adicionar numa linha só; o botão fica cortado — empilhar os campos abaixo de 768 px); cobertura de prova pendente registrada em `docs/resultados.md`: cenários Playwright faltantes da seção 2.2 (CSU03, CSU05, CSU08, CSU12, CSU16, CSU17, CSU18, CSU20, CSU21) e as RNFs de Segurança sem teste próprio da seção 5 (12.1, 17.1, 18.1, 7.1/8.1/9.1/21.1/22.1/41.1 só no front, 7.2/8.2 só leitura, 24.1–37.1 pelo guarda comum, 7.4 e 17.3 de isolamento); mensagem única para convite inexistente, substituído ou já usado; dívida de manutenção apontada pelo SonarCloud e mantida aberta com justificativa: complexidade cognitiva (S3776: sete métodos de `PessoaServico`, `PessoaImportacaoServico` e `RelatorioEbdServico` e o `clienteHttp.ts`) e ternário aninhado (S3358); `!important` no `style.css` (boa parte em seletores do PrimeVue 3 que não casam com nada no PrimeVue 4); controles interativos dentro da linha da chamada (`role="button"`); troca dos componentes depreciados Dropdown e Calendar por Select e DatePicker; checagens de duplicidade com `lower()`, que não trata acento em maiúscula conforme a collation do banco; `Igreja:FusoHorario` inválido cai no fuso padrão sem aviso em log; o percentual do texto de Motivos do painel (`RelatorioEbdServico`) e o `toLocaleDateString()` sem locale (`PaginaAulasTurma.vue`) dependem da cultura do servidor ou do navegador. | Seção de trabalhos futuros do TCC 2 |
+| Trabalhos futuros | Fluxo guiado de configuração da turma (wizard); responsividade polida das telas administrativas (os filtros de Pessoas e Usuários são mais largos que 360 px e rolam dentro do conteúdo; os de Atribuições empilham desde a Entrega B da aderência); "Limpar chamada" que remove os registros de presença de aula Em aberto (hoje uma chamada salva na aula errada só sai por consolidação ou reabertura); formulário do diálogo de Parentescos a 360 px (Parente, Relacionamento e Adicionar numa linha só; o botão fica cortado — empilhar os campos abaixo de 768 px); cobertura de prova pendente registrada em `docs/resultados.md`: cenários Playwright faltantes da seção 2.2 (CSU03, CSU05, CSU08, CSU12, CSU16, CSU17, CSU18, CSU20, CSU21) e as RNFs de Segurança sem teste próprio da seção 5 (12.1, 17.1, 18.1, 7.1/8.1/9.1/21.1/22.1/41.1 só no front, 7.2/8.2 só leitura, 24.1–37.1 pelo guarda comum, 7.4 e 17.3 de isolamento); mensagem única para convite inexistente, substituído ou já usado; dívida de manutenção apontada pelo SonarCloud e mantida aberta com justificativa: complexidade cognitiva (S3776: sete métodos de `PessoaServico`, `PessoaImportacaoServico` e `RelatorioEbdServico` e o `clienteHttp.ts`) e ternário aninhado (S3358); `!important` no `style.css` (boa parte em seletores do PrimeVue 3 que não casam com nada no PrimeVue 4); controles interativos dentro da linha da chamada (`role="button"`); os componentes `Dropdown` e `Calendar` do PrimeVue 4 estão marcados como obsoletos (deprecated) e usados em todas as telas com seleção e data — substituir por `Select` e `DatePicker`, com os specs que nomeiam esses componentes ajustados (`PaginaAulasTurma.spec`, `PaginaAtribuicoesDepartamento.spec`, `PaginaRelatoriosEbd.spec`); checagens de duplicidade com `lower()`, que não trata acento em maiúscula conforme a collation do banco; `Igreja:FusoHorario` inválido cai no fuso padrão sem aviso em log; o percentual do texto de Motivos do painel (`RelatorioEbdServico`) e o `toLocaleDateString()` sem locale (`PaginaAulasTurma.vue`) dependem da cultura do servidor ou do navegador. | Seção de trabalhos futuros do TCC 2 |
 | Capa e listas | Banca, processo SEI, data, Lista de Figuras. | Versão final |
 
 ## 10. Referências das ferramentas de teste
