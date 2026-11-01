@@ -245,9 +245,17 @@ que já contavam como a cobrir) · `npm run build` ok · `npm run test:e2e` = **
 = **191** (API inalterada). Sem testes manuais: a validação desta entrega é o Quality Gate do
 web Passed e o aviso de encoding ausente no run seguinte.
 
+**Resultado (run #9, 31/10/2026).** Web: Quality Gate **Passed**, cobertura do código novo 84,8 %
+sobre 89 linhas (80 no run #8), 0 issues novas e nenhum aviso de análise: o aviso de encoding
+desapareceu com as imagens fora da análise, o que confirma o diagnóstico. API: Quality Gate
+**Passed**. A medição local (62 de 62 linhas executáveis) e a do Sonar (84,8 %) diferem porque o
+Sonar conta também linhas de template dos `.vue`, que o lcov não lista. Prints:
+`docs/evidencias/SONAR-aderencia-web-quality-gate.png` e `SONAR-aderencia-api-quality-gate.png`.
+
 **Arquivos.** `web/sonar-project.properties`; `web/src/paginas/privado/meus-dados/PaginaMeusDados.spec.ts`,
 `web/src/paginas/privado/usuarios/PaginaUsuariosLista.spec.ts`, `web/src/paginas/publico/PaginaPrimeiroAcesso.spec.ts`
-(novos); `web/src/paginas/publico/PaginaCadastroInicial.spec.ts` (+1); este arquivo.
+(novos); `web/src/paginas/publico/PaginaCadastroInicial.spec.ts` (+1); este arquivo;
+`docs/evidencias/SONAR-aderencia-web-quality-gate.png` e `SONAR-aderencia-api-quality-gate.png`.
 
 **Registro para o Plano (v1.12).** Seção 7.2: "28 arquivos, 141 casos" → "31 arquivos, 151 casos";
 linhas novas `Meus Dados (PaginaMeusDados.spec) | validação prévia da RNF 4.3, envio normalizado,
@@ -256,4 +264,6 @@ Descartar (5)`, `Usuários (PaginaUsuariosLista.spec) | coluna Termo com versão
 ativação (3)`; `PaginaCadastroInicial.spec` (1 → 2). Seção 7.4: "141 (28 arquivos)" → "151 (31 arquivos)".
 Seção 7.5 (análise estática): "cobertura do código novo abaixo de 80 % reprova o Quality Gate;
 páginas sem spec contam inteiras como a cobrir, então toda página alterada precisa de spec na
-mesma entrega". Cabeçalho e seção 5: totais 191 / 151 (31) / 18.
+mesma entrega". Cabeçalho e seção 5: totais 191 / 151 (31) / 18. — Aplicado no Plano v1.12
+(31/10/2026): linha própria na seção 5, 7.2, 7.4 (a frase sobre o código novo ficou no parágrafo
+"CI"), 7.5 (os dois prints) e cabeçalho.

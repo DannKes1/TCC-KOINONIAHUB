@@ -6,14 +6,22 @@ principal e alternativos), o DER e o diagrama de casos de uso, a seção 4.8 (JW
 Origin, BCrypt), as telas do protótipo contra as rotas do front e as versões das ferramentas
 contra os manifestos. A verificação mostrou que nenhuma regra de negócio central diverge
 (situações da aula, perfil × atribuição, termo, isolamento por igreja, LGPD). Sobraram doze
-pontos em que o texto deve descrever o que o sistema faz (seção 1), nove em que o código deve
+pontos em que o texto deve descrever o que o sistema faz (seção 1; aplicados no .docx em 31/10/2026), nove em que o código deve
 seguir o texto (seções 2 a 4; o nono, CSU12 FA1, apareceu nos testes manuais da Entrega A) e
 uma lista do que existe no código sem constar da monografia (seção 5). Decisão do autor em
 28/10/2026: código ajustado nos itens, em três entregas (A, B e C), cada uma com plano prévio,
 suíte completa antes e depois e testes manuais; o texto é alterado pelo autor no .docx; nenhum
 RF novo.
 
-## 1. Correções de texto aprovadas (o autor aplica no .docx)
+## 1. Correções de texto aprovadas (aplicadas no .docx em 31/10/2026)
+
+**Aplicadas no .docx pelo autor em 31/10/2026**, as doze, junto com dois acréscimos decididos na
+mesma revisão: o Fluxo Alternativo 4 do CSU09 (consultar as presenças registradas da aula), que
+passa a descrever a Tela de Presenças da Aula e o `GET /api/aulas/{aulaId}/presencas`, até então
+sem RF ou CSU que os citasse; e a coluna Observação de `AlunoDepartamento` no DER. A figura "Tela
+de Turma com abas" não entra no Apêndice A, que é o protótipo do Figma (versão preliminar); o
+print da tela implementada (`RF20-pagina-turma-desktop.png`) vai para o capítulo de Resultados.
+As treze linhas correspondentes saíram da seção 9 do Plano (v1.12).
 
 | Onde | Texto atual → texto novo | Por quê |
 | --- | --- | --- |
@@ -193,7 +201,8 @@ exibido nem editado); `Usuario.UltimoAcesso` (nunca preenchido); `Departamento.I
 `Materia.ImagemUrl`, `Igreja.LogoUrl`, `Igreja.CNPJ`, `Igreja.Endereco`, `Igreja.CEP` (aceitos
 na API, fora das telas); `Departamento.Descricao` e `Materia.Descricao` (aceitos na entrada, não
 devolvidos nem editáveis; a tela de Matérias envia `null`); `AlunoDepartamento.Observacao`
-(campo "Observação (opcional)" do diálogo de matrícula; ausente do DER).
+(campo "Observação (opcional)" do diálogo de matrícula; a coluna entrou no DER em 31/10/2026 e
+segue sem RF ou CSU que a cite).
 
 **Regras de negócio além do texto:** e-mail de pessoa único por igreja (cadastro, edição,
 importação e Meus Dados); nome e tipo de turma únicos por igreja; uma conta de acesso por
@@ -207,7 +216,8 @@ para matrícula; pessoa pode ser criada já "Inativo".
 **Rotas e respostas além do texto:** `GET /api/usuarios/{id}` (sem consumidor no front);
 `GET /api/igrejas/{id}` aberto a qualquer perfil da própria igreja; `GET /api/termo/vigente?token=`
 público, identificando a igreja pelo convite; `GET /api/aulas/{aulaId}/presencas` e a Tela de
-Presenças da Aula (figura 30 do protótipo, sem RF ou CSU que a cite); `GET /api/aulas/{aulaId}/chamada`
+Presenças da Aula (figura 30 do protótipo; descritos pelo CSU09 FA4 desde 31/10/2026, então saem
+desta lista); `GET /api/aulas/{aulaId}/chamada`
 e `GET /api/aulas/{id}`; `GET /api/atribuicoes`, `GET /api/atribuicoes/{id}` e
 `GET /api/atribuicoes/departamento/{id}` sem o guarda de turma (qualquer conta autenticada da
 igreja lista); `GET /api/materias/{id}`; `PATCH /api/aulas/{id}/reabrir` devolve 404 sem corpo
@@ -339,4 +349,5 @@ Seção 7.2: `PaginaAtribuicoesDepartamento.spec` (1 → 3: Dropdown de função
 Seção 7.4: "178 aprovados" → "191"; "131 (26 arquivos)" → "141 (28 arquivos)".
 Seção 9: retirar as linhas CSU01 passo 5 e CSU09 passo 4 quando o autor aplicar o .docx;
 acrescentar as dez correções de texto restantes da seção 1 deste arquivo (inclusive a RNF 34.3)
-até serem aplicadas.
+até serem aplicadas. — Aplicado: as doze linhas e a da figura saíram da seção 9 no Plano v1.12
+(31/10/2026), depois da aplicação no .docx.
