@@ -197,3 +197,63 @@ Docs — `docs/testes.md` (bloco "SonarCloud — correção dos apontamentos" e 
 - Como um rótulo se liga a um campo (`for` → `id`), o que é nome acessível e por que cada componente do PrimeVue pede um atributo diferente; acessibilidade é subcaracterística da Usabilidade na ISO/IEC 25010 (seção 4.10).
 - A diferença entre falso positivo (CA1862: a sugestão quebraria a tradução para SQL), risco aceito com justificativa (S8949, S6845) e dívida mantida como trabalho futuro (S3776).
 - Como se prova que uma mudança de CSS não alterou a tela: comparação de pixels e de estilos calculados antes e depois, nos dois tamanhos.
+
+## 7. Código novo das entregas de aderência (31/10/2026)
+
+**O que a análise mostrou (run #8, 191 / 141 / 18 verdes).** API: Quality Gate Passed, cobertura
+geral 77,8 %. Web: Quality Gate **Failed** por uma condição, cobertura do código novo 73,5 %
+(exigido 80 %) sobre 80 linhas novas a cobrir, e um aviso de análise: "There are problems with
+file encoding in the source code".
+
+**Encoding.** Conferência de todos os 136 arquivos de `web/` rastreados pelo git (`.vue`, `.ts`,
+`.css`, `.spec.ts`, `.properties`, `.json`, `.html`): nenhum com BOM, nenhum fora de UTF-8,
+nenhum com caractere de substituição (U+FFFD), UTF-16 ou bytes de controle; no índice todos
+estão com LF. Nenhum arquivo precisou ser regravado. Os únicos arquivos sob `sonar.sources`
+que não são UTF-8 são as duas imagens de `src/assets` (`LOGOIPB.png`, `LOGOIPB2.png`), que o
+scanner tentava ler como texto; `src/assets/**` entrou em `sonar.exclusions` no
+`web/sonar-project.properties`. A prova é o aviso desaparecer no run seguinte. (Na API, 178
+arquivos `.cs` e o `.sln` têm BOM UTF-8, padrão do Visual Studio; o scanner .NET lê pelo
+compilador e não avisou.)
+
+**Cobertura do código novo.** As linhas novas descobertas estavam concentradas em páginas sem
+spec: `PaginaMeusDados.vue` (validação prévia da RNF 4.3, 15 linhas executáveis), `PaginaUsuariosLista.vue`
+(coluna Termo, 2) e `PaginaPrimeiroAcesso.vue`, mais os `v-model` do Cadastro Inicial, que o spec
+existente não exercitava (8 de 27). Specs novos, só de teste, sem mudar comportamento:
+
+- `PaginaMeusDados.spec.ts` (novo, 5): carga do formulário; e-mail inválido e UF com três letras
+  barrados no campo sem chamar a API, com "Corrija os campos destacados."; celular com menos de
+  8 dígitos barrado e letras removidas ao digitar; dados válidos enviam e-mail vazio como nulo,
+  UF em maiúsculas e aceitam "a@b" (a regra da API), com recarga e toast; Descartar volta aos
+  dados originais e limpa as mensagens.
+- `PaginaUsuariosLista.spec.ts` (novo, 1): coluna Termo com "Aceito v1.0" e "em dd/mm/aaaa hh:mm",
+  "Pendente" sem data e "Versão anterior (v0.9)" com data.
+- `PaginaPrimeiroAcesso.spec.ts` (novo, 3): sem token, "Link incompleto" e nenhuma chamada à API;
+  com token, e-mail do convite, aviso de aceite obrigatório até marcar e Concluir habilitando;
+  confirmação diferente recusada e envio de token, senha e versão do termo com a tela de sucesso.
+- `PaginaCadastroInicial.spec.ts` (+1): aviso de aceite até marcar; preenchimento dos sete campos
+  e Concluir enviando igreja, administrador e versão do termo.
+
+Medição local (lcov do Vitest cruzado com `git diff -U0 160e566..HEAD -- web/src`): 62 de 62
+linhas executáveis novas cobertas nos dez arquivos alterados desde a análise anterior (antes:
+37 de 45 nos arquivos com lcov, mais 3 arquivos sem nenhum registro). A contagem do Sonar
+difere da local (80 linhas) porque inclui linhas de template que o lcov não lista; a meta de
+90 % tem folga.
+
+**Validação (31/10/2026).** `vue-tsc -b` limpo · `npm run test` = **151 casos, 31 arquivos**
+(141 + 10) · cobertura geral do web 71,2 % de linhas (inalterada; os specs novos cobrem páginas
+que já contavam como a cobrir) · `npm run build` ok · `npm run test:e2e` = **18** · `dotnet test`
+= **191** (API inalterada). Sem testes manuais: a validação desta entrega é o Quality Gate do
+web Passed e o aviso de encoding ausente no run seguinte.
+
+**Arquivos.** `web/sonar-project.properties`; `web/src/paginas/privado/meus-dados/PaginaMeusDados.spec.ts`,
+`web/src/paginas/privado/usuarios/PaginaUsuariosLista.spec.ts`, `web/src/paginas/publico/PaginaPrimeiroAcesso.spec.ts`
+(novos); `web/src/paginas/publico/PaginaCadastroInicial.spec.ts` (+1); este arquivo.
+
+**Registro para o Plano (v1.12).** Seção 7.2: "28 arquivos, 141 casos" → "31 arquivos, 151 casos";
+linhas novas `Meus Dados (PaginaMeusDados.spec) | validação prévia da RNF 4.3, envio normalizado,
+Descartar (5)`, `Usuários (PaginaUsuariosLista.spec) | coluna Termo com versão e data (1)`,
+`Primeiro Acesso (PaginaPrimeiroAcesso.spec) | link sem token, aviso de aceite, confirmação de senha e
+ativação (3)`; `PaginaCadastroInicial.spec` (1 → 2). Seção 7.4: "141 (28 arquivos)" → "151 (31 arquivos)".
+Seção 7.5 (análise estática): "cobertura do código novo abaixo de 80 % reprova o Quality Gate;
+páginas sem spec contam inteiras como a cobrir, então toda página alterada precisa de spec na
+mesma entrega". Cabeçalho e seção 5: totais 191 / 151 (31) / 18.
