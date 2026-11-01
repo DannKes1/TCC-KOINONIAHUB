@@ -4,6 +4,7 @@ import PrimeVue from "primevue/config";
 import { createMemoryHistory, createRouter } from "vue-router";
 
 import PaginaCadastroInicial from "./PaginaCadastroInicial.vue";
+import { registrarAdminApi } from "../../aplicacao/servicos/authServico";
 
 // RF1 / CSU01 (correção do SonarCloud, Web:InputWithoutLabelCheck): cada campo do
 // Cadastro Inicial tem um rótulo visível ligado ao input por for/id, e o placeholder
@@ -78,6 +79,44 @@ describe("PaginaCadastroInicial (RF1, rótulos dos campos)", () => {
       .map((l) => l.attributes("for"))
       .filter((f) => f?.startsWith("cadastro-"));
     expect(fors).toEqual(campos.map((c) => c.id));
+
+    wrapper.unmount();
+  });
+
+  // RNF 42.1 / CSU01 FA2 (aderência, Entrega A): o aviso de aceite obrigatório aparece
+  // até marcar a caixa; depois o Concluir habilita e envia o que foi digitado.
+  it("aviso de aceite até marcar; Concluir envia igreja, administrador e versão do termo", async () => {
+    vi.mocked(registrarAdminApi).mockResolvedValueOnce({} as never);
+    const wrapper = await montar();
+
+    expect(wrapper.find('[data-testid="termo-aceite-obrigatorio"]').text()).toBe(
+      "O aceite do termo é obrigatório para concluir.",
+    );
+    expect(wrapper.find('[data-testid="cadastro-concluir"]').attributes("disabled")).toBeDefined();
+
+    await wrapper.find('[data-testid="cadastro-nome-igreja"]').setValue("Igreja Central");
+    await wrapper.find('[data-testid="cadastro-cidade"]').setValue("Ji-Paraná");
+    await wrapper.find('[data-testid="cadastro-estado"]').setValue("RO");
+    await wrapper.find('[data-testid="cadastro-email-igreja"]').setValue("");
+    await wrapper.find('[data-testid="cadastro-nome-admin"]').setValue("Daniel");
+    await wrapper.find('[data-testid="cadastro-email-admin"]').setValue("daniel@teste.com");
+    await wrapper.find('[data-testid="cadastro-senha-admin"]').setValue("segredo1");
+    await wrapper.find('input[type="checkbox"]').setValue(true);
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="termo-aceite-obrigatorio"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="cadastro-concluir"]').attributes("disabled")).toBeUndefined();
+
+    await wrapper.find('[data-testid="cadastro-concluir"]').trigger("click");
+    await flushPromises();
+
+    expect(registrarAdminApi).toHaveBeenCalledWith({
+      Igreja: { Nome: "Igreja Central", Cidade: "Ji-Paraná", Estado: "RO", Email: null },
+      EmailAdmin: "daniel@teste.com",
+      SenhaAdmin: "segredo1",
+      NomeAdmin: "Daniel",
+      AceiteTermoVersao: "1.0",
+    });
 
     wrapper.unmount();
   });
