@@ -9,6 +9,7 @@ using KoinoniaHub.API.Dominio.Interfaces.Repositorios;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -161,7 +162,37 @@ builder.Services.AddScoped<IAutorizacaoEbdServico, AutorizacaoEbdServico>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<RelogioIgreja>();
 
+// Proxy reverso (implantação, Entrega F): atrás do Caddy a API recebe HTTP na rede interna
+// do compose; X-Forwarded-Proto devolve o esquema https (sem laço no UseHttpsRedirection,
+// cookie Secure) e X-Forwarded-For o IP real, gravado no aceite do termo (RNF 42.8).
+// Por padrão só proxies de loopback são aceitos; ProxyReverso:ConfiarNaRedeInterna=true
+// (só na implantação, onde a API não tem porta publicada e só o Caddy a alcança) libera
+// qualquer origem. Fora disso os cabeçalhos são ignorados, como nos testes e no E2E.
+builder.Services.Configure<ForwardedHeadersOptions>(opcoes =>
+{
+    opcoes.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    if (builder.Configuration.GetValue<bool>("ProxyReverso:ConfiarNaRedeInterna"))
+    {
+        opcoes.KnownIPNetworks.Clear();
+        opcoes.KnownProxies.Clear();
+    }
+});
+
 var app = builder.Build();
+
+// Implantação: as migrations pendentes são aplicadas na subida do contêiner (o banco já
+// está pronto pelo depends_on do compose). Fora de Production nada muda: Development e
+// E2E continuam com dotnet ef database update; os testes criam o esquema em SQLite.
+if (app.Environment.IsProduction())
+{
+    using var escopo = app.Services.CreateScope();
+    var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+    await db.Database.MigrateAsync();
+}
+
+// Antes de tudo: o redirecionamento HTTPS e o IP de origem dependem dos cabeçalhos encaminhados.
+app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
 {
