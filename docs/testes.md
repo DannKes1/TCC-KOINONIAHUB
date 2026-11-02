@@ -2095,9 +2095,22 @@ no TestServer (a conexão de teste conta como loopback) e não entrou.
 **Compose não executado localmente:** Docker Desktop não está instalado na máquina do autor.
 `deploy/backup.sh` conferido com `bash -n`; os comandos de verificação na VPS (`config --quiet`,
 `ps`, `curl -I https://DOMINIO`, `curl /api/saude`, `curl -I http://www.DOMINIO`) estão no
-`deploy/README.md`. Testes manuais e prints: a preencher pelo autor na primeira subida na VPS
-(T1 `/api/saude` sem sessão; T2 HSTS no `curl -I`; T3 301 do `www`; T4 IP do navegador no aceite
-do termo em Meus Dados; T5 `backup.sh` gera o `.dump`).
+`deploy/README.md`.
+
+**Implantação (02/11/2026):** VPS Hostinger KVM 1 (Ubuntu 24.04, datacenter no Brasil), domínio
+`koinoniahub.tech`, Docker Compose com `db`, `api` e `caddy`. Base de exemplo restaurada com
+`pg_restore` a partir do dump local.
+
+**Testes manuais na VPS, executados pelo autor em 02/11/2026:** T1 ✔ `GET /api/saude` sem sessão
+= `{"situacao":"ok"}` · T2 ✔ `curl -I https://koinoniahub.tech` = HTTP/2 200 com
+`strict-transport-security: max-age=31536000; includeSubDomains` · T3 ✔ `http://www.koinoniahub.tech`
+→ 308 para `https://www.koinoniahub.tech` (HTTP → HTTPS do Caddy) e 301 para
+`https://koinoniahub.tech/` · T4 ✔ aceite do termo por primeiro acesso gravou o IP público do
+navegador, não o do contêiner (RNF 42.8) · T5 ✔ `backup.sh` gerou `koinoniahub-20261102-2227.dump`
+(60 KB) e o cron das 03:00 está agendado. Acesso pelo celular em 5G com o cadeado conferido.
+
+**Prints (`docs/evidencias/`, 4 arquivos):** `RNF-2.3-saude-hsts-vps.png`,
+`RNF-42.8-ip-aceite-vps.png`, `RNF-2.3-https-celular.png`, `Confiabilidade-backup-cron-vps.png`.
 
 **Anotado no registro do projeto:** decisões da Entrega F (variáveis, proxy reverso, migrations
 em Production, `/api/saude`, imagens, Caddyfile, segredos, o que não foi testado).

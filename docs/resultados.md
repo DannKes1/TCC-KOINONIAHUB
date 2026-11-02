@@ -3,7 +3,8 @@
 Material para o capítulo de Resultados do TCC (registro do projeto, seções 5 e
 7.5; monografia, seção 5.1). Etapa 7.3, 19 a 22/10/2026; atualizado em 31/10/2026 com as entregas
 de aderência à monografia (A a D, 28 a 31/10/2026; seção 7) e com a análise estática do código
-(seção 8).
+(seção 8), e em 02/11/2026 com a implantação em VPS (HTTPS e HSTS na nota 3.1; implantação e
+backup na seção 4).
 
 A monografia avalia o sistema por quatro características da ISO/IEC 25010. Este documento reúne
 a evidência de três delas:
@@ -12,7 +13,7 @@ a evidência de três delas:
 | --- | --- | --- |
 | Adequação Funcional | Tabela CSU → teste → resultado (CSU01–CSU24) | 2 |
 | Segurança | Tabela RNF → teste → evidência | 3 |
-| Confiabilidade | Tabela RNF → teste → resultado, incluindo a cópia e restauração dos dados | 4 |
+| Confiabilidade | Tabela RNF → teste → resultado, incluindo a cópia e restauração dos dados e a implantação com backup | 4 |
 
 A Usabilidade é avaliada com os participantes (seção 5.1), sobre as telas a 360 px; os prints
 `RNF-responsividade-*.png` estão em `docs/evidencias/`. A seção 8 reúne a análise estática do
@@ -146,7 +147,7 @@ Prints em `docs/evidencias/`. Os marcados "D*n*" vieram dos roteiros da Etapa 7.
 | --- | --- | --- | --- | --- |
 | 2.1, 3.1, 4.1, 5.1, 6.1, 9.2, 11.1, 19.1, 20.1, 23.1, 26.1, 34.1 | Acesso só com sessão válida (JWT no cookie httpOnly) | `RF21_PerfilOperacionalTests.EndpointSemAtributo_SemSessaoRetorna401_ComSessaoRetorna200` (FallbackPolicy); `Etapa0_FumacaTests.RotaProtegida_SemCookie_Retorna401`; `RF42_TermoTests.Aceitar_SemSessao_Retorna401`; `RF2_TokenSomenteNoCookieTests` (2); `guardas.spec` | ✔ `RNF-2.1-401-sem-sessao.png` | Coberta |
 | 1.2, 2.2, 13.2, 15.4, 40.3 | Senha só como hash BCrypt, custo ≥ 10 (seção 4.8) | `RF1_CadastroInicialTests` (1: 1.2/2.2) e `RF13_UsuarioTests.Criar_ComSenhaInformada_GravaSoHashBCrypt` (13.2), com formato, custo ≥ 10, ausência da senha e `Verify`; `RF39_RF40_ConviteTests.Ativar_SegundaVez_Retorna400` (15.4/40.3: formato `$2…`, ausência da senha e `Verify`; o custo é conferido no manual D4) | ✔ D4: `RNF-2.2-senhahash-bcrypt-no-banco.png` (consulta A: prefixo, custo 11 e tamanho 60), `RNF-2.2-senhahash-bcrypt-contagem.png` (consulta B: zero fora do formato, zero com a senha), `RNF-13.4-login-senha-manual-termo-pendente.png` (a conta criada com senha entra e cai no termo) | Coberta |
-| 1.4, 2.3, 40.4, 42.4, 44.4 | Comunicação sobre HTTPS | `RF2_HttpsTests` (1: http → 307 com `Location` https); cookie `Secure` em `RF2_TokenSomenteNoCookieTests` (2) | ✔ D7: `RNF-2.3-redirecionamento-https.png` (307 com `Location` https), `RNF-2.3-cookie-secure-httponly.png` (cookie `kh_token` HttpOnly e Secure) | Coberta (nota 3.1) |
+| 1.4, 2.3, 40.4, 42.4, 44.4 | Comunicação sobre HTTPS | `RF2_HttpsTests` (1: http → 307 com `Location` https); cookie `Secure` em `RF2_TokenSomenteNoCookieTests` (2); atrás do proxy, `RF2_ProxyReversoTests` (2: `X-Forwarded-Proto` mantém o https sem laço; `X-Forwarded-For` é o IP do aceite do termo, RNF 42.8) | ✔ D7: `RNF-2.3-redirecionamento-https.png` (307 com `Location` https), `RNF-2.3-cookie-secure-httponly.png` (cookie `kh_token` HttpOnly e Secure); ✔ VPS (02/11/2026): `RNF-2.3-saude-hsts-vps.png` (HTTP/2 200 com HSTS), `RNF-2.3-https-celular.png` (cadeado no celular), `RNF-42.8-ip-aceite-vps.png` (IP do navegador no aceite) | Coberta (nota 3.1) |
 | 2.6 | Escrita só da origem autorizada | `RF2_OrigemTests` (8) | ✔ `RNF-2.6-403-origem-nao-autorizada.png`, `RNF-2.6-passa-origem-autorizada.png` | Coberta |
 | 4.2, 5.2, 6.2, 34.3 | Acesso só aos próprios dados; Professor só às suas turmas | `RF34_PresencasPessoaTests` (5, com a matrícula inativada: 200 na turma do Professor, 403 fora dela — RNF 34.3 com a frase "inclusive os de matrícula já inativada", 31/10/2026); `RF11_PessoaAcessoTests.ObterPessoa_UsuarioOutraPessoa_Retorna403`; `RF35_RelatorioTests.MinhaFrequencia_SoConsolidadas_EListaPendentes`; `RF21_PerfilOperacionalTests.MinhasTurmas_UsuarioComAtribuicaoAtiva_SemVinculoDeAtribuicao`; `RF42_TermoTests.MeusDados_EUsuarios_IncluemAceite` | ✔ `RNF-34.3-403-fora-da-turma.png`, `RNF-34.3-200-presencas-filtradas.png` | Coberta |
 | 11.3 | Professor vê de Pessoa só o necessário, e só nas suas turmas | `RF11_PessoaAcessoTests` (6, com o DTO reduzido do ex-aluno da turma); `RF12_ParentescoDerivadoTests.ObterPessoaParaTurma_ProfessorVeADerivada`; E2E-05; `MenuLateral.spec` | ✔ `RNF-11.3-403-fora-da-turma.png`, `RNF-11.3-200-dto-reduzido.png`, `RNF-12.3-responsaveis-professor-derivado.png` | Coberta |
@@ -179,7 +180,16 @@ Prints em `docs/evidencias/`. Os marcados "D*n*" vieram dos roteiros da Etapa 7.
 
 - **HTTPS.** A API redireciona HTTP para HTTPS (307), e o cookie de sessão é `Secure`. Em
   desenvolvimento o navegador fala HTTP com o Vite (`localhost:5173`), e só o trecho Vite → API
-  é HTTPS. Na implantação, o front também precisa ser servido em HTTPS. A API não usa HSTS.
+  é HTTPS. Na implantação (02/11/2026: VPS Ubuntu 24.04 com Docker Compose e Caddy, domínio
+  `koinoniahub.tech`), front e API são servidos em HTTPS na mesma origem pelo Caddy, com
+  certificado automático e HSTS (`strict-transport-security: max-age=31536000; includeSubDomains`,
+  conferido com `curl -I`: HTTP/2 200); `www` redireciona para o domínio principal e a API só é
+  alcançável pelo proxy. A API aplica os cabeçalhos `X-Forwarded-Proto` e `X-Forwarded-For` do
+  Caddy (`UseForwardedHeaders` antes do redirecionamento; `RF2_ProxyReversoTests`): o
+  redirecionamento não entra em laço, o cookie `Secure` vale atrás do proxy e o IP gravado no
+  aceite do termo é o do navegador, não o do contêiner (RNF 42.8, conferido no primeiro acesso de
+  uma conta na VPS). Acesso pelo celular em rede móvel com o cadeado do navegador. Prints
+  `RNF-2.3-saude-hsts-vps.png`, `RNF-2.3-https-celular.png`, `RNF-42.8-ip-aceite-vps.png`.
 - **403 por perfil (`[Authorize(Roles)]`).** Desde a corretiva de 20/10, sai com o corpo
   `{ "mensagem": "Você não tem permissão para esta operação." }` (`RespostaAutorizacaoHandler`),
   como os demais 403 da API (guarda da turma, acesso a pessoas, Resumo do dia, igreja de outro
@@ -218,7 +228,9 @@ Prints em `docs/evidencias/`. Os marcados "D*n*" vieram dos roteiros da Etapa 7.
 | Seção 5.1 — dados inválidos | Entrada inválida recusada sem gravar; PUT substitui os campos | `RF44_IgrejaTests.Atualizar_NomeVazio_Retorna400ComErroDoCampo`, `Atualizar_EmailInvalido_Retorna400ComErroDoCampo` (400 com o erro no campo), `Atualizar_CampoOmitido_ViraNulo`; `RF4_MeusDadosTests` (4: e-mail e UF inválidos → 400 por campo sem gravar; e-mail vazio → nulo; RNF 4.3); `RF21_FuncaoAtribuicaoTests` (4: função fora da lista → 400 sem gravar); `RF41_ImportacaoTests.Importar_MaisDe1000Linhas_Retorna400` (nada gravado), `Importar_ColunaForaDoModelo_Ignorada`; `RF42_TermoTests.RegistrarAdmin_SemAceite_Retorna400`, `Aceitar_VersaoDiferenteDaVigente_Retorna400` (nada gravado); `Etapa0_FumacaTests.Login_ComSenhaErrada_Retorna400` | ✔ `RNF-44.3-400-email-invalido.png` | Aprovado |
 | Seção 5.1 — cópia e restauração dos dados (registro do projeto, 6.17) | `pg_dump` (formato custom) → `pg_restore` num banco novo → API apontada para ele → login, listagem e escrita conferidos | Manual: roteiro C da Etapa 7.3 (`docs/testes.md`), executado em 22/10/2026 ✔ | ✔ `Confiabilidade-restauracao-1-contagens-origem.png`, `-2-pg-dump-custom.png`, `-3-pg-restore.png`, `-4-contagens-restaurado.png`, `-5-api-no-banco-restaurado.png` (API apontada para o banco restaurado), `-5-login-listagem.png`, `-6-escrita-no-restaurado.png` (a pessoa nova só no banco restaurado) | Aprovado |
 
-**Resumo:** 20 linhas, 20 aprovadas.
+| Implantação e backup | Sistema em produção com HTTPS; cópia diária automática do banco com retenção de 7 dias | `SaudeTests` (1: `GET /api/saude` 200 sem sessão, healthcheck do contêiner); manual na VPS (02/11/2026): `db` e `api` healthy, `/api/saude` = `{"situacao":"ok"}`, `deploy/backup.sh` gerou `koinoniahub-20261102-2227.dump` (60 KB), cron das 03:00 agendado, base de exemplo restaurada com `pg_restore` a partir do dump local (Entrega F em `docs/testes.md`) | ✔ `RNF-2.3-saude-hsts-vps.png`, `Confiabilidade-backup-cron-vps.png` | Aprovado |
+
+**Resumo:** 21 linhas, 21 aprovadas.
 
 ## 5. Lacunas conhecidas de Segurança
 
