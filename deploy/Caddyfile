@@ -1,0 +1,35 @@
+# Caddy (implantação, Entrega F): HTTPS automático (Let's Encrypt) para o domínio e o www,
+# front estático em / e a API em /api. DOMINIO vem do .env pelo docker-compose.prod.yml.
+# Os certificados ficam no volume caddy_dados (/data).
+
+# www redireciona (301) para o domínio principal; o certificado é emitido para os dois.
+www.{$DOMINIO} {
+	redir https://{$DOMINIO}{uri} permanent
+}
+
+{$DOMINIO} {
+	encode zstd gzip
+
+	header {
+		# HSTS: um ano, com subdomínios.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	# API: o reverse_proxy do Caddy envia X-Forwarded-For e X-Forwarded-Proto, que a API
+	# aplica com ProxyReverso:ConfiarNaRedeInterna=true (Program.cs).
+	handle /api/* {
+		reverse_proxy api:8080
+	}
+
+	# Front (Vue Router em modo history): rota desconhecida cai no index.html.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

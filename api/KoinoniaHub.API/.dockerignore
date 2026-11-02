@@ -1,0 +1,7 @@
+# Fora da imagem: saídas de build e os appsettings locais (o E2E tem a connection
+# string do autor). A configuração de produção entra só por variáveis de ambiente.
+bin/
+obj/
+*.user
+appsettings.Development.json
+appsettings.E2E.json

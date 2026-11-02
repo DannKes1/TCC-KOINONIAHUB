@@ -12,6 +12,7 @@ TestResults/
 # ===== Segredos e ambiente =====
 .env
 .env.*
+!.env.example
 *.pfx
 appsettings.*.Local.json
 

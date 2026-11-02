@@ -1,0 +1,4 @@
+# Lidos ou executados no Ubuntu da VPS: sempre LF, mesmo com core.autocrlf=true no Windows.
+*.sh text eol=lf
+Dockerfile text eol=lf
+Caddyfile text eol=lf

@@ -1,0 +1,73 @@
+# Implantação em VPS (Ubuntu 24.04, Docker Compose; Entrega F): PostgreSQL, API e Caddy.
+#   cp .env.example .env            # preencher (deploy/README.md)
+#   docker compose -f docker-compose.prod.yml up -d --build
+# db e api não publicam porta: de fora só o Caddy (80 e 443) é alcançável.
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      # A imagem postgres:18 monta os dados em /var/lib/postgresql (PGDATA em
+      # /var/lib/postgresql/18/docker); nas imagens até a 17 era /var/lib/postgresql/data.
+      - db_dados:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./api/KoinoniaHub.API
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: "8080"
+      # Porta pública do HTTPS, para o UseHttpsRedirection montar o destino de um
+      # eventual acesso em http (normalmente o Caddy já redireciona antes).
+      ASPNETCORE_HTTPS_PORT: "443"
+      # Chaves com os mesmos nomes do appsettings.json (ConnectionStrings:Postgres etc.).
+      ConnectionStrings__Postgres: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password='${POSTGRES_PASSWORD}'"
+      Jwt__ChaveSecreta: ${JWT_CHAVE_SECRETA}
+      Jwt__Emissor: KoinoniaHub
+      Jwt__Audiencia: KoinoniaHub
+      Igreja__FusoHorario: ${IGREJA_FUSO_HORARIO}
+      # Origem autorizada para escrita (RNF 2.6) e CORS: o próprio site.
+      Cors__OrigensPermitidas__0: https://${DOMINIO}
+      # Aplica X-Forwarded-For/Proto do Caddy (só aqui, onde a API não tem porta publicada).
+      ProxyReverso__ConfiarNaRedeInterna: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/api/saude"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      # A primeira subida aplica as migrations antes de responder.
+      start_period: 60s
+
+  caddy:
+    build: ./web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3, que o Caddy liga por padrão
+    environment:
+      DOMINIO: ${DOMINIO}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_dados:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  db_dados:
+  caddy_dados:
+  caddy_config:
