@@ -31,6 +31,7 @@ O tratamento de dados observa a LGPD (Lei nº 13.709/2018), com atenção especi
 api/   → KoinoniaHub.API (ASP.NET Core 10) e KoinoniaHub.API.Tests (xUnit)
 web/   → koinoniahub.web (Vue 3 + TypeScript), com os testes Vitest (src/**/*.spec.ts) e Playwright (e2e/)
 docs/  → resultados.md (material do capítulo de Resultados), testes.md (evidências por etapa) e evidencias/ (prints)
+deploy/ → Caddyfile, backup.sh e README.md da implantação em VPS (docker-compose.prod.yml na raiz)
 ```
 
 ## Como executar
@@ -53,6 +54,10 @@ cd web
 npm install
 npm run dev
 ```
+
+### Implantação
+
+Em VPS (Ubuntu 24.04) com Docker Compose e Caddy (HTTPS automático, HSTS): `deploy/README.md`.
 
 ## Linha do tempo do desenvolvimento
 

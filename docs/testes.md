@@ -2066,3 +2066,38 @@ a 64,4 %, como registrado na seção 4 (os registros do aluno que saiu deixam de
 `RF35-percentual-aula-saida.png`, `RF35-percentual-aula-saida-resumo.png`.
 
 **Anotado no registro do projeto:** texto no registro do projeto (aderência à monografia, seção 8).
+
+## Entrega F — implantação em VPS: Docker Compose, Caddy com HTTPS e HSTS (02/11/2026)
+
+**Escopo.** Implantação em Ubuntu 24.04 com Docker Compose e Caddy (HTTPS automático), fechando a
+pendência "Implantação com HSTS e front em HTTPS" do texto do TCC 2. Arquivos novos:
+`api/KoinoniaHub.API/Dockerfile` (SDK → runtime aspnet, usuário não root, porta 8080),
+`web/Dockerfile` (`npm ci && npm run build` → `caddy:2` com o estático), `docker-compose.prod.yml`
+(`db` postgres:18, `api`, `caddy`; só o Caddy publica porta), `deploy/Caddyfile` (domínio do `.env`,
+`www` com 301, HSTS e cabeçalhos de segurança, `/api` → `api:8080`), `deploy/backup.sh` (`pg_dump -Fc`
+diário, 7 dias), `deploy/README.md`, `.env.example`. Na API: `UseForwardedHeaders` antes do
+`UseHttpsRedirection`, ligado pela chave `ProxyReverso:ConfiarNaRedeInterna` só no compose (IP real
+no aceite do termo, RNF 42.8; cookie Secure atrás do proxy); migrations aplicadas na subida em
+Production; `GET /api/saude` (200, público, sem banco) para o healthcheck. O front já chamava a API
+por `/api` relativo; sem `VITE_API_BASE_URL` em produção. Nomes das variáveis mantidos como no
+`appsettings.json`. Nenhum segredo em arquivo rastreado; `appsettings.E2E.json` fora da imagem.
+Blocos de commit: api · testes · implantação · docs.
+
+**Validação automatizada (02/11/2026, ambiente do autor):** `dotnet build` com 0 avisos e 0 erros ·
+`dotnet test` = **194 aprovados** (191 + `RF2_ProxyReversoTests` 2:
+`Http_ComForwardedProtoHttps_NaoRedireciona`, `AceitarTermo_GravaIpDoForwardedFor`; `SaudeTests` 1:
+`Saude_SemSessao_Retorna200`); `RF2_HttpsTests` e `RF2_OrigemTests` inalterados e aprovados ·
+`vue-tsc -b` limpo · `npm run test` = **31 arquivos, 151 casos** · `npm run build` ok ·
+`npm run test:e2e` = **18 aprovados** (10 `chromium` + 8 `mobile`). Suíte completa executada antes
+(191 / 151 / 18) e depois. O caso "cabeçalho de proxy não confiável é ignorado" não é demonstrável
+no TestServer (a conexão de teste conta como loopback) e não entrou.
+
+**Compose não executado localmente:** Docker Desktop não está instalado na máquina do autor.
+`deploy/backup.sh` conferido com `bash -n`; os comandos de verificação na VPS (`config --quiet`,
+`ps`, `curl -I https://DOMINIO`, `curl /api/saude`, `curl -I http://www.DOMINIO`) estão no
+`deploy/README.md`. Testes manuais e prints: a preencher pelo autor na primeira subida na VPS
+(T1 `/api/saude` sem sessão; T2 HSTS no `curl -I`; T3 301 do `www`; T4 IP do navegador no aceite
+do termo em Meus Dados; T5 `backup.sh` gera o `.dump`).
+
+**Anotado no registro do projeto:** decisões da Entrega F (variáveis, proxy reverso, migrations
+em Production, `/api/saude`, imagens, Caddyfile, segredos, o que não foi testado).
