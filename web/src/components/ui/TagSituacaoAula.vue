@@ -8,7 +8,7 @@ import {
   severidadeSituacaoAula,
 } from "../../aplicacao/dominio/situacaoAula";
 
-// Tag de situação da aula (RF31 / RNF 31.3, Plano 6.2): uma tag por situação
+// Tag de situação da aula (RF31 / RNF 31.3, registro do projeto, 6.2): uma tag por situação
 // (Em aberto / Consolidada / Não realizada) e a tag adicional "Pendente" quando
 // a aula está Em aberto com data já ocorrida.
 const props = defineProps<{

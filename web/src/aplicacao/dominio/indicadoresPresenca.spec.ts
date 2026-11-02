@@ -7,7 +7,7 @@ import {
 } from "./indicadoresPresenca";
 import type { HistoricoPresencaPessoaVM } from "../modelos/dtos";
 
-// Etapa 6 (Plano 5, "Acabamento de UI"): indicadores do painel do aluno (RF3) e do
+// Etapa 6 (registro do projeto, 5, "Acabamento de UI"): indicadores do painel do aluno (RF3) e do
 // diálogo de histórico de Pessoas seguem o CSU07 — só aulas Consolidadas contam —
 // e a janela do painel é a mesma de Minha Frequência (90 dias).
 function registro(

@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 {
     // Relatórios da EBD (RF6, RF35–RF38). Regra comum (RNFs 35.5, 37.5, 38.4; RF36;
-    // CSU07/CSU15/CSU21; Plano 6.9): só aulas Consolidadas entram nos cálculos;
+    // CSU07/CSU15/CSU21; registro do projeto, 6.9): só aulas Consolidadas entram nos cálculos;
     // aulas Não realizadas ficam de fora e aulas Em aberto com data já ocorrida são
     // devolvidas à parte como pendentes de fechamento (AulasPendentes).
     // Dias (período, resumo do dia, "hoje") são dias civis da igreja (RelogioIgreja);
@@ -150,7 +150,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             resposta.TotalAulasConsolidadas = aulasDoDia.Count(a => a.Situacao == SituacaoAula.Consolidada);
             resposta.TotalAulasNaoRealizadas = aulasDoDia.Count(a => a.Situacao == SituacaoAula.NaoRealizada);
 
-            // Listas à parte (RNF 38.4 / Plano 6.9): Não realizadas e Em aberto de data já ocorrida.
+            // Listas à parte (RNF 38.4 / registro do projeto, 6.9): Não realizadas e Em aberto de data já ocorrida.
             resposta.AulasNaoRealizadas = aulasDoDia
                 .Where(a => a.Situacao == SituacaoAula.NaoRealizada)
                 .OrderBy(a => a.NomeDepartamento)

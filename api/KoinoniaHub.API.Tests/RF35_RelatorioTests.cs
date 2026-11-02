@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace KoinoniaHub.API.Tests
 {
     // Relatórios só com aulas Consolidadas (RNFs 35.5, 37.5, 38.4; RF36; CSU07, CSU15, CSU21;
-    // Plano 6.9): Não realizadas ficam fora, Em aberto de data já ocorrida vai para
+    // registro do projeto, 6.9): Não realizadas ficam fora, Em aberto de data já ocorrida vai para
     // aulasPendentes[], e Em aberto futura ou de hoje não aparece em lugar nenhum.
     public class RF35_RelatorioTests : IClassFixture<KoinoniaHubWebApplicationFactory>
     {

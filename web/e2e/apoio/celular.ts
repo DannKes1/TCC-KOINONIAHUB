@@ -5,7 +5,7 @@ import { dirname, resolve } from "node:path";
 
 // Apoio do critério de responsividade (Etapa 6.3; RNFs "a interface deve ser
 // responsiva"): nenhuma tela do fluxo do professor pode exigir rolagem horizontal
-// da página a 360 px. Desde a 6.4-C o padrão é o MODO ESTRITO (Plano, 6.12): além
+// da página a 360 px. Desde a 6.4-C o padrão é o MODO ESTRITO (registro do projeto, 6.12): além
 // do documento e do <main>, nenhum container interno pode rolar para o lado — nem a
 // tabela do PrimeVue (.p-datatable-table-container), que nas telas operacionais deu
 // lugar aos cartões. Só a faixa de abas da Página da Turma (.p-tablist-content)
@@ -65,7 +65,7 @@ export async function semRolagemHorizontal(
   expect(problemas, `${tela}: rolagem horizontal indevida`).toEqual([]);
 }
 
-// Critério mais estreito, para as telas administrativas (Plano, seção 9: "utilizáveis
+// Critério mais estreito, para as telas administrativas (registro do projeto, seção 9: "utilizáveis
 // com rolagem"): a LARGURA DO DOCUMENTO é a da janela — a página não desliza para o
 // lado nem a barra do topo se mexe; uma tabela ou um filtro mais largo rola dentro
 // do <main>. Ajuste da corretiva da 6.4-B (E2E-M2).

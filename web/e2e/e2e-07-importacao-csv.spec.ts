@@ -6,7 +6,7 @@ import { apiURL } from "./apoio/ambiente";
 import { login, novoClienteApi } from "./apoio/api";
 import { ARQUIVO_ESTADO_ADMIN, PESSOA_JA_CADASTRADA, lerSemente } from "./apoio/semente";
 
-// E2E-07 — Importação CSV (Plano 7.3; CSU16; RF41, RNF 41.3). Desktop. A fixture tem
+// E2E-07 — Importação CSV (registro do projeto, 7.3; CSU16; RF41, RNF 41.3). Desktop. A fixture tem
 // quatro linhas: uma nova com e-mail (criada), uma com o e-mail da pessoa semeada
 // (ignorada), uma com o nome da pessoa semeada e sem e-mail (ignorada e sinalizada
 // para conferência) e uma nova sem e-mail (criada).

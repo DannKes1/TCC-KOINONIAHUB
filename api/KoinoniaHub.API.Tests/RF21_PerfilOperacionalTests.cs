@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace KoinoniaHub.API.Tests
 {
-    // Etapa 7.1 — Autorização (Plano 6.16; monografia seção 4.9, RNFs 21.4 e 21.5).
+    // Etapa 7.1 — Autorização (registro do projeto, 6.16; monografia seção 4.9, RNFs 21.4 e 21.5).
     // Perfil = área do sistema que a conta alcança; atribuição ativa = turmas sobre as
     // quais ela age. Uma conta de perfil Usuario com atribuição ativa não opera a turma
     // (21.4); a listagem de atribuições informa `perfilConta` para a tela sinalizar

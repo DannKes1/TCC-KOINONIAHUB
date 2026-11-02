@@ -4,14 +4,14 @@ import type { Page } from "@playwright/test";
 import { evidenciaCelular, larguraDoDocumento, semRolagemHorizontal } from "./apoio/celular";
 import { ARQUIVO_ESTADO_PROFESSOR, lerSemente, turmaChamadaPara } from "./apoio/semente";
 
-// E2E-04 — Chamada até o relatório (Plano 7.3; CSU09, CSU10, CSU11, CSU15). Roda no
+// E2E-04 — Chamada até o relatório (registro do projeto, 7.3; CSU09, CSU10, CSU11, CSU15). Roda no
 // desktop e no celular, cada projeto com a sua turma (semente, Etapa 7.2). O professor
 // cria a aula pela tela, lança uma chamada incompleta e aciona Consolidar: a
 // confirmação nomeia os alunos sem registro e oferece "Salvar e consolidar" (CSU11
 // passos 2–4, comportamento desde a 6.4-C). Ele cancela, completa e salva a chamada,
 // consolida, e a aula entra na Frequência da turma (só Consolidadas contam).
 // No celular: critério estrito nas telas operacionais (Aulas e Chamada) e o das
-// administrativas em Relatórios (Plano 6.12, larguraDoDocumento), com os prints
+// administrativas em Relatórios (registro do projeto, 6.12, larguraDoDocumento), com os prints
 // RNF-responsividade-e2e04-*.png.
 
 test.use({ storageState: ARQUIVO_ESTADO_PROFESSOR });

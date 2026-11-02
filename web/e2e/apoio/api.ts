@@ -4,7 +4,7 @@ import type { APIRequestContext, APIResponse } from "@playwright/test";
 import { baseURL } from "./ambiente";
 
 // Cliente da API para a semente e para os passos que não são o objeto do teste
-// (Plano 7.3). Fala direto com a API (https, certificado de dev ignorado), com o
+// (registro do projeto, 7.3). Fala direto com a API (https, certificado de dev ignorado), com o
 // Origin da SPA — sem ele toda escrita recebe 403 do middleware da RNF 2.6.
 // O contexto guarda o cookie httpOnly da sessão entre as chamadas.
 

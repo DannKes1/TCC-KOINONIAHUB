@@ -6,7 +6,7 @@ import { larguraDoDocumento } from "./apoio/celular";
 import { ARQUIVO_ESTADO_ADMIN, lerSemente } from "./apoio/semente";
 
 // E2E-M2 — Largura do documento a 360 px nas telas administrativas (ajuste da
-// corretiva da 6.4-B; RNFs "a interface deve ser responsiva"; Plano, seção 9:
+// corretiva da 6.4-B; RNFs "a interface deve ser responsiva"; registro do projeto, seção 9:
 // administrativas "utilizáveis com rolagem"). Roda só no projeto "mobile". Critério:
 // em Pessoas, Usuários, Igreja, Relatórios, Turmas EBD, Importação e nas quatro abas
 // da turma, a largura do documento é a da janela (a página não desliza para o lado;

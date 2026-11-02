@@ -41,7 +41,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (existe)
                 throw new InvalidOperationException("Já existe um usuário com este e-mail.");
 
-            // Igreja, pessoa, usuário e aceite do termo na mesma transação (Plano 6.3):
+            // Igreja, pessoa, usuário e aceite do termo na mesma transação (registro do projeto, 6.3):
             // ou o cadastro inicial nasce completo, ou nada é gravado.
             await using var transacao = await _db.Database.BeginTransactionAsync();
 

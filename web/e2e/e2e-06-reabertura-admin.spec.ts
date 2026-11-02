@@ -4,7 +4,7 @@ import { apiURL } from "./apoio/ambiente";
 import { login, novoClienteApi, obterChamada } from "./apoio/api";
 import { ARQUIVO_ESTADO_ADMIN, lerSemente } from "./apoio/semente";
 
-// E2E-06 — Reabertura pelo Admin (Plano 7.3; CSU11 FA3; RF33, RNFs 33.5/33.6). Desktop.
+// E2E-06 — Reabertura pelo Admin (registro do projeto, 7.3; CSU11 FA3; RF33, RNFs 33.5/33.6). Desktop.
 // A semente deixa uma aula Consolidada de uma semana atrás com A e B presentes e C
 // ausente. O Admin reabre pela aba Aulas: a aula volta para Em aberto (e, com a data
 // já ocorrida, pendente de fechamento), os registros continuam lá; ele corrige C e

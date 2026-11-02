@@ -22,7 +22,7 @@ function normalizarAula(bruto: any): AulaVM {
     tema: bruto?.Tema ?? bruto?.tema ?? null,
     conteudo: bruto?.Conteudo ?? bruto?.conteudo ?? null,
     situacao,
-    // A API calcula (Plano 6.2); a regra local só cobre resposta sem o campo.
+    // A API calcula (registro do projeto, 6.2); a regra local só cobre resposta sem o campo.
     pendenteFechamento:
       typeof pendenteDaApi === "boolean"
         ? pendenteDaApi

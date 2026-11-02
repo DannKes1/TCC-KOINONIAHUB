@@ -1,6 +1,6 @@
 import type { SituacaoAula } from "../modelos/dtos";
 
-// Regras de exibição da situação da aula (RF31 / RNF 31.3; Plano 6.2).
+// Regras de exibição da situação da aula (RF31 / RNF 31.3; registro do projeto, 6.2).
 // A API é a fonte da verdade para `pendenteFechamento`; a função abaixo aplica
 // a mesma regra (Em aberto e data já ocorrida, comparando dias civis — na API, o
 // dia no fuso da igreja; aqui, o dia local do navegador, que é o mesmo; corretiva

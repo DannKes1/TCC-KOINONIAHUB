@@ -1,6 +1,6 @@
 namespace KoinoniaHub.API.Dominio.Regras
 {
-    // RF12, RNFs 12.3/12.4 (Plano, seção 6.15): o tipo descreve o parente em relação à
+    // RF12, RNFs 12.3/12.4 (registro do projeto, seção 6.15): o tipo descreve o parente em relação à
     // pessoa em cujo cadastro o vínculo foi registrado. No cadastro do parente o sistema
     // apresenta o grau inverso, derivado do tipo e do sexo da pessoa de origem, sem gravar
     // um segundo registro.

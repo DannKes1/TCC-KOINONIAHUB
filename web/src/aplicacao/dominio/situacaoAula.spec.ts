@@ -6,7 +6,7 @@ import {
   severidadeSituacaoAula,
 } from "./situacaoAula";
 
-// Plano 7.2, primeira linha: Em aberto com data passada → pendente; Em aberto
+// Registro do projeto, 7.2, primeira linha: Em aberto com data passada → pendente; Em aberto
 // hoje → não; Consolidada → não; Não realizada → não.
 describe("ehPendenteFechamento (RNF 31.3)", () => {
   const hoje = new Date("2026-09-27T15:00:00Z");

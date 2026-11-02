@@ -154,7 +154,7 @@ namespace KoinoniaHub.API.Tests
             var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
             var (_, token) = await GerarConviteAsync(admin, cenario.AlvoId);
 
-            // CSU20 / Plano 6.8: redefinir acesso não derruba a senha atual; ela vale até o convite ser usado.
+            // CSU20 / registro do projeto, 6.8: redefinir acesso não derruba a senha atual; ela vale até o convite ser usado.
             Assert.Equal(HttpStatusCode.OK, await LoginAsync(cenario.EmailAlvo, CenarioAcessoPessoa.Senha));
             Assert.True(await LerConvitePendenteAsync(admin, cenario.AlvoId));
 

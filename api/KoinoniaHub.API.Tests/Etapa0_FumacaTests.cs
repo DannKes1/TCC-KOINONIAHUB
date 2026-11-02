@@ -5,7 +5,7 @@ using KoinoniaHub.API.Dominio.Termos;
 
 namespace KoinoniaHub.API.Tests
 {
-    // Definição de pronto da Etapa 0 (Plano, seção 5): a API sobe no .NET 10,
+    // Definição de pronto da Etapa 0 (registro do projeto, seção 5): a API sobe no .NET 10,
     // login e uma listagem funcionam, e o projeto de testes tem um teste verde.
     // Também confirma a decisão da seção 7.1: o modelo (índices únicos com filtro,
     // chaves estrangeiras) é aceito pelo SQLite em memória via EnsureCreated.

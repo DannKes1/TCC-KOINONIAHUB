@@ -7,7 +7,7 @@ import { usarAutenticacaoStore } from "../../aplicacao/armazenamentos/autenticac
 // RNFs 35.4 / 36.4 / 37.4: exportação em CSV e impressão formatada apenas para os
 // perfis administrativos (Admin, Pastor, Superintendente). Professor e Auxiliar
 // consultam em tela: para eles o componente não renderiza nada. A regra fica em
-// um único lugar e é a que o spec do Plano 7.2 verifica.
+// um único lugar e é a que o spec do registro do projeto, 7.2 verifica.
 const props = withDefaults(
   defineProps<{
     csv?: boolean;

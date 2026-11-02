@@ -6,7 +6,7 @@ namespace KoinoniaHub.API.Aplicacao.Excecoes
     // ativa sem registro explícito de presença ou ausência. Deriva de
     // InvalidOperationException para continuar sendo um 400 em qualquer catch
     // genérico; o AulasController a trata antes para devolver também a lista
-    // (Plano de Desenvolvimento, 6.2).
+    // (registro do projeto, 6.2).
     public class ChamadaIncompletaException : InvalidOperationException
     {
         public IReadOnlyList<AlunoSemRegistroRespostaDto> AlunosSemRegistro { get; }

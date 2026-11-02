@@ -4,7 +4,7 @@ import PrimeVue from "primevue/config";
 import TabelaParentescos from "./TabelaParentescos.vue";
 import type { ParentescoVM } from "../../aplicacao/modelos/dtos";
 
-// Etapa 6.6 (RF12 / RNF 12.3; CSU13 passo 2 e FA1; Plano 6.15 e 7.2 "Parentesco
+// Etapa 6.6 (RF12 / RNF 12.3; CSU13 passo 2 e FA1; registro do projeto, 6.15 e 7.2 "Parentesco
 // derivado"): a linha derivada recebe a tag "derivado" e não tem o botão de
 // remover; a explícita continua com o botão e emite `remover` com o item.
 const explicita: ParentescoVM = {

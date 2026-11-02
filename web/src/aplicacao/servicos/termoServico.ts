@@ -5,7 +5,7 @@ import type {
   TermoVigenteVM,
 } from "../modelos/dtos";
 
-// Termo de Uso e Sigilo (RF42 / RF43; Plano 6.3).
+// Termo de Uso e Sigilo (RF42 / RF43; registro do projeto, 6.3).
 
 export function normalizarAceiteTermo(bruto: any): AceiteTermoVM | null {
   if (!bruto || typeof bruto !== "object") return null;

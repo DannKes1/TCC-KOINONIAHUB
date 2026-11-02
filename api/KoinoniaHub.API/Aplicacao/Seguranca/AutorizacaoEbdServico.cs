@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KoinoniaHub.API.Aplicacao.Seguranca
 {
-    // Autorização da operação da EBD (seção 4.9 da monografia; Plano 6.16): perfil
+    // Autorização da operação da EBD (seção 4.9 da monografia; registro do projeto, 6.16): perfil
     // administrativo alcança toda a igreja; o perfil Professor habilita a área de
     // operação e a atribuição ativa (Professor ou Auxiliar) define as turmas (RNF 21.4);
     // contas de perfil Usuario não operam turma alguma, ainda que a pessoa tenha

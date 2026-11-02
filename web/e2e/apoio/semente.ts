@@ -22,12 +22,12 @@ import {
   registrarChamada,
 } from "./api";
 
-// Semente dos fluxos E2E (Plano 7.3): igreja, Admin, Professor com atribuição,
+// Semente dos fluxos E2E (registro do projeto, 7.3): igreja, Admin, Professor com atribuição,
 // turma com matrículas, matéria — tudo pela própria API, sem SQL. Cada execução
 // cria uma igreja nova (isolamento por locatário, RNF 1.1), então o banco de teste
 // não precisa ser limpo entre execuções; as igrejas "E2E …" só se acumulam.
 //
-// Além do que o Plano lista, a semente cria uma conta com senha definida pelo Admin
+// Além do que o registro do projeto lista, a semente cria uma conta com senha definida pelo Admin
 // e SEM aceite do termo (RNF 13.4) para o E2E-02 (uma por projeto do Playwright,
 // porque cada conta só aceita o termo uma vez: `pendente` para o desktop e
 // `pendenteMobile` para o celular), uma pessoa sem usuário para o E2E-03 gerar o

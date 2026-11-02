@@ -41,7 +41,7 @@ namespace KoinoniaHub.API.Tests
         [Fact]
         public async Task Registrar_EmAulaConsolidada_Retorna400()
         {
-            // Nome do Plano 7.1; o caso Consolidada também está coberto pela Theory acima.
+            // Nome do registro do projeto, 7.1; o caso Consolidada também está coberto pela Theory acima.
             var cenario = await CenarioAula.CriarAsync(_fabrica, "rf32b");
             var aulaId = await cenario.CriarAulaAsync(_fabrica, SituacaoAula.Consolidada, (cenario.MatriculaAId, true));
             var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);

@@ -108,7 +108,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Política padrão (Plano 6.16, 7.1): qualquer endpoint sem atributo de autorização exige
+// Política padrão (registro do projeto, 6.16, 7.1): qualquer endpoint sem atributo de autorização exige
 // usuário autenticado, para que uma rota nova nasça protegida. Os públicos (login,
 // cadastro inicial, primeiro acesso, termo vigente) estão marcados com [AllowAnonymous].
 builder.Services.AddAuthorization(opcoes =>

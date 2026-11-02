@@ -50,7 +50,7 @@ export async function atualizarPessoa(id: number, dto: PessoaAtualizarDTO) {
   await clienteHttp.put(`/api/pessoas/${id}`, dto); // 204
 }
 
-// Resultado da importação (RF41 / RNF 41.3). Função pura para o Plano 7.2 poder
+// Resultado da importação (RF41 / RNF 41.3). Função pura para o registro do projeto, 7.2 poder
 // testá-la: totais de criadas/ignoradas/erros e a marcação das linhas sinalizadas
 // para conferência. Se a API não mandar os totais, eles são recontados dos itens.
 export function normalizarResultadoImportacao(

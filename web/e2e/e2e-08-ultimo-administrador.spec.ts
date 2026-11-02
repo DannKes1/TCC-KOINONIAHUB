@@ -5,7 +5,7 @@ import { apiURL } from "./apoio/ambiente";
 import { login, novoClienteApi } from "./apoio/api";
 import { ARQUIVO_ESTADO_ADMIN, lerSemente } from "./apoio/semente";
 
-// E2E-08 — Último administrador (Plano 7.3; CSU19; RF14, RNF 14.3). Desktop. O Admin
+// E2E-08 — Último administrador (registro do projeto, 7.3; CSU19; RF14, RNF 14.3). Desktop. O Admin
 // da semente é o único Admin ativo da igreja. Em Usuários ele tenta inativar a
 // própria conta e trocar o próprio perfil: as duas tentativas são bloqueadas e a conta
 // continua Admin e Ativa.

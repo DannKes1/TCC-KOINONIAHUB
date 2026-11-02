@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace KoinoniaHub.API.Tests
 {
-    // RF12 — parentesco derivado na leitura (RNFs 12.3/12.4; CSU13 passo 2 e FA1; Plano 6.15).
+    // RF12 — parentesco derivado na leitura (RNFs 12.3/12.4; CSU13 passo 2 e FA1; registro do projeto, 6.15).
     // O vínculo é gravado uma vez no cadastro de origem; no cadastro do parente aparece o grau
     // inverso com derivado: true, e a remoção por esse lado é recusada.
     public class RF12_ParentescoDerivadoTests : IClassFixture<KoinoniaHubWebApplicationFactory>

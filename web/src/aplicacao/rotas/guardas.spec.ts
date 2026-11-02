@@ -5,7 +5,7 @@ import { AVISO_RESTRITO_ADMIN, AVISO_SEM_PERFIL_OPERACIONAL, aplicarGuardas } fr
 import { usarAutenticacaoStore } from "../armazenamentos/autenticacaoStore";
 import { setToastHandler, type ToastPayload } from "../servicos/notificacoes";
 
-// Plano 7.2 (RNF 2.5 / 13.4): com o aceite do Termo de Uso e Sigilo pendente, a
+// Registro do projeto, 7.2 (RNF 2.5 / 13.4): com o aceite do Termo de Uso e Sigilo pendente, a
 // única rota da sessão é /termo; o destino original volta pela query.
 // Etapa 7.1 (RNF 21.4): a Página da Turma exige perfil gestor (administrativo ou
 // Professor); o perfil Usuário volta a Minhas Turmas com um único aviso.

@@ -5,7 +5,7 @@ import PrimeVue from "primevue/config";
 import BotoesExportacao from "./BotoesExportacao.vue";
 import { usarAutenticacaoStore } from "../../aplicacao/armazenamentos/autenticacaoStore";
 
-// Plano 7.2, "Visibilidade dos botões de exportação" (RNFs 35.4/36.4/37.4):
+// Registro do projeto, 7.2, "Visibilidade dos botões de exportação" (RNFs 35.4/36.4/37.4):
 // presentes para Admin, Pastor e Superintendente; ausentes para Professor e Usuario.
 function montarComPerfil(perfil: string, props: Record<string, unknown> = {}) {
   const pinia = createPinia();

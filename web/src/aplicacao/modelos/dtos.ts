@@ -295,7 +295,7 @@ export type ChamadaRegistrarDTO = {
   }>;
 };
 
-// Aula listada à parte nos relatórios (Plano 6.9): pendente de fechamento ou
+// Aula listada à parte nos relatórios (registro do projeto, 6.9): pendente de fechamento ou
 // Não realizada. Não entra nos cálculos.
 export type AulaResumidaVM = {
   id: number;

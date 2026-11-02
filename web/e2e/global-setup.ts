@@ -9,7 +9,7 @@ import {
   criarSemente,
 } from "./apoio/semente";
 
-// Roda uma vez antes dos testes, com os servidores já no ar (Plano 7.3):
+// Roda uma vez antes dos testes, com os servidores já no ar (registro do projeto, 7.3):
 // 1. semeia uma igreja nova pela API;
 // 2. faz login pela tela como Admin, Professor e aluno (Usuario) e guarda o
 //    storageState (cookie httpOnly da sessão + localStorage da SPA) em

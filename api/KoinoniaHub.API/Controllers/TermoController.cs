@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace KoinoniaHub.API.Controllers
 {
-    // Termo de Uso e Sigilo (RF42 / RF43; Plano 6.3).
+    // Termo de Uso e Sigilo (RF42 / RF43; registro do projeto, 6.3).
     [ApiController]
     [Route("api/termo")]
     [PermitirSemAceiteTermo] // consultar e aceitar o termo é justamente o que a conta pendente precisa fazer

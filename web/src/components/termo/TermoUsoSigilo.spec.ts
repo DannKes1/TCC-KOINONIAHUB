@@ -4,7 +4,7 @@ import PrimeVue from "primevue/config";
 import TermoUsoSigilo from "./TermoUsoSigilo.vue";
 import type { TermoVigenteVM } from "../../aplicacao/modelos/dtos";
 
-// Plano 7.2 (RNFs 42.1, 42.5, 42.7): o botão só habilita depois de marcar
+// Registro do projeto, 7.2 (RNFs 42.1, 42.5, 42.7): o botão só habilita depois de marcar
 // "Li e aceito"; o aceite emite a versão exibida; a igreja e o canal de contato
 // aparecem fora do texto fixo do termo.
 const termo: TermoVigenteVM = {

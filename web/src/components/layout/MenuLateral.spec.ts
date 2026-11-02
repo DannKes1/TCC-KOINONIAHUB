@@ -5,7 +5,7 @@ import { createMemoryHistory, createRouter } from "vue-router";
 import MenuLateral from "./MenuLateral.vue";
 import { usarAutenticacaoStore } from "../../aplicacao/armazenamentos/autenticacaoStore";
 
-// Plano 7.2, "Menu lateral por perfil": Professor não vê Pessoas nem Usuários;
+// Registro do projeto, 7.2, "Menu lateral por perfil": Professor não vê Pessoas nem Usuários;
 // Usuario vê só Painel, Minhas Turmas e Meus Dados. Etapa 6.2: "Igreja" (RF44) só
 // para o Admin.
 async function montarComPerfil(perfil: string) {

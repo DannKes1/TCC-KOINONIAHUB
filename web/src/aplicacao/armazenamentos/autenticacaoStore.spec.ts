@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { usarAutenticacaoStore } from "./autenticacaoStore";
 import { clienteHttp } from "../servicos/clienteHttp";
 
-// Plano 7.2 (RNF 2.5 / 13.4): a store guarda a pendência do termo vinda do
+// Registro do projeto, 7.2 (RNF 2.5 / 13.4): a store guarda a pendência do termo vinda do
 // login, persiste no storage e limpa tudo ao sair.
 function sessao(extras: Record<string, unknown> = {}) {
   return {

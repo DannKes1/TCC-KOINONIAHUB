@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import TagSituacaoAula from "./TagSituacaoAula.vue";
 import type { SituacaoAula } from "../../aplicacao/modelos/dtos";
 
-// Plano 7.2, "Componente de tag de situação" (RF31 / RNF 31.3): uma tag por
+// Registro do projeto, 7.2, "Componente de tag de situação" (RF31 / RNF 31.3): uma tag por
 // situação e a tag adicional "Pendente" apenas quando a aula está Em aberto
 // com data já ocorrida.
 function montar(props: {

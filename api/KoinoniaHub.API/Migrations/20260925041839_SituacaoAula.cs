@@ -10,7 +10,7 @@ namespace KoinoniaHub.API.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Plano 6.2: Consolidada = true vira "Consolidada"; o restante vira "EmAberto".
+            // Registro do projeto, 6.2: Consolidada = true vira "Consolidada"; o restante vira "EmAberto".
             migrationBuilder.AddColumn<string>(
                 name: "Situacao",
                 table: "Aulas",

@@ -15,7 +15,7 @@ namespace KoinoniaHub.API.Tests.Infraestrutura
     // SQLite em memória com a conexão mantida aberta durante toda a vida da
     // fábrica. O esquema é criado a partir do modelo (EnsureCreated), o que
     // preserva os índices únicos e as chaves estrangeiras que o provedor
-    // InMemory do EF Core ignoraria (Plano de Desenvolvimento, seção 7.1).
+    // InMemory do EF Core ignoraria (registro do projeto, seção 7.1).
     public class KoinoniaHubWebApplicationFactory : WebApplicationFactory<Program>
     {
         // Chave só para testes: HS256 exige no mínimo 256 bits (32 caracteres).

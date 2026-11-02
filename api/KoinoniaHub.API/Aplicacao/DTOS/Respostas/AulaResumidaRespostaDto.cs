@@ -1,6 +1,6 @@
 ﻿namespace KoinoniaHub.API.Aplicacao.DTOs.Respostas
 {
-    // Aula listada à parte nos relatórios (Plano 6.9): pendente de fechamento
+    // Aula listada à parte nos relatórios (registro do projeto, 6.9): pendente de fechamento
     // (Em aberto com data já ocorrida) ou Não realizada. Não entra nos cálculos.
     public class AulaResumidaRespostaDto
     {

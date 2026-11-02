@@ -150,7 +150,7 @@ namespace KoinoniaHub.API.Tests
         [Fact]
         public async Task Atualizar_CampoOmitido_ViraNulo()
         {
-            // Plano 6.11: o PUT substitui os cinco campos; o que não vier no corpo vira nulo
+            // Registro do projeto, 6.11: o PUT substitui os cinco campos; o que não vier no corpo vira nulo
             // (a tela sempre envia os cinco). Só o Nome é obrigatório (RNF 44.3).
             var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf44f");
             var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);

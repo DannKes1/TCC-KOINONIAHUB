@@ -1,6 +1,6 @@
 import { normalizarResultadoImportacao } from "./pessoasServico";
 
-// Plano 7.2, "Parser do resultado de importação" (RF41 / RNF 41.3): totais de
+// Registro do projeto, 7.2, "Parser do resultado de importação" (RF41 / RNF 41.3): totais de
 // criadas/ignoradas/erro e marcação das linhas sinalizadas para conferência.
 const respostaDaApi = {
   totalLinhas: 4,

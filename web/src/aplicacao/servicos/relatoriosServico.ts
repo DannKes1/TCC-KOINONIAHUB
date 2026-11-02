@@ -1,7 +1,7 @@
 import { clienteHttp } from "./clienteHttp";
 import type { AulaResumidaVM, FrequenciaTurmaVM } from "../modelos/dtos";
 
-// Item de aulasPendentes[] / aulasNaoRealizadas[] (Plano 6.9).
+// Item de aulasPendentes[] / aulasNaoRealizadas[] (registro do projeto, 6.9).
 export function normalizarAulaResumida(bruto: any): AulaResumidaVM {
   return {
     id: Number(bruto?.Id ?? bruto?.id ?? 0),

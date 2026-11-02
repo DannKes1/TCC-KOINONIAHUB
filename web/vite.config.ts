@@ -4,7 +4,7 @@ import vue from "@vitejs/plugin-vue";
 
 export default defineConfig({
   plugins: [vue()],
-  // Vitest (Plano de Desenvolvimento, 7.2): specs ao lado do código testado.
+  // Vitest (registro do projeto, 7.2): specs ao lado do código testado.
   test: {
     environment: "jsdom",
     globals: true,

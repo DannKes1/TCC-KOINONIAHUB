@@ -3,7 +3,7 @@ import type { PlaywrightTestConfig } from "@playwright/test";
 
 import { apiURL, baseURL, executavelChromium } from "./e2e/apoio/ambiente";
 
-// Playwright — fluxos ponta a ponta (Plano de Desenvolvimento, 7.3).
+// Playwright — fluxos ponta a ponta (registro do projeto, 7.3).
 //
 // O front de desenvolvimento roda em http://localhost:5173 (Vite, sem certificado
 // próprio) e encaminha /api para a API em https://localhost:7054 (vite.config.ts).
@@ -25,7 +25,7 @@ import { apiURL, baseURL, executavelChromium } from "./e2e/apoio/ambiente";
 //             só pode aceitar o termo uma vez por semente, e o E2E-04 uma turma
 //             própria por projeto; o E2E-03 fica fora porque o convite da pessoa
 //             semeada só pode ser gerado uma vez, e os E2E-05 a E2E-08 são de
-//             desktop (Plano 7.3).
+//             desktop (registro do projeto, 7.3).
 //   `npx playwright test --project=mobile` roda só o celular.
 
 type ServidorWeb = Exclude<

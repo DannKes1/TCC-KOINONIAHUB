@@ -16,7 +16,7 @@ import {
 // Minha Frequência — abrem sem rolagem horizontal da página, com o menu no Drawer e
 // alvos de toque de pelo menos 40 px; na Chamada, Aluno e Presente ficam visíveis sem
 // rolar. Login/Termo com termo pendente estão no E2E-02, que também roda no celular.
-// Desde a 6.4-C, `semRolagemHorizontal` roda em MODO ESTRITO (Plano, 6.12): nenhum
+// Desde a 6.4-C, `semRolagemHorizontal` roda em MODO ESTRITO (registro do projeto, 6.12): nenhum
 // container interno rola para o lado nas telas operacionais — abas Alunos e Matérias
 // incluídas, agora em cartões.
 
