@@ -48,7 +48,7 @@ PS> dotnet test --no-build
 Resumo do teste: total: 3; falhou: 0; bem-sucedido: 3; ignorado: 0; duração: 4,5s
 ```
 
-Casos: `RotaProtegida_SemCookie_Retorna401`, `CadastroInicial_Login_EListagem_Funcionam`, `Login_ComSenhaErrada_Retorna400`. O log confirmou a criação do esquema completo no SQLite em memória (tabelas, chaves estrangeiras e índices únicos, inclusive o filtro `"Ativo" = true`), fechando a decisão da seção 7.1 do Plano por SQLite em memória.
+Casos: `RotaProtegida_SemCookie_Retorna401`, `CadastroInicial_Login_EListagem_Funcionam`, `Login_ComSenhaErrada_Retorna400`. O log confirmou a criação do esquema completo no SQLite em memória (tabelas, chaves estrangeiras e índices únicos, inclusive o filtro `"Ativo" = true`), fechando a decisão da seção 7.1 do registro do projeto por SQLite em memória.
 
 ### Banco real (`api/KoinoniaHub.API/`)
 
@@ -251,7 +251,7 @@ Pré-condição atendida: Etapa 1.2 aplicada e os 10 testes verdes.
 `Observacoes`), DTOs de pessoa (criar/atualizar/resposta),
 `MeusDadosAtualizarRequisicaoDto` (sai `Telefone`), `ParentescoRespostaDto`
 (sai `ParenteTelefone`), `PessoaServico`, `PessoaImportacaoServico` (parser no
-modelo do Plano 6.4; `EstadoCivil` passa a ser importado; mensagem da RNF 41.3;
+modelo do registro do projeto, 6.4; `EstadoCivil` passa a ser importado; mensagem da RNF 41.3;
 `Situacao` deixa de ser lida — importados nascem Ativos), `MatriculaServico`,
 `ParentescoServico`, `AuthServico`, e os testes novos `Etapa1_PessoaEnxutaTests`
 e `RF41_ImportacaoTests`. Controllers, interfaces e rotas intactos.
@@ -291,7 +291,7 @@ exatamente as 17 colunas do DER; pessoa só com nome persiste (RNF 7.5) — e
 `RF41_ImportacaoTests` (5) — colunas do modelo preenchem os campos; coluna fora
 do modelo é ignorada (inclusive `Situacao`: importado nasce Ativo); e-mail
 repetido ignora; nome repetido sem e-mail ignora e sinaliza (RNF 41.3, mensagem
-exata do Plano 6.4); mais de 1.000 linhas lança erro (RNF 41.4). O esquema do
+exata do registro do projeto, 6.4); mais de 1.000 linhas lança erro (RNF 41.4). O esquema do
 SQLite nos testes já cria `Pessoas` com as 17 colunas.
 
 ### Swagger (autenticado como Admin)
@@ -319,7 +319,7 @@ Pré-condição atendida: Bloco 1 aplicado (17 testes verdes, Swagger conferido)
 telas `PaginaPessoasLista.vue` (sem filtro/coluna Categoria; formulário
 reduzido), `PaginaMeusDados.vue` (bloco Nome/Situação; sem Telefone),
 `PaginaMatriculasTurma.vue` (contato do parente só celular) e
-`DialogImportarPessoas.vue` (arquivo-modelo com as 11 colunas do Plano 6.4).
+`DialogImportarPessoas.vue` (arquivo-modelo com as 11 colunas do registro do projeto, 6.4).
 Nenhuma rota, store ou componente compartilhado tocado.
 
 ### Typecheck (`web/`)
@@ -411,14 +411,14 @@ fora (`IPresencaHistoricoServico.cs` e `PessoaTurmaRespostaDto.cs`), e o build
 acusou exatamente os dois (`CS0535` e `CS0246`). Copiados, build limpo. Nada
 chegou ao banco (etapa sem migration).
 
-### Regra (Plano 6.5)
+### Regra (registro do projeto, 6.5)
 
 Gestão passa sem verificação; Usuario só o próprio registro; Professor só
 alunos com matrícula ativa em turma onde tenha atribuição ativa — 403 fora,
 verificado **antes** do 404 (não revela se a pessoa existe). O guard também
 cobre `GET /api/pessoas/{id}/parentescos` (decisão 4.3 do LEIA-ME 2.1:
 **opção (a)** — Professor mantido no endpoint, limitado às suas turmas;
-RNF 12.1 lida como gestão dos vínculos; registrado no Plano).
+RNF 12.1 lida como gestão dos vínculos; registrado no registro do projeto).
 
 ### Build e testes (`api/`)
 
@@ -431,7 +431,7 @@ Casos novos: `RF11_PessoaAcessoTests` (5), `RF28_DisponiveisTests` (3),
 `RF34_PresencasPessoaTests` (3) — incluem as contraprovas de que Admin segue
 com DTO completo e Usuario acessa só o próprio registro.
 
-### Evidências no Swagger (autenticado como Professor — Plano 7.5)
+### Evidências no Swagger (autenticado como Professor — registro do projeto, 7.5)
 
 | RNF  | Resultado                                                                                                                                                                                                                    | Evidência                      |
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
@@ -510,7 +510,7 @@ Pré-condição atendida: Etapa 2.2 aprovada (36 verdes).
 ### Arquivos aplicados
 
 4 arquivos, sem migration e sem front: `ContarAdminsAtivosAsync` em
-`IUsuarioRepositorio`/`UsuarioRepositorio` (Plano 6.7) e o guard em
+`IUsuarioRepositorio`/`UsuarioRepositorio` (registro do projeto, 6.7) e o guard em
 `UsuarioServico.AtualizarAsync` — se o alvo é Admin ativo e o pedido o inativa
 ou troca o perfil, e a contagem de Admins ativos da igreja é ≤ 1, a operação é
 recusada com "Não é possível inativar ou alterar o perfil do único
@@ -532,7 +532,7 @@ desativar o seu próprio usuário"); o ramo efetivamente alcançável é o
 rebaixamento de perfil — coberto pelos testes de integração — e o ramo
 "inativar por outro ator" é provado por teste unitário do serviço.
 
-### Evidência (Swagger, logado como o único Admin — Plano 7.5)
+### Evidência (Swagger, logado como o único Admin — registro do projeto, 7.5)
 
 `PATCH /api/usuarios/1` com `{ "perfil": "Professor" }` → **400**
 `{"mensagem":"Não é possível inativar ou alterar o perfil do único
@@ -558,11 +558,11 @@ botão/diálogo "Resetar senha" — "Redefinir acesso" é o convite
 (`POST /api/usuarios/{id}/convite`, RF15/CSU20); `[JsonIgnore]` em `Token` nos
 DTOs de login e cadastro inicial (o controller segue gravando o cookie
 `kh_token`; o corpo não traz o JWT — fecha a divergência registrada na Etapa 0);
-tela de cadastro inicial passa a decidir por `UsuarioId`. Criados
-`docs/decisoes/etapa-0.md` a `etapa-2.md` (definição de pronto do Plano v1.2).
+tela de cadastro inicial passa a decidir por `UsuarioId`. Criado o
+registro do projeto das Etapas 0 a 2 (definição de pronto do registro do projeto).
 Ocorrências da aplicação: um "a " solto após o `</template>` do
 `PaginaCadastroInicial.vue` recebido (inócuo; removido ao aplicar) e a lista de
-campos removidos no `etapa-1.md` citava 6 dos 7 (faltava `Observacoes`;
+campos removidos no registro da Etapa 1 citava 6 dos 7 (faltava `Observacoes`;
 corrigido).
 
 ### Build e testes (`api/` e `web/`)
@@ -593,7 +593,7 @@ inicial e login sem JWT no corpo, cookie httpOnly/secure sustenta a sessão.
 perfil, igrejaId` e sem `token`; `Set-Cookie kh_token` httponly/secure. ✔
 4. Cadastro inicial entra direto no painel autenticado. ✔
 
-### Evidência (Plano 7.5)
+### Evidência (registro do projeto, 7.5)
 
 `PATCH /api/usuarios/1/resetar-senha` (curl com `Origin` autorizado) → **404**
 → `docs/evidencias/RNF-15.3-404-resetar-senha.png`.
@@ -602,9 +602,9 @@ perfil, igrejaId` e sem `token`; `Set-Cookie kh_token` httponly/secure. ✔
 
 Definição de pronto atendida: RNFs 11.3/28.3/34.3, 2.6, 14.3 e 15.3
 implementadas com testes e evidências; 51 execuções verdes;
-`docs/decisoes/etapa-0.md` a `etapa-2.md` no repositório. Decisões da 2.4:
+registro do projeto das Etapas 0 a 2. Decisões da 2.4:
 5.1 aceita (Vitest instala na abertura da Etapa 3, com os specs de menu por
-perfil e `pendenteFechamento`); 5.2 aceita (linha na seção 9 do Plano sobre a
+perfil e `pendenteFechamento`); 5.2 aceita (linha na seção 9 do registro do projeto sobre a
 Figura 14, a substituir na conversão para o TCC 2). **Etapa 2 (Segurança de
 leitura e escrita) concluída.**
 
@@ -650,7 +650,7 @@ no banco (32.3).
 
 ## Etapa 3.2 — Front das regras de aula + Vitest (RF31/RF32/RF33) (30/09/2026) · fecha a Etapa 3
 
-**Escopo.** Vitest instalado (Plano 7.2: vitest 5.0.2, @vue/test-utils, jsdom) com specs ao lado
+**Escopo.** Vitest instalado (registro do projeto, 7.2: vitest 5.0.2, @vue/test-utils, jsdom) com specs ao lado
 do código; módulo puro `dominio/situacaoAula.ts` (pendente, rótulo, severidade, filtro);
 componente `TagSituacaoAula` substituindo as três tags derivadas do booleano `consolidada`,
 que foi removido de `AulaVM`; tela de aulas com coluna de situação, filtro (+ "Pendentes de
@@ -678,7 +678,7 @@ entregue em seguida; com ele a contagem fechou nos 21 casos previstos.
 4. Reabrir: Professor não vê o botão; Admin reabre com confirmação e os registros de presença
    permanecem marcados na chamada (RNFs 33.5/33.6, CSU11 FA3). ✔
 5. Menu por perfil: Usuario só com Painel/Minhas Turmas/Meus Dados; Professor sem
-   Pessoas/Usuários (Plano 7.2). ✔
+   Pessoas/Usuários (registro do projeto, 7.2). ✔
 
 **Prints (capítulo de Resultados):** `docs/evidencias/RF31-CSU09-listagem-tres-tags.png` e
 `docs/evidencias/CSU11-FA1-chamada-sem-registro.png`.
@@ -721,7 +721,7 @@ serviço, violação do índice único filtrado no banco e rematrícula após in
 para Admin, Pastor e Superintendente — RNFs 35.4/36.4/37.4); `ListaAulasPendentes`
 reutilizado nas abas Frequência, Acompanhamento e Ranking, em Minha Frequência e no Resumo
 do dia (variante "Não realizadas"); Resumo do dia com tags de situação por turma, colunas
-por situação e rodapé "Totais (só aulas Consolidadas)" (RNF 38.4 / Plano 6.10); rótulos
+por situação e rodapé "Totais (só aulas Consolidadas)" (RNF 38.4 / registro do projeto, 6.10); rótulos
 "Aulas consolidadas" nos cards. Conferência do RF3 encontrou o painel do usuário comum
 calculando frequência sobre todos os registros do histórico, inclusive de aulas Em aberto;
 correção: o histórico (RF34) passou a informar `situacaoAula` (campo aditivo na API, com
@@ -840,7 +840,7 @@ públicas (registrar-admin, login e primeiro-acesso GET/POST); os 108 testes pas
 
 ## Etapa 5.3 — Fluxos E2E com Playwright (E2E-01 a E2E-03) — 06/10/2026
 
-**Escopo.** Os três fluxos ponta a ponta do Plano de Desenvolvimento (7.3), num Chromium real
+**Escopo.** Os três fluxos ponta a ponta do registro do projeto (7.3), num Chromium real
 contra a API no ambiente E2E e o front servido pelo Vite: E2E-01 cadastro inicial com termo,
 E2E-02 login com termo pendente e E2E-03 ativação por convite. Semente pela própria API
 (igreja nova a cada execução — sem SQL e sem limpeza de banco), `storageState` de Admin e
@@ -848,8 +848,8 @@ Professor gravados para os fluxos das próximas etapas, seletores por `data-test
 
 **Ambiente.** Banco dedicado `koinoniahub_e2e` (PostgreSQL local; o repositório traz
 `docker-compose.e2e.yml` como alternativa na porta 5433), ambiente `E2E` da API
-(`appsettings.E2E.json`, perfil `e2e`). Divergências com o esboço do Plano registradas em
-`docs/decisoes/etapa-5.md`: `baseURL` http (Vite sem certificado, proxy para a API https) e
+(`appsettings.E2E.json`, perfil `e2e`). Divergências com o esboço do registro do projeto, registradas
+no registro do projeto (Etapa 5): `baseURL` http (Vite sem certificado, proxy para a API https) e
 ambiente `E2E` em vez de `Testing` (nome já usado pela fábrica dos testes xUnit).
 
 **Execução (06/10/2026).**
@@ -869,7 +869,7 @@ ambiente `E2E` em vez de `Testing` (nome já usado pela fábrica dos testes xUni
 
 ## Etapa 6.1 — Acabamento de UI (RNF 32.5, RNF 41.3, RF3/RF6, RF34) — 07/10/2026
 
-**Escopo.** Itens de acabamento já previstos no Plano (seção 5, Etapa 6): dica da RNF 32.5 na
+**Escopo.** Itens de acabamento já previstos no registro do projeto (seção 5, Etapa 6): dica da RNF 32.5 na
 chamada; sinalização das linhas de importação ignoradas por nome repetido sem e-mail (RNF 41.3,
 `paraConferencia` na API e tag "Conferir" na tela); painel do usuário comum com a mesma janela
 (90 dias) e a mesma regra (só Consolidadas) de Minha Frequência, com rótulo "3 Meses" corrigido;
@@ -882,13 +882,13 @@ Consolidadas e situação da aula por linha. Cálculo dos indicadores centraliza
 - API (xUnit): `dotnet test` → **108 aprovados** (sem teste novo; `RF41_ImportacaoTests` ganhou
   asserções sobre `ParaConferencia`: nome repetido sem e-mail sinalizado, e-mail repetido não).
 - Front (Vitest): `npm run test` → **54 aprovados em 9 arquivos** (45 + `pessoasServico.spec` com
-  4 casos do parser do resultado de importação, Plano 7.2 + `indicadoresPresenca.spec` com 5 casos:
+  4 casos do parser do resultado de importação, registro do projeto, 7.2 + `indicadoresPresenca.spec` com 5 casos:
   só Consolidadas, percentual nulo sem aula, janela de 90 dias e limites). `vue-tsc -b` e build limpos.
 
 **Testes manuais.**
 
-1. Chamada de aula Em aberto: dica da RNF 32.5 exibida uma vez acima da tabela, com o texto do
-   Plano 6.10, e placeholder "Justificativa administrativa (opcional)"; em aula Consolidada a dica
+1. Chamada de aula Em aberto: dica da RNF 32.5 exibida uma vez acima da tabela, com o texto da
+   registro do projeto, 6.10, e placeholder "Justificativa administrativa (opcional)"; em aula Consolidada a dica
    não aparece. Evidência: `RNF-32.5-dica-observacao.png`.
 2. Importação de CSV com três linhas (nome existente sem e-mail; e-mail já cadastrado; pessoa nova):
    resumo "Linhas lidas 3 · Criadas 1 · Ignoradas 2 · Erros 0 · Para conferência 1", toast "Linhas
@@ -911,8 +911,8 @@ perfil Admin e à própria igreja do token, com validação pelo DTO (`[Required
 UF, e-mail, telefone), sem tocar Endereco/CEP/CNPJ/LogoUrl nem os registros de aceite;
 `AtualizadoEm` preenchido pelo contexto. Front: rota `/igreja` (só Admin), item "Igreja" no
 menu abaixo de Usuários e tela `PaginaIgreja.vue` no mesmo layout de Meus Dados (Descartar /
-Salvar, validação local do nome e do telefone, erros por campo vindos do 400). Decisões em
-`docs/decisoes/etapa-6.md`.
+Salvar, validação local do nome e do telefone, erros por campo vindos do 400). Decisões no
+registro do projeto (Etapa 6).
 
 **Validação automatizada** (ambiente reproduzido a partir do package-lock.json):
 `dotnet test` = **113 aprovados, 0 falhas** (108 anteriores + 5 de `RF44_IgrejaTests`:
@@ -965,12 +965,12 @@ CSU → teste).
 ## Etapa 6.3 — Responsividade: fluxo do professor a 360 px (08/10/2026)
 
 **Escopo.** Leitura operacional dos RNFs "a interface deve ser responsiva" (RF3, RF5, RF6,
-RF20, RF26, RF28, RF35, RF36), no recorte aprovado na `avaliacao-pre-etapa7.md` (seção 1):
+RF20, RF26, RF28, RF35, RF36), no recorte aprovado na avaliação pré-Etapa 7 (registro do projeto, seção 1):
 ponto de corte 768 px; até ele a barra lateral sai do fluxo e o mesmo `MenuLateral` abre num
 `Drawer` pelo botão da `BarraTopo`; telas do fluxo do professor e do aluno sem rolagem
 horizontal da página a 360 × 640 (grades fluidas, colunas secundárias ocultas no celular,
 alvo de toque de 40 px na caixa de presença); telas administrativas apenas utilizáveis com
-rolagem. Só front e E2E; a API não muda. Decisões em `docs/decisoes/etapa-6.md`, 1.3.
+rolagem. Só front e E2E; a API não muda. Decisões no registro do projeto (Etapa 6, 1.3).
 
 **Validação automatizada** (ambiente reproduzido a partir do package-lock.json):
 `vue-tsc -b` limpo · `npm run test` = **10 arquivos, 57 casos verdes** (54 + 3 de
@@ -1003,7 +1003,7 @@ aberto" do painel do professor, três ou quatro botões só com ícone por aula,
 em Matrículas e Matérias. Como é o fluxo que o professor e o PO avaliam na 5.1, a Etapa 6.4
 passa a incluir o fluxo operacional no celular (cartões com botão nomeado, chamada tocável
 com barra fixa, Página da Turma como centro), com critério estrito — ver
-`RECORTE-6.4-CELULAR.md` em `docs/decisoes/`.
+o recorte 6.4 (celular) no registro do projeto.
 
 **Prints (gerados pelo projeto `mobile` e copiados para `docs/evidencias/`):**
 `RNF-responsividade-{login, termo, painel-professor, menu-drawer, minhas-turmas, aulas-turma,
@@ -1013,7 +1013,7 @@ na 6.4-C.
 ## Etapa 6.4 — Página da Turma e fluxo operacional no celular (09 a 14/10/2026) · fecha a Etapa 6
 
 **Escopo.** RF20 (Tela de Turma) e a leitura estrita dos RNFs "a interface deve ser responsiva"
-para as telas operacionais, conforme `docs/decisoes/recorte-6.4-celular.md` (aprovado em
+para as telas operacionais, conforme o recorte 6.4 (celular) do registro do projeto (aprovado em
 09/10/2026 após a avaliação do autor sobre a 6.3): cada item de lista é um cartão com uma ação
 principal nomeada, a chamada é tocável com barra Salvar · Consolidar, e nenhuma tela operacional
 tem rolagem horizontal, nem interna, a 360 × 640. Cinco entregas: **6.4-A** (09/10) peças
@@ -1027,8 +1027,8 @@ retirado na rota da chamada; **6.4-C** (14/10) abas Alunos e Matérias em cartõ
 cabeçalho recontados a partir das abas, "Sem registro" visível desde a carga (campo aditivo
 `Registrado` na chamada completa), Consolidar nomeando quem será gravado como ausente (CSU11,
 passo 2 com o texto novo), confirmação ao sair ou recarregar com alterações não salvas, diálogos
-e avisos globais no tema e dentro da tela do celular, E2E-M1 em modo estrito. Decisões em
-`docs/decisoes/etapa-6.md`, 1.4 a 1.8.
+e avisos globais no tema e dentro da tela do celular, E2E-M1 em modo estrito. Decisões no
+registro do projeto (Etapa 6, 1.4 a 1.8).
 
 **Validação automatizada (14/10/2026, ambiente do autor):** `dotnet build` e `dotnet test` =
 **114 aprovados** (113 + `ChamadaCompleta_InformaRegistrado_PorMatricula`) · `vue-tsc -b` limpo ·
@@ -1093,13 +1093,13 @@ projeto `mobile`: `RNF-responsividade-{login, termo, painel-professor, menu-draw
 aulas-turma, turma-alunos, turma-materias, chamada, chamada-consolidar-sem-registro,
 chamada-consolidada, presencas-aula, meus-dados, painel-aluno, minha-frequencia}.png`.
 
-**Registro para o Plano:** aplicado na v1.4 (`docs/plano-de-desenvolvimento.md`).
+**Anotado no registro do projeto:** aplicado em 14/10/2026.
 
 ---
 
 ## Etapa 6.5 — RF45: editar e excluir aula Em aberto (15/10/2026)
 
-**Escopo.** Seção 6.14 do Plano: `PUT /api/aulas/{id}` e `DELETE /api/aulas/{id}` com a
+**Escopo.** Seção 6.14 do registro do projeto: `PUT /api/aulas/{id}` e `DELETE /api/aulas/{id}` com a
 autorização do cadastro (RNF 45.1: gestão ou atribuição ativa na turma); edição só de aula Em
 aberto (45.2), com matéria da mesma turma e professor com atribuição ativa de Professor (45.4);
 exclusão só de aula Em aberto e sem nenhum registro de presença (45.5, a mesma condição da 33.7).
@@ -1109,8 +1109,8 @@ oferecer Excluir quando já há chamada (CSU09 FA3). Na aba Aulas, "Editar aula"
 entram no ⋮ dos dois layouts, com `visible` pela situação e pelas presenças; o diálogo de nova
 aula é reaproveitado em modo edição e ganha o campo "Conteúdo (opcional)" nos dois modos
 (RF45 e CSU09 FA1 declaram o conteúdo editável); a exclusão passa pela confirmação comum do
-App.vue, sem `acceptClass`. Nenhuma tabela nova. Primeira entrega produzida no Claude Code.
-Decisões em `docs/decisoes/etapa-6.md`, 1.9.
+App.vue, sem `acceptClass`. Nenhuma tabela nova.
+Decisões no registro do projeto (Etapa 6, 1.9).
 
 **Validação automatizada (15/10/2026, ambiente do autor):** `dotnet build` e `dotnet test` =
 **123 aprovados** (114 + `RF45_EditarAulaTests`, 9 casos: editar Em aberto → 200 e GET reflete;
@@ -1154,14 +1154,14 @@ E2E-M1 em modo estrito sem alteração. O E2E rodou contra o PostgreSQL local no
 400 (o guarda de acesso lança antes do serviço); para a gestão, 404. Comportamento anterior à
 6.5, não alterado; fica para a 7.1.
 
-**Registro para o Plano (v1.5):** seção 4 (linha `api/aulas` e RF45 → Atende), seção 5 (linha
+**Anotado no registro do projeto:** seção 4 (linha `api/aulas` e RF45 → Atende), seção 5 (linha
 6.5 atendida em 15/10/2026), seção 6.14 (ATENDIDA; 9 casos; exclusão → 204), seção 7 (9 casos),
 seção 9 (retirar a linha RF45; acrescentar o CSU09 passo 4 com "e, opcionalmente, o tema e o
-conteúdo"). Texto completo no relato da entrega e em `docs/decisoes/etapa-6.md`, 1.9.
+conteúdo"). Texto completo no registro do projeto (Etapa 6, 1.9).
 
 ## Etapa 6.6 — RF12: parentesco derivado na leitura (16 e 17/10/2026)
 
-**Escopo.** Seção 6.15 do Plano, recorte mínimo: o vínculo é gravado uma única vez; na leitura do
+**Escopo.** Seção 6.15 do registro do projeto, recorte mínimo: o vínculo é gravado uma única vez; na leitura do
 cadastro do parente o sistema apresenta o grau inverso (Pai/Mãe → Filho(a); Filho(a) → Pai, Mãe ou
 "Pai ou mãe" pelo sexo da pessoa de origem; Irmão(ã) e Cônjuge simétricos; Responsável →
 Dependente; texto livre repetido com "(informado no cadastro de X)"), com `derivado: true`, sem
@@ -1174,7 +1174,7 @@ tabela; funciona no toque; área de toque de 40 px), além de uma nota abaixo da
 (gestão e Professor) e para o DTO reduzido do `GET /api/pessoas/{id}` (11.3). A `DataTable` do
 diálogo de Parentescos foi extraída para `TabelaParentescos.vue` (mesma tabela, sem mudança visual
 além da tag e do botão oculto); o diálogo "Responsáveis" do Professor ganhou só a tag.
-Decisões em `docs/decisoes/etapa-6.md`, 1.10.
+Decisões no registro do projeto (Etapa 6, 1.10).
 
 **Validação automatizada (16/10/2026, ambiente do autor):** `dotnet build` e `dotnet test` =
 **136 aprovados** (123 + `RF12_ParentescoDerivadoTests`, 13 casos: Pai e Mãe → Filho(a) com o
@@ -1228,15 +1228,15 @@ tela ao fechar o diálogo ou recarregar a lista com o mouse em cima (montado no 
 final: ⓘ é um botão (`type="button"`, `aria-label`, `aria-expanded`, 40 px) que mostra e esconde a
 explicação como texto na própria linha. `TabelaParentescos.spec`: 4 → 6 casos; Vitest 109 → 111.
 
-**Registro para o Plano (v1.6):** seção 4 (linha `api/pessoas/{id}/parentescos` e RF12 → Atende),
+**Anotado no registro do projeto:** seção 4 (linha `api/pessoas/{id}/parentescos` e RF12 → Atende),
 seção 5 (linha 6.6 atendida em 17/10/2026), seção 6.15 (ATENDIDA; microdecisões), seção 7.1
-(13 casos), seção 7.2 (`TabelaParentescos.spec`, 6). Texto completo em `docs/decisoes/etapa-6.md`, 1.10.
+(13 casos), seção 7.2 (`TabelaParentescos.spec`, 6). Texto completo no registro do projeto (Etapa 6, 1.10).
 
 ---
 
 ## Etapa 7.1 — Autorização: perfil × atribuição, FallbackPolicy, `perfilConta` e 404 uniforme (17 e 18/10/2026)
 
-**Escopo.** Seção 6.16 do Plano e decisões do autor: FallbackPolicy `RequireAuthenticatedUser()` em
+**Escopo.** Seção 6.16 do registro do projeto e decisões do autor: FallbackPolicy `RequireAuthenticatedUser()` em
 `Program.cs` (rota sem atributo nasce protegida; públicos com `[AllowAnonymous]`); RNF 21.4 em
 `AutorizacaoEbdServico` (ordem única nos três guardas: o recurso existe para a igreja → perfil
 administrativo passa → perfil Professor → atribuição ativa; conta de perfil Usuário com atribuição
@@ -1249,8 +1249,8 @@ turma, matéria e aula inexistentes → 404 `{ mensagem }` para qualquer perfil
 Corretivas dos testes manuais (18/10): `GET /api/meus-dados/minhas-turmas` só devolve vínculos de
 atribuição para conta Professor ou administrativa (o vínculo Aluno continua) e a rota
 `/departamentos/:id` exige perfil gestor (`requerGestor`): perfil Usuário volta a Minhas Turmas com
-um único aviso, em vez de carregar a página e receber cinco 403. Decisões em
-`docs/decisoes/etapa-7.md`, 1.1.
+um único aviso, em vez de carregar a página e receber cinco 403. Decisões no
+registro do projeto (Etapa 7, 1.1).
 
 **Validação automatizada (18/10/2026, ambiente do autor):** `dotnet build` e `dotnet test` =
 **146 aprovados** (136 + `RF21_PerfilOperacionalTests`, 10 casos: Usuario com atribuição ativa →
@@ -1268,7 +1268,7 @@ sem toast) · `npm run build` ok · `npm run test:e2e` = **10 aprovados** (3 no 
 7 no projeto `mobile`), E2E-M1 estrito e E2E-M2 sem alteração. O E2E rodou contra o PostgreSQL
 local no ambiente `E2E`.
 
-**Dados existentes (Plano 6.16, "antes de subir"):** consulta executada em 17/10/2026 no banco de
+**Dados existentes (registro do projeto, 6.16, "antes de subir"):** consulta executada em 17/10/2026 no banco de
 desenvolvimento — 3 atribuições ativas de pessoas sem conta e 2 de conta com perfil Usuario (ambas
 da mesma pessoa); as duas foram encerradas na limpeza dos testes manuais.
 
@@ -1326,7 +1326,7 @@ linha — coluna Pessoa com `min-width: 240px`, tag com `white-space: normal` e 
 768 px; `atribuicoes.spec` +1. Totais: xUnit 145 → 146; Vitest 115 → 118.
 
 **Inventário das evidências de Segurança (capturadas × faltantes), para a tabela RNF → teste →
-evidência do capítulo de Resultados (Plano 7.5):**
+evidência do capítulo de Resultados (registro do projeto, 7.5):**
 
 | RNF | Teste automatizado | Evidência |
 | --- | --- | --- |
@@ -1361,17 +1361,17 @@ Faltantes (um print cada, opcionais para a banca, a capturar na 7.3 junto com a 
 teste): BCrypt no banco; HTTPS; 403 de Professor em `/api/usuarios`; convite anterior invalidado;
 21.3; token exibido uma vez e convite já usado (40.2).
 
-**Registro para o Plano (v1.7):** seção 4 (linhas `api/igrejas`, `api/atribuicoes`,
+**Anotado no registro do projeto:** seção 4 (linhas `api/igrejas`, `api/atribuicoes`,
 `api/meus-dados/minhas-turmas` e nota do 404 uniforme; RF21 → Atende), seção 5 (linha 7.1 atendida
 em 18/10/2026), seção 6.16 (ATENDIDA; decisões e microdecisões), seção 7.1 (10 casos), seção 7.2
 (`atribuicoes.spec` 4, `PaginaAtribuicoesDepartamento.spec` 1, `guardas.spec` 7), seção 9 (POST
-igrejas resolvido). Texto completo em `docs/decisoes/etapa-7.md`, 1.1.
+igrejas resolvido). Texto completo no registro do projeto (Etapa 7, 1.1).
 
 ---
 
 ## Etapa 7.2 — Fluxos E2E-04 a E2E-08 e corretiva do dia civil da igreja (18 e 19/10/2026)
 
-**Escopo.** Seção 7.3 do Plano: E2E-04 (chamada até relatório, desktop e projeto `mobile`), E2E-05
+**Escopo.** Seção 7.3 do registro do projeto: E2E-04 (chamada até relatório, desktop e projeto `mobile`), E2E-05
 (restrições do Professor e conta Usuario com atribuição, RNF 21.4), E2E-06 (reabertura pelo Admin),
 E2E-07 (importação CSV, RNF 41.3) e E2E-08 (último administrador, RNF 14.3). A semente cria uma
 turma própria por cenário que grava aula; o front só ganhou `data-testid`. **Corretiva descoberta
@@ -1379,7 +1379,7 @@ pelo E2E-04** (18/10, 21h38 locais): a Frequência da turma contava a aula, mas 
 era lido como dia UTC e a matrícula do próprio dia, depois das 20h, caía no dia seguinte. Correção
 (opção A do autor): `RelogioIgreja` lê `Igreja:FusoHorario` (padrão America/Porto_Velho) e converte
 dias civis em instantes UTC nos relatórios RF35–RF38 (e RF6) e no "hoje" da pendência de
-fechamento; armazenamento continua em UTC. Decisões em `docs/decisoes/etapa-7.md`, 1.2.
+fechamento; armazenamento continua em UTC. Decisões no registro do projeto (Etapa 7, 1.2).
 
 **Validação automatizada (18/10/2026, 22h14 locais, ambiente do autor):** `dotnet build` limpo e
 `dotnet test` = **151 aprovados** (146 + `RF35_FusoHorarioTests`, 5 casos: instantes UTC do dia
@@ -1418,17 +1418,17 @@ têm data 19/10/2026 (testes concluídos na madrugada de 19/10).
 `RNF-35.4-professor-sem-exportacao.png`, `CSU11-reabrir-preserva.png`, `CSU11-reconsolidada.png`,
 `RNF-41.3-importacao-conferencia.png`, `RNF-14.3-perfil-ultimo-admin.png`.
 
-**Registro para o Plano:** seção 7.3 (linha do E2E-04 reescrita para o comportamento atual do
+**Anotado no registro do projeto:** seção 7.3 (linha do E2E-04 reescrita para o comportamento atual do
 CSU11; E2E-05 a E2E-08 ✔ 7.2), critério de data (linha 285: "hoje (UTC)" → dia civil da igreja,
 fuso configurável, armazenamento em UTC), seção 5 (linha 7.2 atendida em 18/10/2026), seções 7.1 a
 7.3 (`RF35_FusoHorarioTests` 5; `situacaoAula.spec` +1; projeto `mobile` com E2E-04) e totais
-(151 · 119 · 18). Texto completo no relato da entrega e em `docs/decisoes/etapa-7.md`, 1.2.
+(151 · 119 · 18). Texto completo no registro do projeto (Etapa 7, 1.2).
 
 ---
 
 ## Etapa 7.3 — Resultados: tabela CSU → teste, testes de Segurança e roteiros de evidência (19 a 22/10/2026)
 
-**Escopo.** Plano v1.8, seção 5 (linha 7.3), 6.17 e 7.5: (a) `docs/resultados.md` com a tabela
+**Escopo.** Registro do projeto, seção 5 (linha 7.3), 6.17 e 7.5: (a) `docs/resultados.md` com a tabela
 CSU → teste → resultado (CSU01–CSU24) e as tabelas RNF → teste → evidência de Segurança e de
 Confiabilidade; (b) `RF44_IgrejaTests.Atualizar_CampoOmitido_ViraNulo` e os xUnit que as evidências
 faltantes do inventário da 7.1 exigiam (a regra existia, o teste não); (c) roteiro de cópia e
@@ -1477,7 +1477,7 @@ xUnit **170**); e Esc fechava o diálogo do histórico durante o carregamento, d
 voo preencher o histórico da próxima pessoa — agora `closeOnEscape` acompanha o carregamento e uma
 resposta atrasada é descartada.
 
-### Roteiro C — Cópia e restauração dos dados (seção 6.17; monografia 5.1, Confiabilidade)
+### Roteiro C — Cópia e restauração dos dados (registro do projeto, 6.17; monografia 5.1, Confiabilidade)
 
 Faz uma cópia do banco de desenvolvimento `koinoniahub` no formato custom do `pg_dump`, restaura
 num banco novo `koinoniahub_restaurado`, sobe a API apontada para ele e confere login, listagem e
@@ -1486,7 +1486,7 @@ variável de ambiente da sessão. **O arquivo da cópia fica fora do repositóri
 (`%LOCALAPPDATA%`), porque contém dados pessoais e os hashes das senhas.
 
 **Preparação.** Feche a API e o front se estiverem rodando (a API restaurada usa a mesma porta).
-Se o banco de desenvolvimento tiver nomes reais de membros, borre-os nos prints 5 e 6 (o Plano
+Se o banco de desenvolvimento tiver nomes reais de membros, borre-os nos prints 5 e 6 (o registro do projeto
 pede evidência só com dados fictícios).
 
 **C1 — Terminal A (PowerShell): variáveis, senha e contagens na origem.**
@@ -1751,15 +1751,15 @@ a Aprovado (Confiabilidade 20 de 20).
 
 ## SonarCloud — primeira análise (22 e 23/10/2026)
 
-**Escopo.** Próximo passo fora das etapas (Plano v1.9, seção 5): análise estática da API e do front
+**Escopo.** Próximo passo fora das etapas (registro do projeto, seção 5): análise estática da API e do front
 no SonarCloud, por GitHub Actions. Nenhuma regra de negócio, rota, contrato ou tela mudou, e nenhum
 arquivo de código foi alterado. Monorepo com dois projetos na organização `dannkes1`
 (`dannkes1_tcc-koinoniahub_api` e `dannkes1_tcc-koinoniahub_web`, públicos, análise automática
 desligada). Arquivos: `.github/workflows/sonarcloud.yml` (jobs `api` e `web`, em push e pull request
 para a main), `web/sonar-project.properties`, `coverlet.collector` 10.1.0 no projeto de testes e
 `TestResults/` e `.sonarqube/` no `.gitignore` (commits `d5d556b` e `c482d3d`). Migrations fora da
-análise da API (decisão do autor): **a cobertura reportada é a do código de autoria**. Decisões em
-`docs/decisoes/sonarcloud.md`. A correção do que o Sonar apontou é a entrega seguinte, com plano antes.
+análise da API (decisão do autor): **a cobertura reportada é a do código de autoria**. Decisões no
+registro do projeto (SonarCloud); resultado consolidado em `docs/resultados.md`, seção 8. A correção do que o Sonar apontou é a entrega seguinte, com plano antes.
 
 **Validação local antes do push (22 e 23/10/2026, comandos exatos do workflow, em bash):**
 `dotnet build KoinoniaHub.API.sln --no-incremental` limpo (0 avisos, 0 erros) · `dotnet test --no-build
@@ -1825,10 +1825,10 @@ autor. Nada foi corrigido nesta entrega.
 `SONAR-web-overview-hotspots.png` e `SONAR-web-coverage.png`. Prefixo `SONAR-` porque a análise não
 corresponde a um RF ou RNF.
 
-**Registro para o Plano (v1.10):** seção 5 (linha nova "SonarCloud" na tabela de estado, fora das
+**Anotado no registro do projeto:** seção 5 (linha nova "SonarCloud" na tabela de estado, fora das
 etapas), 7.4 (o CI e a reprodução local da cobertura) e 7.5 (a análise estática como evidência
 complementar), mais a pendência de texto da monografia na seção 9 (4.10 e 5.1 não preveem análise
-estática). Texto completo em `docs/decisoes/sonarcloud.md`, seção 4.
+estática). Texto completo no registro do projeto (SonarCloud, seção 4).
 
 **Segunda análise (23/10/2026, commit `1d380b4`, só documentação):** Quality Gate **OK** nos dois
 projetos (as condições do código novo passaram a ser avaliadas); demais números iguais aos da
@@ -1840,7 +1840,7 @@ do SonarCloud).
 ## SonarCloud — correção dos apontamentos (23/10/2026)
 
 **Escopo.** Correção da primeira análise com as decisões do autor de 23/10/2026
-(`docs/decisoes/sonarcloud.md`, seções 5 e 6). Nenhuma regra da monografia nem rota mudou; o
+(registro do projeto, SonarCloud, seções 5 e 6; resumo em `docs/resultados.md`, seção 8.2). Nenhuma regra da monografia nem rota mudou; o
 contrato da API só muda para requisição malformada, que passa a receber o 400 `ValidationProblemDetails`
 (decisão do autor). Blocos de commit: api · front · maintainability-api · maintainability-web · docs.
 
@@ -1858,7 +1858,7 @@ contrato da API só muda para requisição malformada, que passa a receber o 400
 - *Maintainability, sem mudança de comportamento.* API: 8 apontamentos (S112 em `Program.cs`, S1118,
   ASP0027, S108, S1125, CA1822, S1192, S9022). Front: 20 (S7924, S4666 ×2, S9449 ×3, S3863 ×5, S6644
   ×3, S7770, S7762 ×2, S4624, S6551, S5976), mais os `!important` que estavam dentro dos blocos de CSS
-  removidos. Aceitos com justificativa: 18 regras (`docs/decisoes/sonarcloud.md`, seção 5).
+  removidos. Aceitos com justificativa: 18 regras (lista em `docs/resultados.md`, seção 8.2).
 
 **Validação automatizada (23/10/2026, ambiente do autor):** `dotnet build` com 0 avisos e 0 erros ·
 `dotnet test` = **174 aprovados** (170 + `RF30_CadastrarAulaTests` 2: aula sem data → 400 com
@@ -1884,7 +1884,7 @@ executados pelo autor em 24/10/2026 (commit `1043a5d`): `RF1-cadastro-inicial-la
 
 **Análise depois da correção (run #3 do workflow, commit `1043a5d`, 24/10/2026):** os dois jobs
 verdes. Números antes → depois, com a triagem aplicada na interface em 24/10 (CA1862 como False
-positive; as demais regras da seção 5 do `sonarcloud.md` como Accept):
+positive; as demais regras aceitas com justificativa como Accept):
 
 | Métrica | API: antes → depois | Web: antes → depois |
 | --- | --- | --- |
@@ -1925,8 +1925,8 @@ positive; as demais regras da seção 5 do `sonarcloud.md` como Accept):
 `-web-summary.png`, `-web-reliability.png`, `-web-maintainability.png`, `-web-issues-abertas.png`;
 mais `RNF-responsividade-cadastro-inicial.png` (E2E-01, projeto `mobile`) e os três dos testes manuais.
 
-**Registro para o Plano (v1.10):** `docs/decisoes/sonarcloud.md`, seção 4, itens 11 a 21 (seções 2.3,
-2.4, 6.1, 7.1 a 7.5 e 9).
+**Anotado no registro do projeto:** seções 2.3, 2.4, 6.1, 7.1 a 7.5 e 9 (texto completo no registro do
+projeto, SonarCloud, seção 4, itens 11 a 21).
 
 ## Aderência à monografia — Entrega A: seis correções de interface e validação (28 e 29/10/2026)
 
@@ -1935,8 +1935,8 @@ que o código passou a seguir o texto: RF36 (limiar crítico ajustável na tela)
 (data e hora do aceite na lista de Usuários), RNF 42.1 / CSU01 FA2 / CSU22 FA2 (aviso de aceite
 obrigatório), RNF 4.3 (validação de Meus Dados, 400 por campo), CSU11 FA2 / RNF 33.7 ("Marcar
 como Não realizada" só sem presenças) e RF29 / CSU12 FA1 (verbo "inativar"). Decisões, critério
-e lista do que existe no código sem RF em `docs/decisoes/aderencia-monografia.md` (seções 1, 2 e
-5). Nenhuma rota, DTO de resposta ou migration alterados; o contrato de `PUT /api/meus-dados`
+e lista do que existe no código sem RF no registro do projeto (aderência à monografia, seções 1,
+2 e 5; resumo em `docs/resultados.md`, seção 7). Nenhuma rota, DTO de resposta ou migration alterados; o contrato de `PUT /api/meus-dados`
 passa a responder 400 `ValidationProblemDetails` por campo a e-mail inválido e UF fora de 2 letras,
 com e-mail vazio aceito como nulo. Blocos de commit: api · front · e2e · docs · prints.
 
@@ -1979,15 +1979,15 @@ front), `RNF-33.7-sem-nao-realizada-com-presenca.png`, `RNF-33.7-nao-realizada-s
 `RF29-inativar-matricula-confirmacao.png`, `RF29-inativar-matricula-confirmacao-360.png`,
 `CSU12-historico-matricula-inativa-professor.png` (o 403 da observação do T6).
 
-**Registro para o Plano (v1.11):** `docs/decisoes/aderencia-monografia.md`, seção 8.
+**Anotado no registro do projeto:** texto no registro do projeto (aderência à monografia, seção 8).
 
 ## Aderência à monografia — Entrega B: RF21 função em lista fechada e CSU12 FA1 histórico da matrícula inativa (29 e 30/10/2026)
 
 **Escopo.** Item 7 da revisão (RF21: a função da atribuição é Professor ou Auxiliar, lista fechada
 na API e na tela) e item 9, surgido no teste manual T6 da Entrega A (CSU12 FA1 / RNF 34.3: o
 Professor da turma continua consultando o histórico, a pessoa em DTO reduzido e os responsáveis
-do aluno cuja matrícula foi inativada). Decisões em `docs/decisoes/aderencia-monografia.md`,
-seção 3. Contrato: `POST` e `PUT /api/atribuicoes` recusam função fora da lista com 400
+do aluno cuja matrícula foi inativada). Decisões no registro do projeto (aderência à monografia,
+seção 3). Contrato: `POST` e `PUT /api/atribuicoes` recusam função fora da lista com 400
 `ValidationProblemDetails` em `errors.Funcao` ("Função inválida: use Professor ou Auxiliar.");
 o guarda de pessoa aceita matrícula ativa ou inativa em turma com atribuição ativa do professor.
 Nenhuma rota, DTO de resposta ou migration alterados. Acabamento encontrado no T7: na tela de
@@ -2025,14 +2025,14 @@ professor de outra turma (perfil Professor) recebe 403 em `GET /api/pessoas/{id}
 `RNF-responsividade-atribuicoes-filtros-360.png`, `CSU12-historico-matricula-inativa-professor-ok.png`,
 `CSU12-historico-matricula-inativa-professor-ok-360.png`, `RNF-34.3-403-outra-turma.png`.
 
-**Registro para o Plano (v1.11):** `docs/decisoes/aderencia-monografia.md`, seção 8.
+**Anotado no registro do projeto:** texto no registro do projeto (aderência à monografia, seção 8).
 
 ## Aderência à monografia — Entrega C: RF35 / CSU15, percentual por aula sobre os registros efetivos (30/10/2026)
 
 **Escopo.** Item 8 da revisão: o CSU15 descreve o percentual de presença "sobre os registros
 efetivos"; o percentual por aula dividia pelo total de alunos com matrícula ativa hoje, e uma
 matrícula criada depois da consolidação rebaixava a aula e movia o gráfico de evolução. Decisão
-em `docs/decisoes/aderencia-monografia.md`, seção 4: o denominador passou a ser os registros da
+no registro do projeto (aderência à monografia, seção 4): o denominador passou a ser os registros da
 própria aula; `naoRegistrado` continua `totalAlunos − registros` e os registros seguem filtrados
 por matrícula ativa, então a saída de um aluno ainda altera as aulas anteriores (o relatório
 retrata o quadro atual, coerente com o geral e o por aluno). Só a API mudou; rota, DTO e front
@@ -2065,4 +2065,4 @@ a 64,4 %, como registrado na seção 4 (os registros do aluno que saiu deixam de
 `RF35-percentual-aula-depois-aluno-novo-360.png`, `RF35-percentual-aula-json.png`,
 `RF35-percentual-aula-saida.png`, `RF35-percentual-aula-saida-resumo.png`.
 
-**Registro para o Plano (v1.11):** `docs/decisoes/aderencia-monografia.md`, seção 8.
+**Anotado no registro do projeto:** texto no registro do projeto (aderência à monografia, seção 8).

@@ -29,7 +29,8 @@ O tratamento de dados observa a LGPD (Lei nº 13.709/2018), com atenção especi
 
 ```
 api/   → KoinoniaHub.API (ASP.NET Core 10) e KoinoniaHub.API.Tests (xUnit)
-web/   → koinoniahub.web (Vue 3 + TypeScript)
+web/   → koinoniahub.web (Vue 3 + TypeScript), com os testes Vitest (src/**/*.spec.ts) e Playwright (e2e/)
+docs/  → resultados.md (material do capítulo de Resultados), testes.md (evidências por etapa) e evidencias/ (prints)
 ```
 
 ## Como executar
@@ -57,7 +58,7 @@ npm run dev
 
 O sistema foi desenvolvido **localmente entre fevereiro e agosto de 2026**, em paralelo à elaboração do projeto de pesquisa (TCC 1), e importado para este repositório em agosto/2026 como commit inicial. As migrations em `api/**/Migrations` preservam os carimbos de data originais da evolução do schema (primeira migration: `20260222234613_Inicial`).
 
-A partir deste ponto, o versionamento acompanha as etapas do TCC 2: testes funcionais por caso de uso, validação com usuários segundo a ISO/IEC 25010 e ajustes finais.
+A partir deste ponto, o versionamento acompanha as etapas do TCC 2: testes funcionais por caso de uso, validação com usuários segundo a ISO/IEC 25010 e ajustes finais. A análise estática roda no SonarCloud a cada push (`.github/workflows/sonarcloud.yml`); os resultados estão em `docs/resultados.md`.
 
 ## Uso
 

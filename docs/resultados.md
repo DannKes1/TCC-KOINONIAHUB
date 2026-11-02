@@ -1,8 +1,9 @@
 # Resultados — KoinoniaHub
 
-Material para o capítulo de Resultados do TCC (Plano de Desenvolvimento v1.12, seções 5 e 7.5;
-monografia, seção 5.1). Etapa 7.3, 19 a 22/10/2026; atualizado em 31/10/2026 com as entregas de
-aderência à monografia (A a D, 28 a 31/10/2026; `docs/decisoes/aderencia-monografia.md`; seção 7).
+Material para o capítulo de Resultados do TCC (registro do projeto, seções 5 e
+7.5; monografia, seção 5.1). Etapa 7.3, 19 a 22/10/2026; atualizado em 31/10/2026 com as entregas
+de aderência à monografia (A a D, 28 a 31/10/2026; seção 7) e com a análise estática do código
+(seção 8).
 
 A monografia avalia o sistema por quatro características da ISO/IEC 25010. Este documento reúne
 a evidência de três delas:
@@ -14,7 +15,8 @@ a evidência de três delas:
 | Confiabilidade | Tabela RNF → teste → resultado, incluindo a cópia e restauração dos dados | 4 |
 
 A Usabilidade é avaliada com os participantes (seção 5.1), sobre as telas a 360 px; os prints
-`RNF-responsividade-*.png` estão em `docs/evidencias/`.
+`RNF-responsividade-*.png` estão em `docs/evidencias/`. A seção 8 reúne a análise estática do
+código no SonarCloud, evidência complementar de Segurança, Confiabilidade e Manutenibilidade.
 
 ## 1. Base da avaliação
 
@@ -44,13 +46,13 @@ mesmo arquivo, todos ✔; são citados abaixo como "manual aderência Tn".
   alternativo não tem teste, ou o comportamento difere do descrito no caso de uso (seção 6).
 - **Não coberto**: nenhum teste exercita o caso de uso.
 
-Nenhum teste citado falha; por isso não há a categoria "Reprovado" prevista na seção 7.5 do
-Plano.
+Nenhum teste citado falha; por isso não há a categoria "Reprovado" prevista na seção 7.5 da
+registro do projeto.
 
 **Como os testes são citados.** xUnit: `Classe.Metodo`; `Classe` (n) quando todos os n casos da
 classe se aplicam (cada `InlineData` de um `[Theory]` conta um caso); para um recorte, os métodos
 pelo nome ou "(k dos n casos: …)". Vitest: `arquivo.spec`, com a mesma regra para (n).
-Playwright: E2E-01 a E2E-08, E2E-M1 e E2E-M2 (seção 7.3 do Plano). Manual: "manual Etapa X,
+Playwright: E2E-01 a E2E-08, E2E-M1 e E2E-M2 (seção 7.3 do registro do projeto). Manual: "manual Etapa X,
 passo N" (`docs/testes.md`).
 
 ## 2. Adequação Funcional — CSU → teste → resultado
@@ -214,7 +216,7 @@ Prints em `docs/evidencias/`. Os marcados "D*n*" vieram dos roteiros da Etapa 7.
 | 45.5 | Excluir só aula sem presença | `RF45_EditarAulaTests.Excluir_SemPresencas_Retorna204ESomeDaListagem`, `Excluir_ComPresencas_Retorna400`; `PaginaAulasTurma.spec` (2 dos 3 casos: Excluir só sem presenças; Excluir com a confirmação comum) | ✔ `RF45-confirmar-excluir-desktop.png`, `RF45-confirmar-excluir-360.png`; ✔ D8: `RNF-45.5-sem-excluir-com-presenca.png` | Aprovado |
 | Seção 5.1 — persistência e integridade do modelo | Modelo conforme o DER; valores padrão; FKs restritivas | `Etapa1_SituacaoAulaTests` (4), `Etapa1_PessoaEnxutaTests` (2), `Etapa1_AceiteTermoTests.AceiteTermo_Gravado_PersisteTodosOsCampos`, `Usuario_ComAceiteRegistrado_NaoPodeSerExcluido`; manual Etapa 1 (banco limpo) | — | Aprovado |
 | Seção 5.1 — dados inválidos | Entrada inválida recusada sem gravar; PUT substitui os campos | `RF44_IgrejaTests.Atualizar_NomeVazio_Retorna400ComErroDoCampo`, `Atualizar_EmailInvalido_Retorna400ComErroDoCampo` (400 com o erro no campo), `Atualizar_CampoOmitido_ViraNulo`; `RF4_MeusDadosTests` (4: e-mail e UF inválidos → 400 por campo sem gravar; e-mail vazio → nulo; RNF 4.3); `RF21_FuncaoAtribuicaoTests` (4: função fora da lista → 400 sem gravar); `RF41_ImportacaoTests.Importar_MaisDe1000Linhas_Retorna400` (nada gravado), `Importar_ColunaForaDoModelo_Ignorada`; `RF42_TermoTests.RegistrarAdmin_SemAceite_Retorna400`, `Aceitar_VersaoDiferenteDaVigente_Retorna400` (nada gravado); `Etapa0_FumacaTests.Login_ComSenhaErrada_Retorna400` | ✔ `RNF-44.3-400-email-invalido.png` | Aprovado |
-| Seção 5.1 — cópia e restauração dos dados (Plano 6.17) | `pg_dump` (formato custom) → `pg_restore` num banco novo → API apontada para ele → login, listagem e escrita conferidos | Manual: roteiro C da Etapa 7.3 (`docs/testes.md`), executado em 22/10/2026 ✔ | ✔ `Confiabilidade-restauracao-1-contagens-origem.png`, `-2-pg-dump-custom.png`, `-3-pg-restore.png`, `-4-contagens-restaurado.png`, `-5-api-no-banco-restaurado.png` (API apontada para o banco restaurado), `-5-login-listagem.png`, `-6-escrita-no-restaurado.png` (a pessoa nova só no banco restaurado) | Aprovado |
+| Seção 5.1 — cópia e restauração dos dados (registro do projeto, 6.17) | `pg_dump` (formato custom) → `pg_restore` num banco novo → API apontada para ele → login, listagem e escrita conferidos | Manual: roteiro C da Etapa 7.3 (`docs/testes.md`), executado em 22/10/2026 ✔ | ✔ `Confiabilidade-restauracao-1-contagens-origem.png`, `-2-pg-dump-custom.png`, `-3-pg-restore.png`, `-4-contagens-restaurado.png`, `-5-api-no-banco-restaurado.png` (API apontada para o banco restaurado), `-5-login-listagem.png`, `-6-escrita-no-restaurado.png` (a pessoa nova só no banco restaurado) | Aprovado |
 
 **Resumo:** 20 linhas, 20 aprovadas.
 
@@ -252,11 +254,11 @@ a prova.
   consolida; a recusa por chamada incompleta (400 com a lista) continua na API para quem chama a
   rota diretamente.
 - **Rótulos de CSU.** O E2E-04 cria a aula (CSU09) e abre a Frequência da turma (CSU15); o E2E-05
-  consulta relatórios (CSU15). As colunas CSU da seção 7.3 do Plano, os comentários dos specs e o
-  print `CSU15-frequencia-apos-consolidar.png` (gravado na 7.2 como `CSU12-…`) foram corrigidos na
+  consulta relatórios (CSU15). As colunas CSU dos cenários E2E no registro do projeto (7.3), os
+  comentários dos specs e o print `CSU15-frequencia-apos-consolidar.png` (gravado na 7.2 como `CSU12-…`) foram corrigidos na
   7.3.
-- **Escala do resultado.** A seção 7.5 do Plano previa Aprovado/Reprovado; com todos os testes
-  verdes, a distinção útil é entre cobertura completa e parcial do fluxo (seção 1).
+- **Escala do resultado.** A estratégia de testes do registro do projeto (7.5)
+  previa Aprovado/Reprovado; com todos os testes verdes, a distinção útil é entre cobertura completa e parcial do fluxo (seção 1).
 
 ## 7. Aderência especificação × sistema
 
@@ -270,7 +272,7 @@ algo razoável que o sistema não fazia: o código passa a seguir o texto, com t
 código saíram em três entregas (A, B e C, 28 a 30/10/2026), cada uma com suíte completa antes e
 depois e testes manuais do autor (38 prints); a Entrega D (31/10) só acrescentou specs para a
 cobertura do código novo no SonarCloud. As correções de texto foram aplicadas no .docx em
-31/10/2026. Registro completo: `docs/decisoes/aderencia-monografia.md`; testes manuais em
+31/10/2026. A conferência RF por RF está no registro do projeto; os testes manuais estão em
 `docs/testes.md`, blocos "Aderência à monografia — Entrega A" a "C".
 
 | Divergência | Classificação | Tratamento (entrega e teste) |
@@ -303,8 +305,177 @@ Efeito na tabela da seção 2.1: CSU05 e CSU12 passaram de Parcial a Aprovado, e
 CSU11, CSU18, CSU22 e CSU23 encolheram (seção 2.2). Efeito nas suítes: 170 → 191 xUnit (31
 classes), 126 → 151 Vitest (31 arquivos), 18 Playwright inalterados; o SonarCloud manteve o
 Quality Gate Passed nos dois projetos (run #9, 31/10/2026, cobertura do código novo do web 84,8 %).
-Decisões do autor registradas para a banca em `docs/decisoes/aderencia-monografia.md`, seção 7:
+Decisões do autor registradas para a banca (registro do projeto):
 o percentual por aula continua filtrado por matrícula ativa (a saída de um aluno ainda altera as
 aulas anteriores, como no geral e no por aluno); a lista fechada de funções não exigiu migration
 (o valor antigo "Secretário" foi editado pela tela); nenhuma rota, DTO de resposta ou migration
 mudou nas três entregas.
+
+## 8. Análise estática (SonarCloud)
+
+Os testes provam o comportamento executando o sistema; a análise estática lê o código sem
+executá-lo e aponta padrões de defeito, de vulnerabilidade e de manutenção difícil. Uma não
+substitui a outra: a monografia avalia Segurança e Confiabilidade por testes técnicos (5.1) e
+declara a Manutenibilidade sem medição formal (4.10); os números desta seção entram no texto como
+evidência complementar.
+
+**Como a análise roda.** Desde 23/10/2026, o workflow `.github/workflows/sonarcloud.yml` repete
+num `ubuntu-24.04`, a cada push e pull request para a main, o build, os testes com cobertura e o
+`vue-tsc -b`, e envia dois projetos ao SonarCloud (`dannkes1_tcc-koinoniahub_api` e
+`dannkes1_tcc-koinoniahub_web`, organização `dannkes1`). A cobertura da API vem do
+`coverlet.collector` 10.1.0 em formato OpenCover, com a contagem dos testes pelo `.trx`; a do
+front, do lcov do Vitest. As Migrations ficam fora da análise da API: são código gerado pelo
+`dotnet ef` que os testes nunca executam (SQLite com `EnsureCreated`), e com elas a cobertura
+seria 28,3 % em vez de 77,0 % das linhas, sem que nenhuma linha de autoria mudasse. O job do
+front roda com o fuso da igreja (`TZ=America/Porto_Velho`) e a API no UTC do runner, o que prova
+a cada push a convenção "instante em UTC, dia no fuso da igreja". Foi a primeira execução das
+suítes fora do Windows do autor: nenhum teste dependia da cultura, do fuso ou do disco local.
+
+**Como ler os números.** A cobertura do SonarCloud combina linhas e condições (por isso a API fica
+em 74,5 % com 77,0 % das linhas). No front, o Sonar conta com 0 % os arquivos que nenhum spec
+importa, enquanto o resumo do Vitest só considera os arquivos carregados pelos testes (71,7 % das
+linhas na primeira análise): o número oficial para o texto é o do SonarCloud. A nota de A a E de
+cada qualidade segue o apontamento mais grave, não a quantidade; na organização (Standard
+Experience) só os do tipo VULNERABILITY contam para Security e só os do tipo BUG para
+Reliability. O Quality Gate (Sonar way) avalia o código novo desde a análise de referência:
+cobertura mínima de 80 %, sem issue nova, sem hotspot aberto.
+
+### 8.1 Primeira análise (run #1, commit `c482d3d`, 23/10/2026)
+
+Os dois jobs verdes (API em 1min42s, Web em 1min16s); 170 xUnit e 126 Vitest (24 arquivos)
+aprovados no Linux. Nenhum arquivo de código mudou nesta entrega.
+
+| Métrica | API | Web |
+| --- | --- | --- |
+| Linhas de código | 6.742 (sem Migrations) | 13.627 |
+| Quality Gate | não computado (primeira análise) | não computado (primeira análise) |
+| Security | 3 (2 Blocker, 1 Medium) · **E** | 0 · **A** |
+| Reliability | 12 (1 High, 11 Medium) · **C** | 85 (todas Medium) · **C** |
+| Maintainability | 45 · **A** | 128 · **A** |
+| Security Hotspots | 0 · **A** | 0 · **A** |
+| Cobertura | **74,5 %** (linhas 77,0 %; condições 60,5 %; 4.422 linhas a cobrir, 1.018 descobertas) | **48,0 %** (linhas 41,1 %; condições 63,3 %; 2.542 a cobrir, 1.498 descobertas) |
+| Duplicação | 3,0 % | 0,9 % |
+| Testes importados | 170 (0 erros, 0 falhas) | não importados (só o lcov) |
+
+Dois dos três apontamentos de Security da API estavam no `appsettings.E2E.json` versionado (senha
+do PostgreSQL local de teste e chave JWT do ambiente E2E, valores descartáveis); o terceiro, em
+`TokenServico.cs`. Na API, só 2 dos 12 apontamentos de Reliability eram BUG (S8949 e S8733); no
+front, 12 dos 85 (os 72 S6853 de rótulo sem campo associado e o S6845 são CODE_SMELL e não entram
+na nota). A segunda análise (commit `1d380b4`, só documentação) computou o Quality Gate **OK** nos
+dois projetos, com os demais números iguais. Os apontamentos de Security e Reliability foram
+agrupados por regra em 23/10/2026 e triados pelo autor: corrigir, aceitar com justificativa ou
+adiar.
+
+### 8.2 Correção dos apontamentos (run #3, commit `1043a5d`, 24/10/2026)
+
+**O que mudou.** API (Reliability): `Data` obrigatória no cadastro e na edição de aula (sem o
+campo, a aula era gravada com 0001-01-01); ids de aula, matéria, matrícula e usuário com
+`[Range(1, …)]` (id ausente passa a dizer qual campo falta); item da chamada sem `presente` → 400
+sem gravar nada do lote (antes virava ausência, contra o registro explícito da RNF 32.6);
+`await app.RunAsync()`; `AsSingleQuery()` na consulta de uma pessoa. Requisição malformada passa a
+receber o 400 `ValidationProblemDetails` padrão (`errors[campo]`); para dados válidos nada muda.
+Front (Reliability e acessibilidade): 72 rótulos ligados aos campos em 12 telas (17 campos não
+tinham nome acessível nenhum); Cadastro Inicial com rótulos visíveis; `aria-label` no arquivo da
+importação; logout em segundo plano com `void`; Meus Dados com o perfil administrativo da store.
+Maintainability sem mudança de comportamento: 8 apontamentos na API e 20 no front, mais blocos de
+CSS que não casavam com nada (seletores do PrimeVue 3). Nenhuma regra da monografia nem rota mudou.
+
+| Métrica | API: antes → depois | Web: antes → depois |
+| --- | --- | --- |
+| Linhas de código | 6.742 → 6.750 | 13.627 → 13.774 |
+| Apontamentos (total) | 60 → 41 (19 fechados); após a triagem: **7 abertos**, 19 aceitos, 15 falsos positivos | 212 → 106 (109 fechados); após a triagem: **90 abertos**, 16 aceitos |
+| Security | 3 (E) → 0 abertos, 3 aceitos · **A** | 0 · **A** |
+| Reliability | 12 (C) → 1 aceito (S8949) · **A** | 85 (C) → 1 aceito (S6845) · **A** |
+| Maintainability | 45 → 37 · **A** (abertos: 7 × S3776) | 131 → 106 · **A** (abertos: S9423 ×88, S3776, S3358) |
+| Security Hotspots | 0 | 0 |
+| Cobertura | 74,5 % → **74,5 %** | 48,0 % → **46,3 %** (a cobrir 2.542 → 2.709) |
+| Cobertura do código novo | 76,92 % em 18 linhas | 82,35 % em 27 linhas |
+| Duplicação | 3,0 % | 0,9 % |
+| Testes importados | 170 → 174 | — |
+| Quality Gate | **FAILED** (cobertura do código novo < 80 %) | **PASSED** |
+
+**Quality Gate da API.** Das 18 linhas novas, 5 ficaram sem cobertura (os quatro `BadRequest` do
+período invertido em `RelatoriosController` e o `catch` interno de `RelogioIgreja.ResolverFuso`),
+mais a condição da chave JWT ausente em `Program.cs`. Fechado no mesmo dia com
+`RF35_RelatorioTests.Relatorios_PeriodoInvertido_Retorna400` (`[Theory]`, um caso por relatório de
+período): `dotnet test` = 178 e o OpenCover local com as quatro linhas visitadas, código novo em
+24 de 26 (92,3 %). Ficam sem cobertura, por decisão, o `catch` do `RelogioIgreja` (inalcançável
+com ICU e tzdata) e a condição da chave JWT (exigiria subir um host sem a chave). A queda da
+cobertura do web (48,0 % → 46,3 %) é efeito dos templates novos: os rótulos acrescentados em
+páginas sem spec entram como linhas a cobrir sem teste; nenhuma linha antes coberta deixou de ser.
+
+**Aceitos com justificativa (decisão do autor, 23/10/2026, marcados na interface em 24/10):**
+S6418 e S2068 (`appsettings.E2E.json`: configuração do ambiente de teste com valores descartáveis;
+os reais nunca são versionados); S6781 (`TokenServico`: chave lida do `IConfiguration`, sem
+literal no código); S6845 (`TermoUsoSigilo.vue`: `tabindex="0"` na região rolável do termo, WCAG
+2.1.1); S8949 (`RespostaAutorizacaoHandler`: `WriteAsJsonAsync` já usa o `RequestAborted`); S8733
+(`AsSingleQuery` registrado no código); S9129 ×8 (SQL idêntico, conferido com `ToQueryString`);
+ASP0025; S112; CA1861 ×3 (arrays de `Assert` em teste); S127 (leitor CSV da RFC 4180); S6960
+(`PessoasController`, 133 linhas); S9423 ×10 (`@media print`: só `!important` vence o tamanho
+inline do Chart.js); S7924 (`BarraTopo`: contraste real 9,69:1); S6564 ×2; S7750 (`findLast`
+exige ES2023); S6819 (`LinhaChamada`: a linha inteira é o alvo de toque, `role=button` com
+teclado e `aria-pressed`). CA1862 ×15 como **falso positivo**: a comparação está dentro de
+consulta `IQueryable` traduzida para `lower(coluna) = @p`, e o `string.Equals` com
+`StringComparison` sugerido não é traduzido pelo EF Core 10. Abertos como trabalho futuro:
+S3776 (complexidade cognitiva: 7 métodos na API e 1 no front), S3358 (ternário aninhado) e os
+S9423 de `style.css` e `LayoutPrincipal.vue`.
+
+**Validação.** `dotnet build` com 0 avisos; `dotnet test` = 174 (depois 178); `vue-tsc -b` limpo;
+`npm run test` = 131 (26 arquivos); `npm run build` ok; `npm run test:e2e` = 18, com o E2E-01
+conferindo o rótulo do Cadastro Inicial e, no celular, a ausência de rolagem lateral. CSS
+conferido no navegador: Painel, Aulas da turma, Pessoas e Usuários a 1366×768 e 360×640, antes e
+depois, com **0 pixel diferente** nos 8 prints e os estilos calculados idênticos (salvo a transição
+dos links do menu, declarada por propriedade). Testes manuais M1 a M8 ✔, executados pelo autor em
+24/10/2026 (`RF1-cadastro-inicial-labels.png`, `RF1-cadastro-inicial-labels-360.png`,
+`RNF-30.2-400-aula-sem-data.png`). `npm audit` em 24/10/2026: 15 vulnerabilidades (1 low, 5
+moderate, 9 high) nas cadeias de vite, vitest e playwright e nos pacotes `axios` e `vue` (por
+`@vue/server-renderer`, que a SPA não usa); fica como entrega própria.
+
+### 8.3 Código novo das entregas de aderência (runs #8 e #9, 31/10/2026)
+
+As Entregas A a C da aderência (seção 7) chegaram ao SonarCloud no run #8 (191 xUnit, 141 Vitest,
+18 Playwright): API com Quality Gate Passed e cobertura geral 77,8 %; Web com Quality Gate
+**Failed** por uma condição, cobertura do código novo 73,5 % sobre 80 linhas, e o aviso "There
+are problems with file encoding in the source code". A conferência dos 136 arquivos de `web/`
+rastreados mostrou nenhum fora de UTF-8, sem BOM e com LF; os únicos arquivos sob `sonar.sources`
+que não são texto eram as duas imagens de `src/assets`, que o scanner tentava ler, e
+`src/assets/**` entrou nas exclusões. As linhas novas descobertas estavam em páginas sem spec
+(`PaginaMeusDados.vue`, `PaginaUsuariosLista.vue`, `PaginaPrimeiroAcesso.vue` e os `v-model` do
+Cadastro Inicial); a Entrega D acrescentou só specs: `PaginaMeusDados.spec` (5),
+`PaginaUsuariosLista.spec` (1), `PaginaPrimeiroAcesso.spec` (3) e `PaginaCadastroInicial.spec`
+(+1), sem mudar comportamento (`npm run test` = 151 casos, 31 arquivos).
+
+**Resultado (run #9, 31/10/2026).** Web: Quality Gate **Passed**, cobertura do código novo
+84,8 % sobre 89 linhas, 0 issues novas e nenhum aviso de análise (o aviso de encoding desapareceu
+com as imagens fora da análise, o que confirma o diagnóstico). API: Quality Gate **Passed**. A
+medição local (62 de 62 linhas executáveis novas cobertas, pelo lcov cruzado com o `git diff`) e a
+do Sonar (84,8 %) diferem porque o Sonar conta também linhas de template dos `.vue`, que o lcov
+não lista. Lição registrada: uma página sem spec conta inteira como a cobrir, então toda página
+alterada precisa de spec na mesma entrega.
+
+### 8.4 Prints (`docs/evidencias/`, prefixo `SONAR-`)
+
+- Primeira análise (17): `SONAR-actions-verde.png`, `SONAR-api-log.png`, `SONAR-api-log-testes.png`,
+  `SONAR-api-overview.png`, `-reliability.png`, `-maintainability.png`, `-hotspots.png`,
+  `SONAR-api-coverage.png`, `SONAR-api-testes.png`, `SONAR-api-sem-migrations.png`,
+  `SONAR-web-log.png`, `SONAR-web-log-testes.png`, `SONAR-web-overview.png`, `-reliability.png`,
+  `-maintainability.png`, `-hotspots.png`, `SONAR-web-coverage.png`.
+- Correção (12): `SONAR-correcao-actions-verde.png`, `SONAR-correcao-api-overview.png`,
+  `-summary.png`, `-reliability.png`, `-maintainability.png`, `-issues-abertas.png`,
+  `SONAR-correcao-web-overview.png`, `-summary.png`, `-reliability.png`, `-maintainability.png`,
+  `-issues-abertas.png`; `SONAR-correcao-api-quality-gate.png`.
+- Aderência (2): `SONAR-aderencia-web-quality-gate.png`, `SONAR-aderencia-api-quality-gate.png`.
+
+### 8.5 Leitura para o texto do TCC
+
+- Security, Reliability e Maintainability do SonarCloud conversam com Segurança, Confiabilidade e
+  Manutenibilidade da ISO/IEC 25010 (seção 4.10), mas a nota vem do apontamento mais grave, não
+  é uma medição na escala da norma.
+- Excluir as Migrations não maquia o número: é código gerado que os testes não executam por
+  desenho, e a decisão está registrada com os dois valores (28,3 % e 77,0 %).
+- Um apontamento não é automaticamente um defeito. Há três destinos, todos registrados: corrigido
+  (ex.: `Data` obrigatória), aceito com justificativa (ex.: S8949) ou falso positivo (CA1862, cuja
+  sugestão quebraria a tradução para SQL); a dívida mantida aberta (S3776) está em Trabalhos
+  futuros.
+- O CI num Linux com fuso UTC e cultura invariante prova, a cada push, que a regra de datas
+  ("instante em UTC, dia no fuso da igreja") e o CSV não dependem do ambiente do autor.
