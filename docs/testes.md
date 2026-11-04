@@ -2114,3 +2114,62 @@ navegador, não o do contêiner (RNF 42.8) · T5 ✔ `backup.sh` gerou `koinonia
 
 **Anotado no registro do projeto:** decisões da Entrega F (variáveis, proxy reverso, migrations
 em Production, `/api/saude`, imagens, Caddyfile, segredos, o que não foi testado).
+
+## Entrega G — acabamento pré-avaliação de usabilidade (03/11/2026)
+
+**Escopo.** Última entrega de código antes da avaliação com os participantes. (1) `/termo` com a
+sarça verde e Voltar pelo histórico (Painel só na abertura direta); (2) sem rolagem horizontal em
+`/termo`, Painel de gestão, Usuários e Atribuições — a tabela rola dentro do próprio cartão; E2E-M3
+novo (2 casos: 360 px nas quatro telas; 1024 e 1200 px nos filtros de Usuários e Atribuições);
+(3) textos de tela sem código de requisito (saíram "(CSU07)" e "(RNF 38.4)"); (4) aba Alunos com
+busca por nome e situação da matrícula (padrão Ativas), só no cliente; (5) tela pública de convite
+com o título "Definir senha de acesso" e a frase sobre primeiro acesso e redefinição; (6) filtros
+com padrão Ativos em Pessoas, Usuários, Atribuições e Alunos (nenhum E2E dependia de "Todos").
+Rota e contrato inalterados, além do campo aditivo `aceiteVigente` na validação do convite.
+Blocos de commit: api · testes · front · e2e · docs.
+
+**Defeito corrigido (7): aceite duplicado na redefinição de acesso (CSU20).** A ativação do
+convite sempre exigia `AceiteTermoVersao` e sempre gravava um novo `AceiteTermo`, mesmo para
+conta que já tinha o aceite da versão vigente; a tela sempre exigia a caixa. Agora
+`GET /api/auth/primeiro-acesso/{token}` informa `aceiteVigente`; com ele a tela mostra o termo
+sem a caixa, com o aviso "Você já aceitou a versão vigente deste termo.", e a ativação não exige
+nem grava aceite. Conta sem aceite: fluxo da RNF 42.1 inalterado (400 sem a versão, convite não
+consumido). Provado em `RF42_TermoTests`:
+`PrimeiroAcesso_ContaComAceiteVigente_ValidacaoInformaEAtivaSemAceiteSemDuplicar` (contagem de
+aceites continua 1, Meio = Login, login sem pendência) e
+`PrimeiroAcesso_ContaComAceiteVigente_VersaoEnviadaNaoDuplica`; o caso sem aceite ganhou a
+afirmação `aceiteVigente = false`.
+
+**Validação automatizada (03/11/2026, ambiente do autor):** `dotnet build` 0 avisos e 0 erros ·
+`dotnet test` = **196 aprovados** (194 + 2) · `vue-tsc -b` limpo · `npm run test` = **31 arquivos,
+153 casos** (151 + `PaginaPrimeiroAcesso.spec` 1: conta com aceite vigente; `PaginaMatriculasTurma.spec`
+1: filtro da aba Alunos) · `npm run build` ok · `npm run test:e2e` = **20 aprovados** (10 `chromium`
++ 10 `mobile`; E2E-M3 com 2). Suíte completa executada antes (194 / 151 / 18) e depois.
+Provas do E2E-M3: com o CSS anterior de Usuários o caso a 360 px reprova (`main.conteudo` com
+436 px para 360); com o de Atribuições a 1024 px o campo Buscar media 26 px (o teste exige ≥ 200).
+A conferência final apontou dois ajustes no próprio E2E-M3 e no CSS de Atribuições, aplicados: a
+espera `.p-progress-spinner` era vazia (o seletor não existe no DOM; passou a
+`.pi-spin.pi-spinner` mais a primeira linha da tabela) e o ponto de quebra de 1100 px deixava o
+Buscar com ~90 px logo acima dele (subiu para 1280 px, com medição a 1200 px no teste).
+
+**Testes manuais (perfil `https` + `npm run dev`, Admin; celular a 360 × 640 e Responsive a
+1024 px), executados pelo autor em 03/11/2026:** T1 ✔ `/termo` com a sarça verde; Voltar devolve à
+tela anterior e, na abertura direta, ao Painel · T2 ✔ Painel, Usuários, Atribuições e `/termo` sem
+rolagem lateral a 360 px (a tabela rola dentro do cartão); a 1024 px o Buscar largo e os dois botões
+dos filtros inteiros numa linha própria · T3 ✔ avisos do Resumo do dia e do histórico de presenças
+sem código de requisito · T4 ✔ aba Alunos abre em "Matrículas ativas"; "Todas as matrículas" mostra
+a inativa e a busca por nome filtra · T5 ✔ Pessoas, Usuários e Atribuições abrem em Ativo · T6 ✔
+redefinição de acesso em conta com aceite vigente: termo sem a caixa, aviso "Você já aceitou…",
+senha definida e a coluna Termo de Usuários com a mesma data de aceite (nenhum registro novo) ·
+T7 ✔ primeiro acesso de conta nova: caixa obrigatória, botão desabilitado até marcar; conta criada
+com senha manual continua caindo no gate do termo (RNF 2.5).
+
+**Prints (`docs/evidencias/`, 12 arquivos):** `UI-termo-sarca-verde.png`,
+`RNF-responsividade-painel-gestao-360.png`, `RNF-responsividade-atribuicoes-360.png`,
+`RNF-responsividade-termo-360.png`, `RNF-responsividade-atribuicoes-1024.png`,
+`UI-avisos-sem-codigo.png`, `RF27-alunos-filtro.png`, `UI-filtros-padrao-ativos.png`,
+`RF40-redefinicao-sem-novo-aceite.png`, `RF40-redefinicao-aceite-mantido.png`,
+`RF40-primeiro-acesso-caixa.png`, `RNF-2.5-gate-termo-conta-com-senha.png`.
+
+**Anotado no registro do projeto:** decisões da Entrega G e trabalhos futuros (exclusão de pessoa
+por anonimização, exclusão da igreja como procedimento, menu lateral retrátil no desktop).
