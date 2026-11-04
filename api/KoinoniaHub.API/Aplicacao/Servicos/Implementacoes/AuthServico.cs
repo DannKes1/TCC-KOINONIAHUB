@@ -139,12 +139,15 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             return new PrimeiroAcessoValidarRespostaDto
             {
                 Email = usuario.Email,
-                NomePessoa = usuario.Pessoa?.Nome
+                NomePessoa = usuario.Pessoa?.Nome,
+                AceiteVigente = await _aceiteTermoServico.PossuiAceiteVigenteAsync(usuario.Id)
             };
         }
 
         // Consome o convite: a própria pessoa define a senha, o hash BCrypt é
         // gravado, o aceite do termo é registrado e o token é invalidado (uso único).
+        // Entrega G: conta que já aceitou a versão vigente (redefinição de acesso, CSU20)
+        // não precisa aceitar de novo e não ganha um segundo registro de aceite.
         public async Task<PrimeiroAcessoValidarRespostaDto> AtivarPrimeiroAcessoAsync(PrimeiroAcessoAtivarRequisicaoDto dto, string? ipOrigem)
         {
             var usuario = await BuscarPorTokenAsync(dto.Token);
@@ -156,14 +159,18 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             // RNF 40.5 / 42.1: sem o aceite da versão vigente, o convite não é consumido.
             // Montar valida a versão antes de qualquer alteração; Meio = PrimeiroAcesso (42.5).
-            var aceite = _aceiteTermoServico.Montar(
-                usuario.IgrejaId, dto.AceiteTermoVersao, MeioAceiteTermo.PrimeiroAcesso, ipOrigem, usuarioId: usuario.Id);
+            var aceiteVigente = await _aceiteTermoServico.PossuiAceiteVigenteAsync(usuario.Id);
+            var aceite = aceiteVigente
+                ? null
+                : _aceiteTermoServico.Montar(
+                    usuario.IgrejaId, dto.AceiteTermoVersao, MeioAceiteTermo.PrimeiroAcesso, ipOrigem, usuarioId: usuario.Id);
 
             usuario.SenhaHash = BCrypt.Net.BCrypt.HashPassword(dto.NovaSenha.Trim());
             usuario.ConviteTokenHash = null;
             usuario.ConviteExpiraEm = null;
 
-            _db.AceitesTermo.Add(aceite);
+            if (aceite is not null)
+                _db.AceitesTermo.Add(aceite);
 
             // Senha, descarte do convite e aceite no mesmo SaveChanges (mesma transação).
             await _db.SaveChangesAsync();
@@ -171,7 +178,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             return new PrimeiroAcessoValidarRespostaDto
             {
                 Email = usuario.Email,
-                NomePessoa = usuario.Pessoa?.Nome
+                NomePessoa = usuario.Pessoa?.Nome,
+                AceiteVigente = true
             };
         }
 
