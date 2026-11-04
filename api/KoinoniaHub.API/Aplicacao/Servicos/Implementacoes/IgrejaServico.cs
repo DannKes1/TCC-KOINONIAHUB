@@ -1,4 +1,5 @@
 ﻿using KoinoniaHub.API.Aplicacao.DTOs.Requisicoes;
+using KoinoniaHub.API.Aplicacao.Regras;
 using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
 using KoinoniaHub.API.Dominio.Entidades;
@@ -23,7 +24,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 Endereco = dto.Endereco,
                 Cidade = dto.Cidade,
                 Estado = dto.Estado,
-                CEP = dto.CEP,
+                CEP = Cep.Normalizar(dto.CEP),
                 Telefone = dto.Telefone,
                 Email = dto.Email,
                 CNPJ = dto.CNPJ,

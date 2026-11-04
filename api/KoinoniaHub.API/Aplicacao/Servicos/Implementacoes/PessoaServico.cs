@@ -44,7 +44,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 Bairro = dto.Bairro,
                 Cidade = dto.Cidade,
                 Estado = dto.Estado,
-                CEP = dto.CEP,
+                CEP = Cep.Normalizar(dto.CEP),
                 Situacao = dto.Situacao,
                 DataInativacao = string.Equals(dto.Situacao, "Inativo", StringComparison.OrdinalIgnoreCase)
                     ? DateTime.UtcNow
@@ -173,7 +173,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             pessoa.Bairro = dto.Bairro;
             pessoa.Cidade = dto.Cidade;
             pessoa.Estado = dto.Estado;
-            pessoa.CEP = dto.CEP;
+            pessoa.CEP = Cep.Normalizar(dto.CEP);
             pessoa.Situacao = dto.Situacao;
 
             var ficaInativa = string.Equals(pessoa.Situacao, "Inativo", StringComparison.OrdinalIgnoreCase);
@@ -274,7 +274,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             pessoa.Bairro = dto.Bairro;
             pessoa.Cidade = dto.Cidade;
             pessoa.Estado = dto.Estado;
-            pessoa.CEP = dto.CEP;
+            pessoa.CEP = Cep.Normalizar(dto.CEP);
 
             await _repositorio.AtualizarAsync(pessoa);
             return true;

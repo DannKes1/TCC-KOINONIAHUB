@@ -8,20 +8,20 @@ namespace KoinoniaHub.API.Aplicacao.DTOs.Requisicoes
     public class IgrejaAtualizarRequisicaoDto
     {
         [Required(ErrorMessage = "O nome da igreja é obrigatório.")]
-        [StringLength(200)]
+        [StringLength(200, ErrorMessage = "O campo Nome deve ter no máximo 200 caracteres.")]
         public string Nome { get; set; } = string.Empty;
 
-        [StringLength(100)]
+        [StringLength(100, ErrorMessage = "O campo Cidade deve ter no máximo 100 caracteres.")]
         public string? Cidade { get; set; }
 
         [StringLength(2, ErrorMessage = "Informe a UF com 2 letras.")]
         public string? Estado { get; set; }
 
-        [EmailAddress(ErrorMessage = "E-mail em formato inválido.")]
-        [StringLength(100)]
+        [EmailAddress(ErrorMessage = "Informe um e-mail válido.")]
+        [StringLength(100, ErrorMessage = "O campo E-mail deve ter no máximo 100 caracteres.")]
         public string? Email { get; set; }
 
-        [StringLength(20)]
+        [StringLength(20, ErrorMessage = "O campo Telefone deve ter no máximo 20 caracteres.")]
         public string? Telefone { get; set; }
     }
 }

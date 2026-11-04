@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using KoinoniaHub.API.Aplicacao.Regras;
 using System.Net.Mail;
 using System.Text;
 using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
@@ -185,7 +186,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                     Bairro = Limitar(Valor(idxBairro), 100),
                     Cidade = Limitar(Valor(idxCidade), 100),
                     Estado = Limitar(Valor(idxEstado), 2),
-                    CEP = Limitar(Valor(idxCep), 10),
+                    CEP = Limitar(Cep.Normalizar(Valor(idxCep)) ?? "", 10),
                     Situacao = "Ativo"
                 };
 

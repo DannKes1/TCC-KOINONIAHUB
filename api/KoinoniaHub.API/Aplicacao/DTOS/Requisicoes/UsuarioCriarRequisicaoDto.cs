@@ -4,7 +4,7 @@ namespace KoinoniaHub.API.Aplicacao.DTOs.Requisicoes
 {
     public class UsuarioCriarRequisicaoDto
     {
-        [Required]
+        [Required(ErrorMessage = "O campo Pessoa é obrigatório.")]
         [Range(1, int.MaxValue, ErrorMessage = "Informe a pessoa.")]
         public int PessoaId { get; set; }
 

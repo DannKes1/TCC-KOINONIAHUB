@@ -11,8 +11,8 @@ namespace KoinoniaHub.API.Aplicacao.DTOs.Requisicoes
 
         // Corretiva G2 (RF14): e-mail de acesso. Ausente, vazio ou igual ao atual = sem
         // alteração (vazio vira nulo antes do [EmailAddress], como em Meus Dados).
-        [EmailAddress]
-        [StringLength(100)]
+        [EmailAddress(ErrorMessage = "Informe um e-mail válido.")]
+        [StringLength(100, ErrorMessage = "O campo E-mail deve ter no máximo 100 caracteres.")]
         public string? Email
         {
             get => _email;
