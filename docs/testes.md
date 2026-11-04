@@ -2240,3 +2240,104 @@ da API aparece no topo da página, atrás do diálogo, e fica até recarregar
 
 **Anotado no registro do projeto:** regra do e-mail único, decisões e o que explicar na banca;
 os quatro textos da monografia na lista de correções do .docx.
+
+## Corretiva G4 — padrão único de validação em todo o sistema (04/11/2026)
+
+**Escopo.** Última corretiva antes do congelamento do código para a avaliação de usabilidade.
+(1) Toda mensagem de validação dos 22 DTOs de requisição da API em português (97 atributos
+`Required`, `StringLength`, `EmailAddress` e `Range` sem `ErrorMessage` recebiam a mensagem
+padrão do .NET em inglês), no padrão "O campo {nome} é obrigatório." / "…deve ter no máximo {N}
+caracteres." / "Informe um e-mail válido." / "…deve estar entre {min} e {max}.", com o nome como
+o usuário vê; (2) `maxlength` igual ao DTO em todos os campos de texto dos formulários (Pessoas,
+Usuários, Meus Dados, Turmas, Matérias, Aulas, Matrículas, Parentescos e Cadastro Inicial;
+Igreja já tinha); (3) os nove diálogos restantes (Turmas, Matérias, Atribuições ×2, Aulas,
+Matrículas, Parentescos, Importar CSV) e os formulários de Igreja e Meus Dados no padrão da G3:
+instância própria de `useAsync` para o salvar, aviso de regra no topo do diálogo, `FieldError` em
+todos os campos, validação local junto ao campo (nenhum `toastWarn` de validação; toast só para
+sucesso), limpeza ao fechar ou alterar; Pessoas e Usuários receberam a mesma migração das
+validações locais. Nenhuma rota, DTO de resposta, regra de negócio ou texto da monografia mudou.
+Fora do escopo, por decisão do autor: o aviso "Complete a chamada antes de consolidar…"
+(confirmação, continua em toast), a linha "Corrija os campos destacados." de Meus Dados
+(mantida, no topo do formulário) e as mensagens de model binding (JSON malformado), que não vêm
+de atributo. Blocos de commit: api · testes · front · specs · docs.
+
+**Validação automatizada (04/11/2026, ambiente do autor):** `dotnet build` 0 avisos e 0 erros ·
+`dotnet test` = **209 aprovados** (208 + 1: `RF4_MeusDadosTests`, CEP com 60 caracteres →
+`errors.CEP[0]` = "O campo CEP deve ter no máximo 10 caracteres.") · grep nos DTOs por atributo
+sem `ErrorMessage` = 0 · saída detalhada do `dotnet test` sem "The field" nem "field is
+required" = 0 · `vue-tsc -b` limpo · `npm run test` = **36 arquivos, 179 casos** (163 + 16:
+specs novos de Turmas (2), Importar CSV (2) e Igreja (2); +2 Matérias, +2 Atribuições, +1 Aulas,
++1 Matrículas, +2 Pessoas, +1 Meus Dados, +1 Usuários; cada diálogo com um caso de erro de
+regra dentro do diálogo e nada no topo da página) · `npm run build` ok · `npm run test:e2e` =
+**20 aprovados** (10 `chromium` + 10 `mobile`; E2E-04 e E2E-07 inalterados). Suíte completa
+executada antes (208 / 163 / 20) e depois.
+
+**Testes manuais (perfil `https` + `npm run dev`, Admin; celular a 360 × 640), executados pelo
+autor em 04/11/2026:** T1 ✔ PUT de Meus Dados com CEP de 60 caracteres devolve em `errors.CEP` "O
+campo CEP deve ter no máximo 10 caracteres."; o campo da tela limita o tamanho · T2 ✔ Nova Turma
+sem nome: erro junto ao campo, sem toast; nome repetido: aviso no topo do diálogo, nada atrás,
+some ao digitar · T3 ✔ Nova Matéria sem nome: erro junto ao campo; Nova aula vazia: erros em
+Data, Matéria e Professor · T4 ✔ Nova Atribuição sem pessoa: erro junto ao campo; pessoa já
+atribuída: aviso no topo do diálogo; Matricular sem pessoa: erro junto ao campo · T5 ✔
+Parentescos: Parente e Relacionamento obrigatórios junto aos campos; vínculo repetido: aviso no
+topo do diálogo, nada no topo da página · T6 ✔ Importar CSV com erro da API: aviso no topo do
+diálogo, acima das instruções; importação só com linhas ignoradas: só o relatório, sem toast ·
+T7 ✔ Igreja sem nome: erro junto ao campo; Meus Dados com UF "ROO": erro junto ao campo e
+"Corrija os campos destacados." no topo do formulário · T8 ✔ Novo usuário vazio: erros em
+Pessoa e E-mail; a própria conta como Inativo: "Você não pode desativar o seu próprio usuário."
+junto ao Status; a 360 px o aviso de erro cabe no diálogo. Na execução do T1 o autor registrou
+que o CEP é aceito sem formato (`UI-cep-sem-formato.png`), tratado no complemento G4b.
+
+**Prints (`docs/evidencias/`, 16 arquivos):** `RNF-14.2-mensagem-portugues.png`,
+`UI-g4-turma-campo.png`, `UI-g4-turma-erro-no-dialogo.png`, `UI-g4-materia-campo.png`,
+`UI-g4-aula-campos.png`, `UI-g4-atribuicao-erro.png`, `UI-g4-matricula-campo.png`,
+`UI-g4-parentesco-campos.png`, `UI-g4-parentesco-erro.png`, `UI-g4-importacao-erro-topo.png`,
+`UI-g4-igreja-nome.png`, `UI-g4-meus-dados-uf.png`, `UI-g4-usuario-campos.png`,
+`UI-g4-usuario-proprio-inativo.png`, `UI-g4-dialogo-erro-360.png`, `UI-cep-sem-formato.png`.
+
+**Anotado no registro do projeto:** decisões por página e o que explicar na banca. O código
+congela depois do complemento G4b.
+
+## Corretiva G4b — CEP com formato e textos em linguagem de usuário (04/11/2026)
+
+**Escopo.** Complemento da G4, no mesmo lote. (1) CEP no formato 00000-000: o campo de CEP de
+Pessoas e Meus Dados passou a ter a máscara `99999-999` (`InputMask` do PrimeVue, sem
+dependência nova; Igreja e Cadastro Inicial não têm o campo); CEP incompleto é barrado junto ao
+campo com "Informe o CEP no formato 00000-000."; na API, `[RegularExpression]` nos DTOs com CEP
+aceita 8 dígitos com ou sem hífen, com a mesma mensagem, vazio aceito onde o campo é opcional, e
+a gravação é sempre 00000-000 (cadastro, edição, Meus Dados, cadastro inicial e importação). (2)
+Textos visíveis sem termos técnicos: "API" e "backend" trocados por linguagem de usuário
+(conexão, erro do servidor, tipo da turma, data fim da atribuição). (3) Travessões retirados de
+todos os textos visíveis do front (títulos, rodapé, relatório impresso, aviso de conta em
+Atribuições, valores vazios). Mantido o do texto do Termo de Uso e Sigilo, coberto pelo hash dos
+aceites já registrados (RNF 42.7).
+
+**Defeito corrigido no teste manual.** A primeira versão formatava o CEP com um `watch`; em Meus
+Dados o autor digitou "7690AAAAA" e as letras ficaram na tela (`UI-g4b-cep-incompleto.png`),
+porque o valor formatado coincidia com o anterior e o campo não redesenhava. Com o `InputMask`
+nas duas telas, letras não entram; o spec de Meus Dados repete o caso "7690AAAAA".
+
+**Validação automatizada (04/11/2026, ambiente do autor):** `dotnet build` 0 avisos e 0 erros ·
+`dotnet test` = **211 aprovados** (209 + 2: `RF4_MeusDadosTests`, CEP "7777777777" → 400 com
+"Informe o CEP no formato 00000-000." em `errors.CEP`; "76900000" → 204 e gravado "76900-000") ·
+saída detalhada sem "The field" nem "field is required" = 0 · `vue-tsc -b` limpo · `npm run
+test` = **37 arquivos, 182 casos** (179 + `cep.spec` 2, novo; `PaginaMeusDados.spec` 1) · `npm
+run build` ok · `npm run test:e2e` = **20 aprovados** (10 `chromium` + 10 `mobile`). Suíte
+completa executada antes (209 / 179 / 20) e depois.
+
+**Testes manuais (perfil `https` + `npm run dev`, Admin), executados pelo autor em
+04/11/2026:** T1 ✔ CEP com a máscara 00000-000 em Pessoas e em Meus Dados · T2 ✔ CEP incompleto
+barrado junto ao campo, sem toast; em Meus Dados as letras entravam no campo na primeira versão,
+corrigido com o `InputMask` · T3 ✔ PUT de Meus Dados com CEP "7777777777" devolve "Informe o CEP
+no formato 00000-000." em `errors.CEP` · T4 ✔ dica de Nova Turma "Se deixar vazio, o tipo será
+EBD.", aviso da data fim em Editar atribuição e tag "Conta com perfil Usuário: não acessa a
+turma" na lista de Atribuições · T5 ✔ títulos de Aulas, Matérias, Matrículas, Chamada e
+Presenças, rodapé e histórico do painel sem travessão.
+
+**Prints (`docs/evidencias/`, 8 arquivos):** `UI-g4b-cep-mascara.png`,
+`UI-g4b-cep-mascara-meus-dados.png`, `UI-g4b-cep-incompleto.png`, `RNF-g4b-cep-api.png`,
+`UI-g4b-textos.png`, `UI-g4b-atribuicoes-lista.png`, `UI-g4b-atribuicao-data-fim.png`,
+`UI-g4b-titulos.png`.
+
+**Anotado no registro do projeto:** a regra do CEP, a troca do `watch` pelo `InputMask` e o
+motivo de manter o texto do termo. Código congelado a partir deste lote até o fim da avaliação.
