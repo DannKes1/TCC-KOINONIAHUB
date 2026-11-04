@@ -77,7 +77,10 @@ const dialogEdicaoAberto = ref(false);
 const editandoId = ref<number | null>(null);
 
 const filtroFuncao = ref<string | null>(null);
-const filtroAtivo = ref<string | null>(null);
+// Entrega G: a lista abre com as atribuições ativas (parâmetro da API); "Todos" é
+// escolha explícita. Limpar volta a este padrão.
+const FILTRO_ATIVO_PADRAO = "true";
+const filtroAtivo = ref<string | null>(FILTRO_ATIVO_PADRAO);
 const busca = ref("");
 
 /** Busca local por nome da pessoa ou função (os demais filtros são aplicados pela API). */
@@ -323,8 +326,9 @@ function confirmarEncerramento(item: AtribuicaoVM) {
 }
 
 function limparFiltros() {
+  busca.value = "";
   filtroFuncao.value = null;
-  filtroAtivo.value = null;
+  filtroAtivo.value = FILTRO_ATIVO_PADRAO;
   carregarAtribuicoes();
 }
 
@@ -394,21 +398,25 @@ onMounted(carregarTela);
         />
       </div>
 
-      <Button
-        label="Aplicar filtros"
-        icon="pi pi-filter"
-        severity="secondary"
-        :loading="carregando"
-        @click="carregarAtribuicoes"
-      />
+      <div class="atribuicoes-filtros-acoes">
+        <Button
+          label="Aplicar filtros"
+          icon="pi pi-filter"
+          severity="secondary"
+          :loading="carregando"
+          data-testid="atribuicoes-aplicar-filtros"
+          @click="carregarAtribuicoes"
+        />
 
-      <Button
-        label="Limpar"
-        icon="pi pi-times"
-        severity="secondary"
-        :disabled="carregando"
-        @click="limparFiltros"
-      />
+        <Button
+          label="Limpar"
+          icon="pi pi-times"
+          severity="secondary"
+          :disabled="carregando"
+          data-testid="atribuicoes-limpar-filtros"
+          @click="limparFiltros"
+        />
+      </div>
     </div>
 
     <LoadingOverlay :loading="carregando" texto="Carregando atribuições...">
@@ -675,12 +683,36 @@ onMounted(carregarTela);
 <style scoped>
 /* Filtros (Buscar · Função · Status · botões) e linhas dos diálogos. Abaixo de 576 px os
    campos empilham numa coluna: a 360 px as colunas fixas estouravam a largura do diálogo
-   ("Status inicial" cortado) e a dos filtros (Dropdown "Todas" cortado na borda). */
+   ("Status inicial" cortado) e a dos filtros (Dropdown "Todas" cortado na borda).
+   Entrega G: até 1280 px os botões Aplicar filtros e Limpar vão para uma linha própria
+   (ao lado dos campos, a coluna `auto` dos botões cresce antes da faixa `fr` da busca:
+   a 1024 px o Buscar ficava com 26 px e, com o ponto de quebra em 1100 px, com ~90 px
+   logo acima dele; a partir de 1280 px a busca tem mais de 250 px). */
 .atribuicoes-filtros {
   display: grid;
-  grid-template-columns: 1.4fr 220px 180px auto auto;
+  grid-template-columns: minmax(0, 1.4fr) 220px 180px auto;
   gap: 10px;
   align-items: end;
+}
+
+.atribuicoes-filtros > * {
+  min-width: 0;
+}
+
+.atribuicoes-filtros-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 1279.98px) {
+  .atribuicoes-filtros {
+    grid-template-columns: minmax(0, 1fr) 200px 160px;
+  }
+
+  .atribuicoes-filtros-acoes {
+    grid-column: 1 / -1;
+  }
 }
 
 .atribuicao-form-linha {

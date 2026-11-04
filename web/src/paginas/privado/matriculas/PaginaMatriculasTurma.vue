@@ -70,8 +70,36 @@ const turma = ref<DepartamentoVM | null>(null);
 const alunos = ref<AlunoDaClasseVM[]>([]);
 const pessoas = ref<PessoaVM[]>([]);
 
+// Entrega G: filtro no padrão das outras abas, só no cliente — busca por nome e
+// situação da matrícula (Ativas por padrão; Inativas; Todas).
+type FiltroMatricula = "ativas" | "inativas" | "todas";
+const OPCOES_FILTRO_MATRICULA: { label: string; value: FiltroMatricula }[] = [
+  { label: "Matrículas ativas", value: "ativas" },
+  { label: "Matrículas inativas", value: "inativas" },
+  { label: "Todas as matrículas", value: "todas" },
+];
+const busca = ref("");
+const filtroMatricula = ref<FiltroMatricula>("ativas");
+
+const alunosFiltrados = computed(() => {
+  const termo = busca.value.trim().toLowerCase();
+  return alunos.value.filter((a) => {
+    if (filtroMatricula.value === "ativas" && !a.matriculaAtiva) return false;
+    if (filtroMatricula.value === "inativas" && a.matriculaAtiva) return false;
+    return !termo || a.nome.toLowerCase().includes(termo);
+  });
+});
+
 const alunosOrdenados = computed(() =>
-  [...alunos.value].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+  [...alunosFiltrados.value].sort((a, b) =>
+    a.nome.localeCompare(b.nome, "pt-BR"),
+  ),
+);
+
+const mensagemListaVazia = computed(() =>
+  alunos.value.length === 0
+    ? "Nenhum aluno matriculado nesta turma."
+    : "Nenhum aluno encontrado para os filtros aplicados.",
 );
 const {
   visiveis: alunosVisiveis,
@@ -251,6 +279,25 @@ onMounted(carregarTudo);
 
     <InlineMessage :texto="erro" tipo="erro" />
 
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+      <InputText
+        v-model="busca"
+        placeholder="Buscar por nome do aluno..."
+        aria-label="Buscar por nome do aluno"
+        style="flex: 1 1 240px; min-width: 0"
+        data-testid="alunos-filtro-busca"
+      />
+      <Dropdown
+        v-model="filtroMatricula"
+        :options="OPCOES_FILTRO_MATRICULA"
+        optionLabel="label"
+        optionValue="value"
+        aria-label="Situação da matrícula"
+        style="flex: 1 1 200px; min-width: 0"
+        data-testid="alunos-filtro-situacao"
+      />
+    </div>
+
     <LoadingOverlay :loading="carregando" texto="Carregando matrículas...">
       <!-- Celular: cartões (Etapa 6.4-C). -->
       <div v-if="compacta" class="lista-cartoes" data-testid="alunos-cartoes">
@@ -291,7 +338,7 @@ onMounted(carregarTudo);
         </CartaoItem>
 
         <p v-if="!carregando && alunosVisiveis.length === 0" class="lista-vazia">
-          Nenhum aluno matriculado nesta turma.
+          {{ mensagemListaVazia }}
         </p>
 
         <Button
@@ -308,7 +355,7 @@ onMounted(carregarTudo);
       <!-- Desktop: tabela de sempre. -->
       <DataTable
         v-else
-        :value="alunos"
+        :value="alunosFiltrados"
         paginator
         :rows="10"
         rowHover
@@ -317,6 +364,9 @@ onMounted(carregarTudo);
         dataKey="matriculaId"
         responsiveLayout="scroll"
       >
+        <template #empty>
+          <div style="padding: 14px; opacity: 0.7">{{ mensagemListaVazia }}</div>
+        </template>
         <Column field="nome" header="Aluno" sortable />
         <Column field="statusPessoa" header="Status da Pessoa" />
 

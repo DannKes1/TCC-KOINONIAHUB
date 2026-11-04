@@ -13,7 +13,7 @@ import {
 // exibe o termo com o aviso de aceite obrigatório enquanto a caixa está desmarcada e só
 // conclui com senha confirmada e termo aceito.
 vi.mock("../../aplicacao/servicos/authServico", () => ({
-  validarPrimeiroAcessoApi: vi.fn(async () => ({ email: "maria@teste.com", nomePessoa: "Maria Souza" })),
+  validarPrimeiroAcessoApi: vi.fn(async () => ({ email: "maria@teste.com", nomePessoa: "Maria Souza", aceiteVigente: false })),
   ativarPrimeiroAcessoApi: vi.fn(async () => ({})),
 }));
 
@@ -103,6 +103,36 @@ describe("PaginaPrimeiroAcesso — convite, termo e senha (RF40, RNF 42.1)", () 
       NovaSenha: "segredo1",
       AceiteTermoVersao: "1.0",
     });
+    expect(wrapper.find('[data-testid="primeiro-acesso-sucesso"]').exists()).toBe(true);
+
+    wrapper.unmount();
+  });
+
+  // Entrega G (CSU20): conta que já aceitou a versão vigente redefine a senha sem
+  // a caixa; o termo continua visível, com o aviso, e a ativação vai sem a versão.
+  it("conta com aceite vigente: sem caixa, com o aviso, conclui sem aceite e envia sem a versão do termo", async () => {
+    vi.mocked(validarPrimeiroAcessoApi).mockResolvedValueOnce({
+      email: "maria@teste.com",
+      nomePessoa: "Maria Souza",
+      aceiteVigente: true,
+    });
+    const wrapper = await montar("?token=abc");
+
+    expect(wrapper.text()).toContain("Definir senha de acesso");
+    expect(wrapper.find('[data-testid="termo-texto"]').exists()).toBe(true);
+    expect(wrapper.find('input[type="checkbox"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="termo-aceite-dispensado"]').text()).toContain(
+      "Você já aceitou a versão vigente deste termo.",
+    );
+    expect(wrapper.find('[data-testid="termo-aceite-obrigatorio"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="primeiro-acesso-concluir"]').attributes("disabled")).toBeUndefined();
+
+    await wrapper.find("input#primeiro-acesso-senha").setValue("segredo1");
+    await wrapper.find("input#primeiro-acesso-confirmar").setValue("segredo1");
+    await wrapper.find('[data-testid="primeiro-acesso-concluir"]').trigger("click");
+    await flushPromises();
+
+    expect(ativarPrimeiroAcessoApi).toHaveBeenCalledWith({ Token: "abc", NovaSenha: "segredo1" });
     expect(wrapper.find('[data-testid="primeiro-acesso-sucesso"]').exists()).toBe(true);
 
     wrapper.unmount();

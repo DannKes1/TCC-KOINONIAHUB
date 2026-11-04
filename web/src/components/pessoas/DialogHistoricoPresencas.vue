@@ -157,7 +157,7 @@ function severityPresenca(presente: boolean) {
       </div>
 
       <InlineMessage
-        texto="Os totais consideram somente aulas Consolidadas (CSU07). Registros de aulas Em aberto ou Não realizadas aparecem na lista, mas não entram na frequência."
+        texto="Os totais consideram somente aulas Consolidadas. Registros de aulas Em aberto ou Não realizadas aparecem na lista, mas não entram na frequência."
         tipo="info"
       />
 

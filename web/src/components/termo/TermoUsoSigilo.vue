@@ -31,6 +31,9 @@ const props = withDefaults(
     // obrigatório enquanto a caixa estiver desmarcada (CSU01 FA2, CSU22 FA2). As
     // telas que embutem o termo ligam esta prop; a tela /termo tem aviso próprio.
     avisoAceite?: boolean;
+    // Entrega G: a conta já aceitou a versão vigente (redefinição de acesso, CSU20).
+    // O texto continua visível para consulta, sem a caixa; o aceite conta como dado.
+    aceiteDispensado?: boolean;
   }>(),
   {
     igreja: undefined,
@@ -39,6 +42,7 @@ const props = withDefaults(
     mostrarBotao: true,
     salvando: false,
     avisoAceite: false,
+    aceiteDispensado: false,
   },
 );
 
@@ -82,7 +86,10 @@ const vigenciaFormatada = computed(() =>
 );
 
 const podeAceitar = computed(
-  () => Boolean(props.termo) && aceito.value && !props.salvando,
+  () =>
+    Boolean(props.termo) &&
+    (aceito.value || props.aceiteDispensado) &&
+    !props.salvando,
 );
 
 function aceitar() {
@@ -133,7 +140,16 @@ function aceitar() {
         termo.texto
       }}</div>
 
-      <div class="termo-aceite">
+      <p
+        v-if="aceiteDispensado"
+        class="termo-dispensado"
+        data-testid="termo-aceite-dispensado"
+      >
+        <i class="pi pi-check-circle" aria-hidden="true"></i>
+        Você já aceitou a versão vigente deste termo.
+      </p>
+
+      <div v-else class="termo-aceite">
         <Checkbox
           v-model="aceito"
           binary
@@ -146,7 +162,7 @@ function aceitar() {
       </div>
 
       <small
-        v-if="avisoAceite && !aceito"
+        v-if="avisoAceite && !aceito && !aceiteDispensado"
         class="termo-aviso"
         data-testid="termo-aceite-obrigatorio"
       >
@@ -267,5 +283,19 @@ function aceitar() {
   margin-top: -6px;
   font-size: 12.5px;
   color: var(--ipb-alerta, #8a5b00);
+}
+
+.termo-dispensado {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--ipb-verde-bg, #edf5f0);
+  border: 1px solid #cfe3d6;
+  color: var(--ipb-verde-escuro, #1a3b25);
+  font-size: 14px;
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 </style>

@@ -46,7 +46,8 @@ const pessoas = ref<PessoaVM[]>([]);
 
 const busca = ref("");
 const filtroPerfil = ref<string | null>(null);
-const filtroAtivo = ref<string | null>(null);
+// Entrega G: a lista abre com as contas ativas; "Todos" é escolha explícita (limpar).
+const filtroAtivo = ref<string | null>("true");
 
 const dialogCriacaoAberto = ref(false);
 const dialogEdicaoAberto = ref(false);
@@ -401,14 +402,7 @@ onMounted(carregarDados);
       tipo="info"
     />
 
-    <div
-      style="
-        display: grid;
-        grid-template-columns: 1.6fr 220px 180px;
-        gap: 10px;
-        align-items: end;
-      "
-    >
+    <div class="usuarios-filtros">
       <div style="display: flex; flex-direction: column; gap: 6px">
         <label for="usuario-filtro-busca">Buscar</label>
         <InputText
@@ -814,3 +808,29 @@ onMounted(carregarDados);
     </Dialog>
   </div>
 </template>
+
+<style scoped>
+/* Entrega G: filtros (Buscar · Perfil · Status). As colunas fixas estouravam os 360 px
+   e alargavam a página; abaixo de 576 px os campos empilham numa coluna. */
+.usuarios-filtros {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) 220px 180px;
+  gap: 10px;
+  align-items: end;
+}
+
+.usuarios-filtros > * {
+  min-width: 0;
+}
+
+@media (max-width: 575.98px) {
+  .usuarios-filtros {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .usuarios-filtros :deep(.p-inputtext),
+  .usuarios-filtros :deep(.p-select) {
+    width: 100%;
+  }
+}
+</style>

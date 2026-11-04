@@ -862,7 +862,7 @@ onMounted(async () => {
               </div>
 
               <InlineMessage
-                texto="Os totais consideram apenas aulas Consolidadas (RNF 38.4). Aulas Não realizadas e aulas em aberto já ocorridas são listadas separadamente."
+                texto="Os totais consideram apenas aulas Consolidadas. Aulas Não realizadas e aulas em aberto já ocorridas são listadas separadamente."
                 tipo="info"
               />
 

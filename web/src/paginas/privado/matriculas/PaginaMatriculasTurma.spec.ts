@@ -1,5 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import PrimeVue from "primevue/config";
+import Dropdown from "primevue/dropdown";
 import Tooltip from "primevue/tooltip";
 import { ref } from "vue";
 import { createMemoryHistory, createRouter } from "vue-router";
@@ -12,7 +13,8 @@ import { listarHistoricoPresencasDaPessoa } from "../../../aplicacao/servicos/pr
 // Etapa 6.4-C (RF20 / RF27–RF28): no celular a aba Alunos vira cartões — um por
 // matrícula, "Responsáveis" como ação principal, "Inativar matrícula" no ⋮ (só com
 // matrícula ativa) — e, dentro da Página da Turma, inativar avisa o cabeçalho para
-// recontar os alunos ativos (`turmaRecarregarResumo`).
+// recontar os alunos ativos (`turmaRecarregarResumo`). Entrega G: a aba abre com as
+// matrículas ativas; o filtro (busca por nome e situação) é só no cliente.
 vi.mock("../../../aplicacao/composables/usarTelaCompacta", () => ({
   usarTelaCompacta: () => ref(true),
 }));
@@ -49,6 +51,15 @@ vi.mock("../../../aplicacao/servicos/presencasPessoaServico", () => ({
   ]),
 }));
 
+// Troca a situação do filtro pelo próprio componente (o Select do PrimeVue não abre
+// a lista no jsdom).
+async function filtrarMatriculas(wrapper: ReturnType<typeof mount>, valor: string) {
+  const select = wrapper.findAllComponents(Dropdown).find((c) => c.attributes("data-testid") === "alunos-filtro-situacao");
+  expect(select).toBeDefined();
+  await select!.vm.$emit("update:modelValue", valor);
+  await flushPromises();
+}
+
 async function montar() {
   const recarregarResumo = vi.fn(async () => undefined);
   const router = createRouter({
@@ -71,14 +82,52 @@ async function montar() {
 }
 
 describe("PaginaMatriculasTurma — cartões no celular (6.4-C)", () => {
+  // O Dropdown (Select) do PrimeVue consulta matchMedia; o jsdom não o implementa.
+  beforeAll(() => {
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      writable: true,
+      value: () => ({
+        matches: false,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }),
+    });
+  });
+
   beforeEach(() => {
     requireConfirmacao.mockClear();
     vi.mocked(removerMatricula).mockClear();
     document.body.innerHTML = "";
   });
 
+  it("abre com as matrículas ativas; busca por nome e situação filtram no cliente (Entrega G)", async () => {
+    const { wrapper } = await montar();
+    const titulos = () => wrapper.findAll('[data-testid="aluno-cartao"]').map((c) => c.find(".cartao-item-titulo").text());
+
+    expect(titulos()).toEqual(["Ana", "Bia"]);
+
+    await filtrarMatriculas(wrapper, "inativas");
+    expect(titulos()).toEqual(["Caio"]);
+
+    await filtrarMatriculas(wrapper, "todas");
+    expect(titulos()).toEqual(["Ana", "Bia", "Caio"]);
+
+    await wrapper.find('[data-testid="alunos-filtro-busca"]').setValue("bi");
+    await flushPromises();
+    expect(titulos()).toEqual(["Bia"]);
+
+    await wrapper.find('[data-testid="alunos-filtro-busca"]').setValue("zzz");
+    await flushPromises();
+    expect(titulos()).toEqual([]);
+    expect(wrapper.text()).toContain("Nenhum aluno encontrado para os filtros aplicados.");
+
+    wrapper.unmount();
+  });
+
   it("um cartão por aluno, em ordem alfabética, com Responsáveis e o ⋮", async () => {
     const { wrapper } = await montar();
+    await filtrarMatriculas(wrapper, "todas");
 
     const cartoes = wrapper.findAll('[data-testid="aluno-cartao"]');
     expect(cartoes.map((c) => c.find(".cartao-item-titulo").text())).toEqual(["Ana", "Bia", "Caio"]);
@@ -96,6 +145,7 @@ describe("PaginaMatriculasTurma — cartões no celular (6.4-C)", () => {
 
   it("Histórico de presenças pelo ⋮ abre o diálogo e carrega pela pessoa do aluno (CSU14)", async () => {
     const { wrapper } = await montar();
+    await filtrarMatriculas(wrapper, "todas");
 
     // Matrícula inativa (Caio): só o histórico no ⋮, sem "Inativar matrícula".
     await wrapper.findAll('[data-testid="aluno-cartao"]')[2]!.get('[data-testid="menu-acoes"]').trigger("click");

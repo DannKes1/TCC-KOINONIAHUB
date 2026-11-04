@@ -4,8 +4,6 @@ import { useRoute, useRouter } from "vue-router";
 
 import Button from "primevue/button";
 
-import logoIPB2 from "../../assets/LOGOIPB2.png";
-
 import TermoUsoSigilo from "../../components/termo/TermoUsoSigilo.vue";
 import { usarAutenticacaoStore } from "../../aplicacao/armazenamentos/autenticacaoStore";
 import {
@@ -75,8 +73,14 @@ async function sair() {
   await router.push("/login");
 }
 
+// Entrega G: Voltar devolve à tela anterior do histórico; só cai no Painel quando
+// a página foi aberta direto (sem entrada anterior nesta sessão do navegador).
 function voltar() {
-  router.push(obterRedirectSeguro());
+  if (window.history.state?.back) {
+    router.back();
+    return;
+  }
+  router.push("/");
 }
 </script>
 
@@ -84,7 +88,8 @@ function voltar() {
   <div class="termo-pagina">
     <div class="termo-card">
       <div class="termo-marca">
-        <img :src="logoIPB2" alt="IPB" class="termo-logo" />
+        <!-- Entrega G: a sarça verde (a mesma da aba), não a versão branca do logo. -->
+        <img src="/sarca-192.png" alt="" class="termo-logo" />
         <div>
           <div class="termo-marca-titulo">KoinoniaHub</div>
           <div class="termo-marca-sub">
@@ -152,6 +157,8 @@ function voltar() {
 
 .termo-card {
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   max-width: 760px;
   background: var(--ipb-branco, #fff);
   border-radius: var(--radius-md, 10px);
@@ -210,6 +217,7 @@ function voltar() {
 
 .termo-acoes {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 10px;
 }

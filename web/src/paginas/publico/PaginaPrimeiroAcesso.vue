@@ -42,8 +42,15 @@ const termoCarregando = ref(false);
 const termoErro = ref("");
 const aceiteTermo = ref(false);
 
+// Entrega G: na redefinição de acesso (CSU20) a conta já tem o aceite vigente; a
+// validação do convite informa isso, a caixa some e a ativação não grava outro aceite.
+const aceiteVigente = ref(false);
+
 const podeConcluir = computed(
-  () => Boolean(termo.value) && aceiteTermo.value && !salvando.value,
+  () =>
+    Boolean(termo.value) &&
+    (aceiteVigente.value || aceiteTermo.value) &&
+    !salvando.value,
 );
 
 function extrairMensagem(e: any, padrao: string): string {
@@ -80,6 +87,7 @@ onMounted(async () => {
     const dados = await validarPrimeiroAcessoApi(token.value);
     email.value = dados.email;
     nomePessoa.value = dados.nomePessoa;
+    aceiteVigente.value = dados.aceiteVigente;
     conviteValido.value = true;
     await carregarTermo();
   } catch (e: any) {
@@ -98,7 +106,7 @@ function validarFormulario(): string {
     return "A senha deve ter no mínimo 6 caracteres.";
   if (novaSenha.value.trim() !== confirmarSenha.value.trim())
     return "A confirmação da senha não confere.";
-  if (!termo.value || !aceiteTermo.value)
+  if (!termo.value || (!aceiteVigente.value && !aceiteTermo.value))
     return "É necessário aceitar o Termo de Uso e Sigilo para concluir.";
   return "";
 }
@@ -117,7 +125,7 @@ async function definirSenha() {
     await ativarPrimeiroAcessoApi({
       Token: token.value,
       NovaSenha: novaSenha.value.trim(),
-      AceiteTermoVersao: termo.value!.versao,
+      ...(aceiteVigente.value ? {} : { AceiteTermoVersao: termo.value!.versao }),
     });
     concluido.value = true;
   } catch (e: any) {
@@ -154,9 +162,10 @@ function irParaLogin() {
     <div class="login-formulario-area">
       <div class="login-formulario-card">
         <div class="login-form-header">
-          <h2 class="login-form-titulo">Primeiro acesso</h2>
+          <h2 class="login-form-titulo">Definir senha de acesso</h2>
           <p class="login-form-subtitulo">
-            Defina a sua senha para começar a usar o KoinoniaHub.
+            Esta tela serve para o primeiro acesso e para a redefinição de senha,
+            sempre pelo link enviado pelo administrador.
           </p>
         </div>
 
@@ -201,8 +210,8 @@ function irParaLogin() {
         <div v-else class="login-campos">
           <p class="saudacao">
             Olá<strong>{{ nomePessoa ? `, ${nomePessoa}` : "" }}</strong
-            >! Seu acesso foi criado pelo administrador. Escolha uma senha
-            pessoal para concluir.
+            >! Este link foi gerado pelo administrador para você. Escolha uma
+            senha pessoal para concluir.
           </p>
 
           <div class="login-campo">
@@ -249,6 +258,7 @@ function irParaLogin() {
             :carregando="termoCarregando"
             :erro="termoErro"
             :mostrar-botao="false"
+            :aceite-dispensado="aceiteVigente"
             aviso-aceite
           />
 

@@ -66,7 +66,8 @@ const pessoaSelecionadaHistorico = ref<PessoaVM | null>(null);
 const editandoId = ref<number | null>(null);
 
 const busca = ref("");
-const filtroSituacao = ref<string | null>(null);
+// Entrega G: a lista abre com as pessoas ativas; "Todas" é escolha explícita (limpar).
+const filtroSituacao = ref<string | null>("Ativo");
 
 const opcoesSituacao = [
   { label: "Ativo", value: "Ativo" },

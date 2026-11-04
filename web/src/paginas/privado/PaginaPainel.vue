@@ -367,14 +367,7 @@ onMounted(carregarPainel);
       </div>
 
       <LoadingOverlay :loading="carregando" texto="Carregando painel...">
-        <div
-          style="
-            display: grid;
-            grid-template-columns: 1.2fr 1fr;
-            gap: 16px;
-            align-items: start;
-          "
-        >
+        <div class="painel-grade-tabelas" data-testid="painel-gestao-tabelas">
           <div class="card-tabela">
             <div class="card-tabela-titulo">Últimas aulas</div>
 
@@ -824,3 +817,25 @@ onMounted(carregarPainel);
     </template>
   </div>
 </template>
+
+<style scoped>
+/* Entrega G: as duas tabelas do painel de gestão lado a lado no desktop e uma
+   abaixo da outra até 768 px. minmax(0, …) deixa a coluna encolher abaixo da largura
+   da tabela, que então rola dentro do próprio cartão (nunca a página). */
+.painel-grade-tabelas {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.painel-grade-tabelas > .card-tabela {
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .painel-grade-tabelas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+</style>

@@ -45,14 +45,20 @@ export async function validarPrimeiroAcessoApi(token: string) {
     nomePessoa: (resposta.data?.NomePessoa ??
       resposta.data?.nomePessoa ??
       null) as string | null,
+    // Entrega G: a conta já aceitou a versão vigente do termo (redefinição de acesso,
+    // CSU20); a tela dispensa a caixa e a ativação segue sem novo aceite.
+    aceiteVigente: Boolean(
+      resposta.data?.AceiteVigente ?? resposta.data?.aceiteVigente ?? false,
+    ),
   };
 }
 
 export async function ativarPrimeiroAcessoApi(dto: {
   Token: string;
   NovaSenha: string;
-  // RNF 42.1: aceite do termo faz parte da ativação do primeiro acesso.
-  AceiteTermoVersao: string;
+  // RNF 42.1: aceite do termo faz parte da ativação do primeiro acesso. Omitido
+  // quando a validação do convite informou que a conta já tem o aceite vigente.
+  AceiteTermoVersao?: string;
 }) {
   const resposta = await clienteHttp.post("/api/auth/primeiro-acesso", dto);
   return resposta.data as { mensagem?: string; email?: string };
