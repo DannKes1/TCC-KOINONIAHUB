@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
@@ -18,12 +18,12 @@ import FieldError from "../../../components/ui/FieldError.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-import {
-  toastSuccess,
-  toastWarn,
-} from "../../../aplicacao/servicos/notificacoes";
+import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-import { firstFieldError } from "../../../aplicacao/servicos/apiError";
+import {
+  firstFieldError,
+  mensagemForaDosCampos,
+} from "../../../aplicacao/servicos/apiError";
 
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -41,7 +41,41 @@ const autenticacao = usarAutenticacaoStore();
 const router = useRouter();
 const confirm = useConfirm();
 
-const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
+const { carregando, erro, run, clearErrors } = useAsync();
+
+// Corretiva G4: o erro do salvar fica no próprio diálogo — junto ao campo quando a API
+// devolve o campo (ou quando a validação local aponta o campo), senão num aviso no topo
+// — e some ao fechar ou ao alterar um campo. A instância da página continua com o erro
+// da lista e do ativar/inativar.
+const {
+  carregando: salvando,
+  erro: erroDoDialogo,
+  fieldErrors: errosDoDialogo,
+  run: executarNoDialogo,
+  clearErrors: limparErrosDaApi,
+} = useAsync();
+
+// Validação local no próprio campo (chave = nome do campo no DTO).
+const errosLocais = reactive<Record<string, string>>({});
+
+function limparErrosDoDialogo() {
+  limparErrosDaApi();
+  for (const chave of Object.keys(errosLocais)) delete errosLocais[chave];
+}
+
+function erroDoCampo(campo: string, camel: string) {
+  return (
+    errosLocais[campo] ||
+    firstFieldError(errosDoDialogo.value, campo) ||
+    firstFieldError(errosDoDialogo.value, camel)
+  );
+}
+
+// Campos com FieldError no diálogo: um erro da API fora deles vai para o aviso.
+const CAMPOS_DO_DIALOGO = ["Nome", "Tipo", "Ativo"];
+const avisoDoDialogo = computed(() =>
+  mensagemForaDosCampos(erroDoDialogo.value, errosDoDialogo.value, CAMPOS_DO_DIALOGO),
+);
 
 const podeGerenciarTurma = computed(() => {
   const perfil = (autenticacao.perfil || "").trim().toLowerCase();
@@ -81,6 +115,11 @@ const formulario = reactive({
   tipo: "EBD",
   ativo: true,
 });
+
+watch(dialogAberto, (aberto) => {
+  if (!aberto) limparErrosDoDialogo();
+});
+watch(formulario, limparErrosDoDialogo);
 
 const menuAcoes = ref();
 const turmaMenuSelecionada = ref<DepartamentoVM | null>(null);
@@ -154,12 +193,14 @@ function limparFormulario() {
 
 function abrirNovo() {
   clearErrors();
+  limparErrosDoDialogo();
   limparFormulario();
   dialogAberto.value = true;
 }
 
 function abrirEdicao(dep: DepartamentoVM) {
   clearErrors();
+  limparErrosDoDialogo();
   editandoId.value = dep.id;
   formulario.nome = dep.nome ?? "";
   formulario.tipo = dep.tipo ?? "EBD";
@@ -173,11 +214,16 @@ async function carregarLista() {
   }, "Não foi possível carregar os departamentos.");
 }
 
-async function salvar() {
+function validarFormulario(): boolean {
+  limparErrosDoDialogo();
   if (!formulario.nome.trim()) {
-    toastWarn("Informe o nome do departamento/turma.");
-    return;
+    errosLocais.Nome = "Informe o nome do departamento/turma.";
   }
+  return Object.keys(errosLocais).length === 0;
+}
+
+async function salvar() {
+  if (!validarFormulario()) return;
 
   const payload = {
     Nome: formulario.nome.trim(),
@@ -185,7 +231,7 @@ async function salvar() {
     Ativo: Boolean(formulario.ativo),
   };
 
-  await run(async () => {
+  await executarNoDialogo(async () => {
     if (editandoId.value === null) {
       await criarDepartamento(payload);
       toastSuccess("Turma criada com sucesso.", "Criado");
@@ -355,24 +401,29 @@ onMounted(carregarLista);
     <Dialog
       v-model:visible="dialogAberto"
       modal
-      :closable="!carregando"
-      :dismissableMask="!carregando"
+      :closable="!salvando"
+      :dismissableMask="!salvando"
       header="Departamento / Turma"
       style="width: 520px; max-width: 92vw"
     >
       <div style="display: flex; flex-direction: column; gap: 10px">
+        <InlineMessage
+          :texto="avisoDoDialogo"
+          tipo="erro"
+          data-testid="turma-dialogo-erro"
+        />
+
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label for="departamento-nome">Nome</label>
           <InputText
             id="departamento-nome"
             v-model="formulario.nome"
             placeholder="Ex.: Adolescentes, Jovens, Adultos..."
+            maxlength="100"
           />
           <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Nome') ||
-              firstFieldError(fieldErrors, 'nome')
-            "
+            data-testid="turma-nome-erro"
+            :texto="erroDoCampo('Nome', 'nome')"
           />
         </div>
 
@@ -382,15 +433,11 @@ onMounted(carregarLista);
             id="departamento-tipo"
             v-model="formulario.tipo"
             placeholder="Ex.: EBD"
+            maxlength="50"
           />
-          <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Tipo') ||
-              firstFieldError(fieldErrors, 'tipo')
-            "
-          />
+          <FieldError :texto="erroDoCampo('Tipo', 'tipo')" />
           <small style="opacity: 0.7"
-            >Dica: se deixar vazio, a API tende a assumir "EBD".</small
+            >Se deixar vazio, o tipo será EBD.</small
           >
         </div>
 
@@ -404,25 +451,22 @@ onMounted(carregarLista);
           />
           <label for="depAtivo">Ativo</label>
         </div>
-        <FieldError
-          :texto="
-            firstFieldError(fieldErrors, 'Ativo') ||
-            firstFieldError(fieldErrors, 'ativo')
-          "
-        />
+        <FieldError :texto="erroDoCampo('Ativo', 'ativo')" />
       </div>
 
       <template #footer>
         <Button
           label="Cancelar"
           severity="secondary"
-          :disabled="carregando"
+          :disabled="salvando"
+          data-testid="turma-dialogo-cancelar"
           @click="dialogAberto = false"
         />
         <Button
           :label="editandoId === null ? 'Criar' : 'Salvar'"
           icon="pi pi-check"
-          :loading="carregando"
+          :loading="salvando"
+          data-testid="turma-dialogo-salvar"
           @click="salvar"
         />
       </template>

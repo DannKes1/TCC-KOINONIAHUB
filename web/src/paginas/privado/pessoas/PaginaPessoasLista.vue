@@ -7,13 +7,13 @@ import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
+// Corretiva G4b: máscara 00000-000 (InputMask) e validação do CEP.
+import { MENSAGEM_CEP, cepValido } from "../../../aplicacao/dominio/cep";
+import InputMask from "primevue/inputmask";
 
 import DialogImportarPessoas from "./DialogImportarPessoas.vue";
 
-import {
-  toastSuccess,
-  toastWarn,
-} from "../../../aplicacao/servicos/notificacoes";
+import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
 import {
   firstFieldError,
@@ -52,7 +52,7 @@ import Calendar from "primevue/calendar";
 import { useConfirm } from "primevue/useconfirm";
 
 const confirm = useConfirm();
-const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
+const { carregando, erro, run, clearErrors } = useAsync();
 
 // Corretiva G3: o erro do salvar fica no próprio diálogo Nova/Editar pessoa — junto ao
 // campo quando a API devolve o campo, senão num aviso no topo — e some ao fechar ou ao
@@ -62,8 +62,55 @@ const {
   erro: erroDoDialogo,
   fieldErrors: errosDoDialogo,
   run: executarNoDialogo,
-  clearErrors: limparErrosDoDialogo,
+  clearErrors: limparErrosDaApi,
 } = useAsync();
+
+// Corretiva G4: validação local no próprio campo (chave = nome do campo no DTO), limpa
+// junto com os erros da API.
+const errosLocais = reactive<Record<string, string>>({});
+
+function limparErrosDoDialogo() {
+  limparErrosDaApi();
+  for (const chave of Object.keys(errosLocais)) delete errosLocais[chave];
+}
+
+function erroDoCampo(campo: string, camel: string) {
+  return (
+    errosLocais[campo] ||
+    firstFieldError(errosDoDialogo.value, campo) ||
+    firstFieldError(errosDoDialogo.value, camel)
+  );
+}
+
+// Corretiva G4: o diálogo de Parentescos (que não fecha ao salvar) tem a própria
+// instância para o Adicionar; carregar e remover continuam na instância da página.
+const {
+  carregando: salvandoParentesco,
+  erro: erroDoParentesco,
+  fieldErrors: errosDoParentesco,
+  run: executarNoParentesco,
+  clearErrors: limparErrosDaApiDoParentesco,
+} = useAsync();
+
+const errosLocaisParentesco = reactive<Record<string, string>>({});
+
+function limparErrosDoParentesco() {
+  limparErrosDaApiDoParentesco();
+  for (const chave of Object.keys(errosLocaisParentesco)) delete errosLocaisParentesco[chave];
+}
+
+function erroDoCampoParentesco(campo: string, camel: string) {
+  return (
+    errosLocaisParentesco[campo] ||
+    firstFieldError(errosDoParentesco.value, campo) ||
+    firstFieldError(errosDoParentesco.value, camel)
+  );
+}
+
+const CAMPOS_PARENTESCO = ["ParenteId", "TipoRelacionamento"];
+const avisoDoParentesco = computed(() =>
+  mensagemForaDosCampos(erroDoParentesco.value, errosDoParentesco.value, CAMPOS_PARENTESCO),
+);
 
 const dialogImportarAberto = ref(false);
 
@@ -158,6 +205,11 @@ watch(dialogPessoaAberto, (aberto) => {
 });
 watch(formulario, limparErrosDoDialogo);
 
+watch(dialogParentescosAberto, (aberto) => {
+  if (!aberto) limparErrosDoParentesco();
+});
+watch(formularioParentesco, limparErrosDoParentesco);
+
 function limparFormulario() {
   formulario.nome = "";
   formulario.dataNascimento = null;
@@ -220,6 +272,7 @@ async function abrirEdicao(pessoa: PessoaVM) {
 
 async function abrirParentescos(pessoa: PessoaVM) {
   clearErrors();
+  limparErrosDoParentesco();
   pessoaSelecionadaParentescos.value = pessoa;
   limparFormularioParentesco();
   dialogParentescosAberto.value = true;
@@ -272,36 +325,38 @@ watch(
   },
 );
 
-function validarFormulario(): string {
-  if (!formulario.nome.trim()) return "Informe o nome da pessoa.";
+function validarFormulario(): boolean {
+  limparErrosDoDialogo();
+  if (!formulario.nome.trim()) errosLocais.Nome = "Informe o nome da pessoa.";
 
   const celDigitos = contarDigitos(formulario.celular);
-  if (celDigitos > 0 && (celDigitos < 8 || celDigitos > 11))
-    return "Celular inválido. Informe DDD + número (8 a 11 dígitos).";
-
-  return "";
-}
-
-function validarFormularioParentesco(): string {
-  if (!pessoaSelecionadaParentescos.value) {
-    return "Nenhuma pessoa foi selecionada.";
+  if (celDigitos > 0 && (celDigitos < 8 || celDigitos > 11)) {
+    errosLocais.Celular = "Celular inválido. Informe DDD + número (8 a 11 dígitos).";
   }
 
+  if (!cepValido(formulario.cep)) errosLocais.CEP = MENSAGEM_CEP;
+
+  return Object.keys(errosLocais).length === 0;
+}
+
+function validarFormularioParentesco(): boolean {
+  limparErrosDoParentesco();
+  // Guarda defensiva: o diálogo só abre com uma pessoa selecionada.
+  if (!pessoaSelecionadaParentescos.value) return false;
+
   if (!formularioParentesco.parenteId) {
-    return "Selecione o parente.";
+    errosLocaisParentesco.ParenteId = "Selecione o parente.";
+  } else if (
+    formularioParentesco.parenteId === pessoaSelecionadaParentescos.value.id
+  ) {
+    errosLocaisParentesco.ParenteId = "A pessoa não pode ser parente dela mesma.";
   }
 
   if (!formularioParentesco.tipoRelacionamento.trim()) {
-    return "Informe o tipo de relacionamento.";
+    errosLocaisParentesco.TipoRelacionamento = "Informe o tipo de relacionamento.";
   }
 
-  if (
-    formularioParentesco.parenteId === pessoaSelecionadaParentescos.value.id
-  ) {
-    return "A pessoa não pode ser parente dela mesma.";
-  }
-
-  return "";
+  return Object.keys(errosLocaisParentesco).length === 0;
 }
 
 const pessoasFiltradas = computed(() => {
@@ -360,11 +415,7 @@ async function carregarParentescos() {
 }
 
 async function salvarPessoa() {
-  const msg = validarFormulario();
-  if (msg) {
-    toastWarn(msg);
-    return;
-  }
+  if (!validarFormulario()) return;
 
   const payload = {
     Nome: formulario.nome.trim(),
@@ -396,16 +447,12 @@ async function salvarPessoa() {
 }
 
 async function salvarParentesco() {
-  const msg = validarFormularioParentesco();
-  if (msg) {
-    toastWarn(msg);
-    return;
-  }
+  if (!validarFormularioParentesco()) return;
 
   const pessoa = pessoaSelecionadaParentescos.value;
   if (!pessoa) return;
 
-  await run(async () => {
+  await executarNoParentesco(async () => {
     await criarParentesco(pessoa.id, {
       ParenteId: Number(formularioParentesco.parenteId),
       TipoRelacionamento: formularioParentesco.tipoRelacionamento.trim(),
@@ -597,12 +644,11 @@ onMounted(carregarLista);
               id="pessoa-formulario-nome"
               v-model="formulario.nome"
               placeholder="Nome completo da pessoa"
+              maxlength="200"
             />
             <FieldError
-              :texto="
-                firstFieldError(errosDoDialogo, 'Nome') ||
-                firstFieldError(errosDoDialogo, 'nome')
-              "
+              data-testid="pessoa-nome-erro"
+              :texto="erroDoCampo('Nome', 'nome')"
             />
           </div>
 
@@ -707,16 +753,17 @@ onMounted(carregarLista);
 
           <div style="display: flex; flex-direction: column; gap: 6px">
             <label for="pessoa-formulario-cep">CEP</label>
-            <InputText
+            <InputMask
               id="pessoa-formulario-cep"
               v-model="formulario.cep"
+              mask="99999-999"
+              :autoClear="false"
               placeholder="00000-000"
+              inputmode="numeric"
             />
             <FieldError
-              :texto="
-                firstFieldError(errosDoDialogo, 'CEP') ||
-                firstFieldError(errosDoDialogo, 'cep')
-              "
+              data-testid="pessoa-cep-erro"
+              :texto="erroDoCampo('CEP', 'cep')"
             />
           </div>
         </div>
@@ -728,13 +775,11 @@ onMounted(carregarLista);
               id="pessoa-formulario-celular"
               v-model="formulario.celular"
               placeholder="Celular / WhatsApp"
+              maxlength="20"
             />
             <FieldError
               data-testid="pessoa-celular-erro"
-              :texto="
-                firstFieldError(errosDoDialogo, 'Celular') ||
-                firstFieldError(errosDoDialogo, 'celular')
-              "
+              :texto="erroDoCampo('Celular', 'celular')"
             />
           </div>
 
@@ -744,6 +789,7 @@ onMounted(carregarLista);
               id="pessoa-formulario-email"
               v-model="formulario.email"
               placeholder="email@dominio.com"
+              maxlength="100"
               :disabled="editandoPossuiConta"
             />
             <small
@@ -775,13 +821,9 @@ onMounted(carregarLista);
               id="pessoa-formulario-endereco"
               v-model="formulario.endereco"
               placeholder="Rua, número, complemento"
+              maxlength="500"
             />
-            <FieldError
-              :texto="
-                firstFieldError(errosDoDialogo, 'Endereco') ||
-                firstFieldError(errosDoDialogo, 'endereco')
-              "
-            />
+            <FieldError :texto="erroDoCampo('Endereco', 'endereco')" />
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
@@ -790,13 +832,9 @@ onMounted(carregarLista);
               id="pessoa-formulario-bairro"
               v-model="formulario.bairro"
               placeholder="Bairro"
+              maxlength="100"
             />
-            <FieldError
-              :texto="
-                firstFieldError(errosDoDialogo, 'Bairro') ||
-                firstFieldError(errosDoDialogo, 'bairro')
-              "
-            />
+            <FieldError :texto="erroDoCampo('Bairro', 'bairro')" />
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
@@ -805,13 +843,9 @@ onMounted(carregarLista);
               id="pessoa-formulario-cidade"
               v-model="formulario.cidade"
               placeholder="Cidade"
+              maxlength="100"
             />
-            <FieldError
-              :texto="
-                firstFieldError(errosDoDialogo, 'Cidade') ||
-                firstFieldError(errosDoDialogo, 'cidade')
-              "
-            />
+            <FieldError :texto="erroDoCampo('Cidade', 'cidade')" />
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
@@ -853,12 +887,18 @@ onMounted(carregarLista);
     <Dialog
       v-model:visible="dialogParentescosAberto"
       modal
-      :closable="!carregando"
-      :dismissableMask="!carregando"
+      :closable="!(salvandoParentesco || carregando)"
+      :dismissableMask="!(salvandoParentesco || carregando)"
       :header="`Parentescos - ${pessoaSelecionadaParentescos?.nome ?? ''}`"
       style="width: 860px; max-width: 96vw"
     >
       <div style="display: flex; flex-direction: column; gap: 14px">
+        <InlineMessage
+          :texto="avisoDoParentesco"
+          tipo="erro"
+          data-testid="parentesco-dialogo-erro"
+        />
+        <!-- Erro de carregar ou remover (instância da página). -->
         <InlineMessage :texto="erro" tipo="erro" />
 
         <div
@@ -887,10 +927,8 @@ onMounted(carregarLista);
               placeholder="Selecione a pessoa"
             />
             <FieldError
-              :texto="
-                firstFieldError(fieldErrors, 'ParenteId') ||
-                firstFieldError(fieldErrors, 'parenteId')
-              "
+              data-testid="parentesco-parente-erro"
+              :texto="erroDoCampoParentesco('ParenteId', 'parenteId')"
             />
           </div>
 
@@ -906,11 +944,11 @@ onMounted(carregarLista);
               optionValue="value"
               editable
               placeholder="Selecione ou digite"
+              :pt="{ label: { maxlength: 50 } }"
             />
             <FieldError
               :texto="
-                firstFieldError(fieldErrors, 'TipoRelacionamento') ||
-                firstFieldError(fieldErrors, 'tipoRelacionamento')
+                erroDoCampoParentesco('TipoRelacionamento', 'tipoRelacionamento')
               "
             />
           </div>
@@ -918,7 +956,9 @@ onMounted(carregarLista);
           <Button
             label="Adicionar"
             icon="pi pi-plus"
-            :loading="carregando"
+            :loading="salvandoParentesco"
+            :disabled="carregando"
+            data-testid="parentesco-dialogo-salvar"
             @click="salvarParentesco"
           />
         </div>
@@ -942,7 +982,8 @@ onMounted(carregarLista);
         <Button
           label="Fechar"
           severity="secondary"
-          :disabled="carregando"
+          :disabled="salvandoParentesco || carregando"
+          data-testid="parentesco-dialogo-cancelar"
           @click="dialogParentescosAberto = false"
         />
       </template>

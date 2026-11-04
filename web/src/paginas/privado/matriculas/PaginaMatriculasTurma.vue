@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, reactive, ref } from "vue";
+import { computed, inject, onMounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
 import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
+import FieldError from "../../../components/ui/FieldError.vue";
 import CartaoItem from "../../../components/ui/CartaoItem.vue";
 import MenuAcoes from "../../../components/ui/MenuAcoes.vue";
 // Corretiva da 7.3 (CSU14, RNF 34.3): o Professor consulta o histórico de presenças do
@@ -26,10 +27,11 @@ import type { MenuItem } from "primevue/menuitem";
 
 import { useConfirm } from "primevue/useconfirm";
 
+import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 import {
-  toastSuccess,
-  toastWarn,
-} from "../../../aplicacao/servicos/notificacoes";
+  firstFieldError,
+  mensagemForaDosCampos,
+} from "../../../aplicacao/servicos/apiError";
 
 import { obterDepartamento } from "../../../aplicacao/servicos/departamentosServico";
 import {
@@ -63,6 +65,40 @@ const recarregarResumoDaTurma = inject<(() => Promise<void>) | null>(
 );
 
 const { carregando, erro, run, clearErrors } = useAsync();
+
+// Corretiva G4: o erro do matricular fica no próprio diálogo — junto ao campo quando a
+// API devolve o campo (ou quando a validação local aponta o campo), senão num aviso no
+// topo — e some ao fechar ou ao alterar um campo. A instância da página continua com o
+// erro da lista e do inativar.
+const {
+  carregando: salvando,
+  erro: erroDoDialogo,
+  fieldErrors: errosDoDialogo,
+  run: executarNoDialogo,
+  clearErrors: limparErrosDaApi,
+} = useAsync();
+
+// Validação local no próprio campo (chave = nome do campo no DTO).
+const errosLocais = reactive<Record<string, string>>({});
+
+function limparErrosDoDialogo() {
+  limparErrosDaApi();
+  for (const chave of Object.keys(errosLocais)) delete errosLocais[chave];
+}
+
+function erroDoCampo(campo: string, camel: string) {
+  return (
+    errosLocais[campo] ||
+    firstFieldError(errosDoDialogo.value, campo) ||
+    firstFieldError(errosDoDialogo.value, camel)
+  );
+}
+
+// Campos com FieldError no diálogo: um erro da API fora deles vai para o aviso do topo.
+const CAMPOS_DO_DIALOGO = ["PessoaId", "Observacao"];
+const avisoDoDialogo = computed(() =>
+  mensagemForaDosCampos(erroDoDialogo.value, errosDoDialogo.value, CAMPOS_DO_DIALOGO),
+);
 
 const departamentoId = computed(() => Number(route.params.departamentoId));
 
@@ -142,6 +178,11 @@ const form = reactive({
   observacao: "",
 });
 
+watch(dialogAberto, (aberto) => {
+  if (!aberto) limparErrosDoDialogo();
+});
+watch(form, limparErrosDoDialogo);
+
 const dialogResponsaveisAberto = ref(false);
 const alunoSelecionado = ref<AlunoDaClasseVM | null>(null);
 const responsaveisDoAluno = ref<ParentescoVM[]>([]);
@@ -150,6 +191,7 @@ const erroResponsaveis = ref("");
 
 function abrirNovo() {
   clearErrors();
+  limparErrosDoDialogo();
   form.pessoaId = null;
   form.observacao = "";
   dialogAberto.value = true;
@@ -171,19 +213,16 @@ async function carregarTudo() {
   }, "Não foi possível carregar as matrículas.");
 }
 
-function validarForm(): string {
-  if (!form.pessoaId) return "Selecione uma pessoa para matricular.";
-  return "";
+function validarForm(): boolean {
+  limparErrosDoDialogo();
+  if (!form.pessoaId) errosLocais.PessoaId = "Selecione uma pessoa para matricular.";
+  return Object.keys(errosLocais).length === 0;
 }
 
 async function salvar() {
-  const msg = validarForm();
-  if (msg) {
-    toastWarn(msg);
-    return;
-  }
+  if (!validarForm()) return;
 
-  await run(async () => {
+  await executarNoDialogo(async () => {
     await matricular(departamentoId.value, {
       PessoaId: form.pessoaId as number,
       Observacao: form.observacao?.trim() || null,
@@ -262,7 +301,7 @@ onMounted(carregarTudo);
 <template>
   <div class="page-container">
     <PageHeader
-      :titulo="turma ? `Matrículas — ${turma.nome}` : 'Matrículas'"
+      :titulo="turma ? `Matrículas: ${turma.nome}` : 'Matrículas'"
       subtitulo="Gerencie os alunos matriculados nesta turma"
     >
       <template #acoes>
@@ -411,12 +450,18 @@ onMounted(carregarTudo);
     <Dialog
       v-model:visible="dialogAberto"
       modal
-      :closable="!carregando"
-      :dismissableMask="!carregando"
+      :closable="!salvando"
+      :dismissableMask="!salvando"
       header="Matricular aluno"
       style="width: 560px; max-width: 92vw"
     >
       <div class="page-container">
+        <InlineMessage
+          :texto="avisoDoDialogo"
+          tipo="erro"
+          data-testid="matricula-dialogo-erro"
+        />
+
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label id="matricula-pessoa-rotulo" for="matricula-pessoa">Pessoa</label>
           <Dropdown
@@ -429,6 +474,10 @@ onMounted(carregarTudo);
             labelId="matricula-pessoa"
             ariaLabelledby="matricula-pessoa-rotulo"
           />
+          <FieldError
+            data-testid="matricula-pessoa-erro"
+            :texto="erroDoCampo('PessoaId', 'pessoaId')"
+          />
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
@@ -437,7 +486,9 @@ onMounted(carregarTudo);
             id="matricula-observacao"
             v-model="form.observacao"
             placeholder="Ex.: Transferido, visitante, etc."
+            maxlength="500"
           />
+          <FieldError :texto="erroDoCampo('Observacao', 'observacao')" />
         </div>
       </div>
 
@@ -445,13 +496,15 @@ onMounted(carregarTudo);
         <Button
           label="Cancelar"
           severity="secondary"
-          :disabled="carregando"
+          :disabled="salvando"
+          data-testid="matricula-dialogo-cancelar"
           @click="dialogAberto = false"
         />
         <Button
           label="Matricular"
           icon="pi pi-check"
-          :loading="carregando"
+          :loading="salvando"
+          data-testid="matricula-dialogo-salvar"
           @click="salvar"
         />
       </template>

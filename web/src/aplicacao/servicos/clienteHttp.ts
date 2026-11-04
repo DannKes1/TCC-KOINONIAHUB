@@ -19,11 +19,11 @@ clienteHttp.interceptors.response.use(
 
     if (!erro?.response) {
       toastError(
-        "Não foi possível conectar ao servidor. Verifique se a API está rodando e se a URL está correta.",
+        "Não foi possível conectar ao servidor. Verifique sua conexão com a internet e tente novamente.",
         "Servidor indisponível",
       );
       erro.message =
-        "Não foi possível conectar ao servidor. Verifique se a API está rodando e a URL está correta.";
+        "Não foi possível conectar ao servidor. Verifique sua conexão com a internet e tente novamente.";
       return Promise.reject(erro);
     }
 
@@ -82,7 +82,7 @@ clienteHttp.interceptors.response.use(
 
     if (status >= 500) {
       toastError(
-        "O servidor retornou um erro inesperado. Tente novamente. Se persistir, verifique os logs da API.",
+        "O servidor retornou um erro inesperado. Tente novamente. Se persistir, procure o administrador do sistema.",
         "Erro no servidor",
       );
 

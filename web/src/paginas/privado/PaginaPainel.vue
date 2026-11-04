@@ -739,7 +739,7 @@ onMounted(carregarPainel);
 
           <div class="card-tabela">
             <div class="card-tabela-titulo">
-              Meu histórico de presenças — {{ rotuloJanela }}
+              Meu histórico de presenças ({{ rotuloJanela }})
             </div>
             <p class="card-tabela-nota">
               Mesma janela e mesma regra de Minha Frequência, somando todas as suas

@@ -1,9 +1,9 @@
 import type { AtribuicaoVM } from "../modelos/dtos";
 
 export const AVISO_SEM_CONTA = "Sem conta";
-export const AVISO_PERFIL_USUARIO = "Conta com perfil Usuário — não acessa a turma";
+export const AVISO_PERFIL_USUARIO = "Conta com perfil Usuário: não acessa a turma";
 // Abaixo de 768 px (tela compacta) o texto curto cabe em duas linhas na coluna Pessoa.
-export const AVISO_PERFIL_USUARIO_CURTO = "Perfil Usuário — não acessa a turma";
+export const AVISO_PERFIL_USUARIO_CURTO = "Perfil Usuário: não acessa a turma";
 
 /**
  * RNF 21.5: a atribuição só produz efeito para conta de perfil Professor ou

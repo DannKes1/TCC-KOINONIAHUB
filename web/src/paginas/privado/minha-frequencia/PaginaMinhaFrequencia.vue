@@ -102,7 +102,7 @@ onMounted(carregar);
       <div v-if="dados" class="conteudo">
         <p v-if="periodoFormatado" class="periodo" data-testid="minha-frequencia-periodo">
           <i class="pi pi-calendar" aria-hidden="true"></i>
-          Período: <strong>{{ periodoFormatado }}</strong> (últimos 90 dias) — só
+          Período: <strong>{{ periodoFormatado }}</strong> (últimos 90 dias). Só
           aulas Consolidadas entram no cálculo.
         </p>
         <div class="grade-indicadores">

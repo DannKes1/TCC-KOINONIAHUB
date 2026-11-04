@@ -55,7 +55,7 @@ watch(
     </div>
 
     <footer class="footer-ipb">
-      KoinoniaHub © 2026 — Sistema de Gestão da Escola Bíblica Dominical
+      KoinoniaHub © 2026 · Sistema de Gestão da Escola Bíblica Dominical
       <div class="footer-slogan">"Corpo vivo de Cristo vivendo em família"</div>
     </footer>
   </div>

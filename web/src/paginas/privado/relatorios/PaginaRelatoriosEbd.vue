@@ -410,7 +410,7 @@ onMounted(async () => {
     </PageHeader>
 
     <div class="apenas-impressao cabecalho-impressao">
-      <strong>KoinoniaHub — Relatórios EBD</strong>
+      <strong>KoinoniaHub · Relatórios EBD</strong>
       <span v-if="abaAtiva === 'resumo'">
         Resumo do dia ·
         {{ dataResumo ? dataResumo.toLocaleDateString("pt-BR") : "-" }}

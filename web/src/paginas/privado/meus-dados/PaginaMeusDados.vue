@@ -9,10 +9,16 @@ import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
+// Corretiva G4b: máscara 00000-000 (InputMask) e validação do CEP.
+import { MENSAGEM_CEP, cepValido } from "../../../aplicacao/dominio/cep";
+import InputMask from "primevue/inputmask";
 
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-import { firstFieldError } from "../../../aplicacao/servicos/apiError";
+import {
+  firstFieldError,
+  mensagemForaDosCampos,
+} from "../../../aplicacao/servicos/apiError";
 
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
@@ -30,7 +36,28 @@ const autenticacao = usarAutenticacaoStore();
 // Perfis administrativos (Admin, Pastor e Superintendente), pelo getter da store.
 const isAdministrativo = computed(() => autenticacao.isAdministrativo);
 
-const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
+const { carregando, erro, run, clearErrors } = useAsync();
+
+// Corretiva G4: o erro do salvar fica no topo do formulário — junto ao campo quando a
+// API devolve o campo (ou quando a validação local aponta o campo), senão num aviso —
+// e some ao alterar um campo. A instância da página fica só com a carga dos dados.
+const {
+  carregando: salvando,
+  erro: erroDoFormulario,
+  fieldErrors: errosDoFormulario,
+  run: executarNoFormulario,
+  clearErrors: limparErrosDaApi,
+} = useAsync();
+
+const CAMPOS_DO_FORMULARIO = ["Celular", "Email", "Endereco", "Bairro", "Cidade", "Estado", "CEP"];
+// Linha geral da validação local ("Corrija os campos destacados."), no mesmo lugar do
+// aviso de regra da API.
+const avisoLocal = ref("");
+const avisoDoFormulario = computed(
+  () =>
+    mensagemForaDosCampos(erroDoFormulario.value, errosDoFormulario.value, CAMPOS_DO_FORMULARIO) ||
+    avisoLocal.value,
+);
 
 const dadosOriginais = ref<MeusDadosVM | null>(null);
 
@@ -94,6 +121,24 @@ function limparErrosLocais() {
   Object.keys(errosLocais).forEach((k) => delete errosLocais[k]);
 }
 
+function limparErrosDoFormulario() {
+  limparErrosDaApi();
+  limparErrosLocais();
+  avisoLocal.value = "";
+}
+
+function erroDoCampo(campo: string, camel: string) {
+  return (
+    errosLocais[camel] ||
+    firstFieldError(errosDoFormulario.value, campo) ||
+    firstFieldError(errosDoFormulario.value, camel)
+  );
+}
+
+// Qualquer alteração limpa os erros (o watch de sanitizar o celular também dispara aqui,
+// sem efeito: a validação só roda no Salvar).
+watch(form, limparErrosDoFormulario);
+
 function validarLocal(): boolean {
   limparErrosLocais();
 
@@ -107,18 +152,20 @@ function validarLocal(): boolean {
     errosLocais.estado = "Informe a UF com 2 letras (ex.: RO).";
   }
 
+  if (!cepValido(form.cep)) errosLocais.cep = MENSAGEM_CEP;
+
   return Object.keys(errosLocais).length === 0;
 }
 
 async function salvar() {
-  clearErrors();
+  limparErrosDoFormulario();
 
   if (!validarLocal()) {
-    erro.value = "Corrija os campos destacados.";
+    avisoLocal.value = "Corrija os campos destacados.";
     return;
   }
 
-  await run(async () => {
+  await executarNoFormulario(async () => {
     await atualizarMeusDados({
       Celular: limparOuNull(form.celular),
       Email: limparOuNull(form.email),
@@ -138,7 +185,7 @@ function descartarAlteracoes() {
   if (dadosOriginais.value) {
     popularForm(dadosOriginais.value);
     clearErrors();
-    limparErrosLocais();
+    limparErrosDoFormulario();
   }
 }
 
@@ -179,13 +226,14 @@ onMounted(carregar);
           label="Descartar"
           icon="pi pi-undo"
           severity="secondary"
-          :disabled="carregando"
+          :disabled="salvando || carregando"
           @click="descartarAlteracoes"
         />
         <Button
           label="Salvar"
           icon="pi pi-check"
-          :loading="carregando"
+          :loading="salvando"
+          :disabled="carregando"
           @click="salvar"
         />
       </template>
@@ -220,7 +268,7 @@ onMounted(carregar);
           >
             Situação
           </div>
-          <div>{{ dadosOriginais.situacao || "—" }}</div>
+          <div>{{ dadosOriginais.situacao || "-" }}</div>
         </div>
         <div data-testid="meus-dados-termo">
           <div
@@ -231,7 +279,7 @@ onMounted(carregar);
           <div v-if="resumoAceiteTermo">
             {{ resumoAceiteTermo.texto }}
             <span v-if="!resumoAceiteTermo.vigente" style="color: #8a5b00">
-              — há uma nova versão a aceitar
+              (há uma nova versão a aceitar)
             </span>
           </div>
           <div v-else style="color: #8a5b00">Aceite pendente</div>
@@ -252,6 +300,12 @@ onMounted(carregar);
         tipo="info"
       />
 
+      <InlineMessage
+        :texto="avisoDoFormulario"
+        tipo="erro"
+        data-testid="meus-dados-formulario-erro"
+      />
+
       <h3 style="margin: 16px 0 6px">Contato</h3>
       <div
         style="
@@ -266,31 +320,26 @@ onMounted(carregar);
             id="meus-dados-celular"
             v-model="form.celular"
             placeholder="(00) 00000-0000"
+            maxlength="20"
           />
-          <FieldError
-            :texto="
-              errosLocais.celular ||
-              firstFieldError(fieldErrors, 'Celular') ||
-              firstFieldError(fieldErrors, 'celular')
-            "
-          />
+          <FieldError :texto="erroDoCampo('Celular', 'celular')" />
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label for="meus-dados-email">E-mail</label>
-          <InputText id="meus-dados-email" v-model="form.email" disabled />
+          <InputText
+            id="meus-dados-email"
+            v-model="form.email"
+            maxlength="100"
+            disabled
+          />
           <small
             data-testid="meus-dados-email-dica"
             style="font-size: 12px; color: var(--ipb-cinza-claro, #7a7a7a)"
           >
             E-mail de acesso; definido na criação da conta.
           </small>
-          <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Email') ||
-              firstFieldError(fieldErrors, 'email')
-            "
-          />
+          <FieldError :texto="erroDoCampo('Email', 'email')" />
         </div>
       </div>
 
@@ -302,27 +351,24 @@ onMounted(carregar);
             id="meus-dados-endereco"
             v-model="form.endereco"
             placeholder="Rua, número, complemento"
+            maxlength="500"
           />
-          <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Endereco') ||
-              firstFieldError(fieldErrors, 'endereco')
-            "
-          />
+          <FieldError :texto="erroDoCampo('Endereco', 'endereco')" />
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label for="meus-dados-cep">CEP</label>
-          <InputText
+          <InputMask
             id="meus-dados-cep"
             v-model="form.cep"
+            mask="99999-999"
+            :autoClear="false"
             placeholder="00000-000"
+            inputmode="numeric"
           />
           <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'CEP') ||
-              firstFieldError(fieldErrors, 'cep')
-            "
+            data-testid="meus-dados-cep-erro"
+            :texto="erroDoCampo('CEP', 'cep')"
           />
         </div>
       </div>
@@ -330,24 +376,14 @@ onMounted(carregar);
       <div class="grade-endereco grade-endereco-cidade">
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label for="meus-dados-bairro">Bairro</label>
-          <InputText id="meus-dados-bairro" v-model="form.bairro" />
-          <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Bairro') ||
-              firstFieldError(fieldErrors, 'bairro')
-            "
-          />
+          <InputText id="meus-dados-bairro" v-model="form.bairro" maxlength="100" />
+          <FieldError :texto="erroDoCampo('Bairro', 'bairro')" />
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label for="meus-dados-cidade">Cidade</label>
-          <InputText id="meus-dados-cidade" v-model="form.cidade" />
-          <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Cidade') ||
-              firstFieldError(fieldErrors, 'cidade')
-            "
-          />
+          <InputText id="meus-dados-cidade" v-model="form.cidade" maxlength="100" />
+          <FieldError :texto="erroDoCampo('Cidade', 'cidade')" />
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
@@ -358,13 +394,7 @@ onMounted(carregar);
             maxlength="2"
             placeholder="SP"
           />
-          <FieldError
-            :texto="
-              errosLocais.estado ||
-              firstFieldError(fieldErrors, 'Estado') ||
-              firstFieldError(fieldErrors, 'estado')
-            "
-          />
+          <FieldError :texto="erroDoCampo('Estado', 'estado')" />
         </div>
       </div>
     </LoadingOverlay>

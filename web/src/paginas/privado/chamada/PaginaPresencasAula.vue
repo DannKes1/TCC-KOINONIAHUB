@@ -52,7 +52,7 @@ const voltarLabel = computed(
 );
 
 const titulo = computed(() =>
-  aula.value ? `Presenças — ${formatarData(aula.value.data)}` : "Presenças",
+  aula.value ? `Presenças de ${formatarData(aula.value.data)}` : "Presenças",
 );
 const subtitulo = computed(() =>
   aula.value

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
 
@@ -10,7 +10,10 @@ import FieldError from "../../../components/ui/FieldError.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
-import { firstFieldError } from "../../../aplicacao/servicos/apiError";
+import {
+  firstFieldError,
+  mensagemForaDosCampos,
+} from "../../../aplicacao/servicos/apiError";
 
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
@@ -26,7 +29,39 @@ import type { IgrejaVM } from "../../../aplicacao/modelos/dtos";
 // cinco campos do requisito. A rota exige Admin (RNF 44.1) e a API confere que o id
 // é o da própria igreja (RNF 44.2).
 const autenticacao = usarAutenticacaoStore();
-const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
+const { carregando, erro, run, clearErrors } = useAsync();
+
+// Corretiva G4: o erro do salvar fica no topo do formulário — junto ao campo quando a
+// API devolve o campo (ou quando a validação local aponta o campo), senão num aviso —
+// e some ao alterar um campo. A instância da página fica só com a carga dos dados.
+const {
+  carregando: salvando,
+  erro: erroDoFormulario,
+  fieldErrors: errosDoFormulario,
+  run: executarNoFormulario,
+  clearErrors: limparErrosDaApi,
+} = useAsync();
+
+// Validação local no próprio campo (chave = nome do campo no DTO).
+const errosLocais = reactive<Record<string, string>>({});
+
+function limparErrosDoFormulario() {
+  limparErrosDaApi();
+  for (const chave of Object.keys(errosLocais)) delete errosLocais[chave];
+}
+
+function erroDoCampo(campo: string, camel: string) {
+  return (
+    errosLocais[campo] ||
+    firstFieldError(errosDoFormulario.value, campo) ||
+    firstFieldError(errosDoFormulario.value, camel)
+  );
+}
+
+const CAMPOS_DO_FORMULARIO = ["Nome", "Cidade", "Estado", "Email", "Telefone"];
+const avisoDoFormulario = computed(() =>
+  mensagemForaDosCampos(erroDoFormulario.value, errosDoFormulario.value, CAMPOS_DO_FORMULARIO),
+);
 
 const dadosOriginais = ref<IgrejaVM | null>(null);
 
@@ -37,6 +72,8 @@ const form = reactive({
   email: "",
   telefone: "",
 });
+
+watch(form, limparErrosDoFormulario);
 
 function popularForm(dados: IgrejaVM) {
   form.nome = dados.nome ?? "";
@@ -90,24 +127,26 @@ async function carregar() {
   }, "Não foi possível carregar os dados da igreja.");
 }
 
-async function salvar() {
-  clearErrors();
+function validarFormulario(): boolean {
+  limparErrosDoFormulario();
 
-  if (!form.nome.trim()) {
-    erro.value = "Informe o nome da igreja.";
-    return;
-  }
+  if (!form.nome.trim()) errosLocais.Nome = "Informe o nome da igreja.";
 
   const telDigitos = contarDigitos(form.telefone);
   if (telDigitos > 0 && (telDigitos < 8 || telDigitos > 11)) {
-    erro.value = "Telefone inválido. Informe DDD + número (8 a 11 dígitos).";
-    return;
+    errosLocais.Telefone = "Telefone inválido. Informe DDD + número (8 a 11 dígitos).";
   }
+
+  return Object.keys(errosLocais).length === 0;
+}
+
+async function salvar() {
+  if (!validarFormulario()) return;
 
   const igrejaId = autenticacao.igrejaId;
   if (!igrejaId) return;
 
-  await run(async () => {
+  await executarNoFormulario(async () => {
     const atualizada = await atualizarIgreja(igrejaId, {
       Nome: form.nome.trim(),
       Cidade: limparOuNull(form.cidade),
@@ -129,6 +168,7 @@ function descartarAlteracoes() {
   if (dadosOriginais.value) {
     popularForm(dadosOriginais.value);
     clearErrors();
+    limparErrosDoFormulario();
   }
 }
 
@@ -146,15 +186,15 @@ onMounted(carregar);
           label="Descartar"
           icon="pi pi-undo"
           severity="secondary"
-          :disabled="carregando || !dadosOriginais"
+          :disabled="salvando || carregando || !dadosOriginais"
           @click="descartarAlteracoes"
         />
         <Button
           label="Salvar"
           icon="pi pi-check"
           data-testid="igreja-salvar"
-          :loading="carregando"
-          :disabled="!dadosOriginais"
+          :loading="salvando"
+          :disabled="carregando || !dadosOriginais"
           @click="salvar"
         />
       </template>
@@ -168,6 +208,12 @@ onMounted(carregar);
     />
 
     <LoadingOverlay :loading="carregando" texto="Carregando dados da igreja...">
+      <InlineMessage
+        :texto="avisoDoFormulario"
+        tipo="erro"
+        data-testid="igreja-formulario-erro"
+      />
+
       <h3 style="margin: 16px 0 6px">Dados da igreja</h3>
       <div
         style="
@@ -188,10 +234,8 @@ onMounted(carregar);
             placeholder="Nome da igreja"
           />
           <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Nome') ||
-              firstFieldError(fieldErrors, 'nome')
-            "
+            data-testid="igreja-nome-erro"
+            :texto="erroDoCampo('Nome', 'nome')"
           />
         </div>
 
@@ -203,12 +247,7 @@ onMounted(carregar);
             data-testid="igreja-cidade"
             maxlength="100"
           />
-          <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Cidade') ||
-              firstFieldError(fieldErrors, 'cidade')
-            "
-          />
+          <FieldError :texto="erroDoCampo('Cidade', 'cidade')" />
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
@@ -220,12 +259,7 @@ onMounted(carregar);
             maxlength="2"
             placeholder="RO"
           />
-          <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Estado') ||
-              firstFieldError(fieldErrors, 'estado')
-            "
-          />
+          <FieldError :texto="erroDoCampo('Estado', 'estado')" />
         </div>
       </div>
 
@@ -247,12 +281,7 @@ onMounted(carregar);
             maxlength="100"
             placeholder="contato@igreja.org"
           />
-          <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Email') ||
-              firstFieldError(fieldErrors, 'email')
-            "
-          />
+          <FieldError :texto="erroDoCampo('Email', 'email')" />
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
@@ -265,10 +294,8 @@ onMounted(carregar);
             placeholder="(00) 00000-0000"
           />
           <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Telefone') ||
-              firstFieldError(fieldErrors, 'telefone')
-            "
+            data-testid="igreja-telefone-erro"
+            :texto="erroDoCampo('Telefone', 'telefone')"
           />
         </div>
       </div>

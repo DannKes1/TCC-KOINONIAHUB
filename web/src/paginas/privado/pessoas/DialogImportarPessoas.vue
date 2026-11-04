@@ -2,11 +2,10 @@
 import { computed, ref } from "vue";
 
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
+import FieldError from "../../../components/ui/FieldError.vue";
 
-import {
-  toastSuccess,
-  toastWarn,
-} from "../../../aplicacao/servicos/notificacoes";
+import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
+import { parseApiError } from "../../../aplicacao/servicos/apiError";
 
 import { importarPessoas } from "../../../aplicacao/servicos/pessoasServico";
 import type {
@@ -28,7 +27,12 @@ const emit = defineEmits<{
 
 const arquivo = ref<File | null>(null);
 const enviando = ref(false);
+// Corretiva G4: o erro da API fica no topo do diálogo e a validação local ("selecione um
+// arquivo") junto ao campo; os dois somem ao escolher outro arquivo ou ao fechar. Toast
+// só para o sucesso — o relatório dentro do diálogo já informa linhas ignoradas e
+// para conferência.
 const erro = ref("");
+const erroArquivo = ref("");
 const resultado = ref<ImportacaoPessoasResultadoVM | null>(null);
 
 const visivel = computed({
@@ -36,17 +40,22 @@ const visivel = computed({
   set: (valor: boolean) => emit("update:visible", valor),
 });
 
+function limparErros() {
+  erro.value = "";
+  erroArquivo.value = "";
+}
+
 function aoSelecionarArquivo(evento: Event) {
   const alvo = evento.target as HTMLInputElement;
   arquivo.value = alvo.files?.[0] ?? null;
   resultado.value = null;
-  erro.value = "";
+  limparErros();
 }
 
 function limparEFechar() {
   arquivo.value = null;
   resultado.value = null;
-  erro.value = "";
+  limparErros();
   visivel.value = false;
 }
 
@@ -72,39 +81,31 @@ function baixarModelo() {
 }
 
 async function enviar() {
+  limparErros();
   if (!arquivo.value) {
-    toastWarn("Selecione um arquivo CSV para importar.");
+    erroArquivo.value = "Selecione um arquivo CSV para importar.";
     return;
   }
 
   enviando.value = true;
-  erro.value = "";
 
   try {
     const dados = await importarPessoas(arquivo.value);
     resultado.value = dados;
 
+    // RNF 41.3: linhas ignoradas e para conferência ficam no relatório abaixo.
     if (dados.criados > 0) {
       toastSuccess(
         `${dados.criados} pessoa(s) importada(s) com sucesso.`,
         "Importação concluída",
       );
       emit("importado");
-    } else {
-      toastWarn("Nenhuma pessoa nova foi criada. Confira o relatório abaixo.");
-    }
-
-    // RNF 41.3: linhas ignoradas por nome repetido sem e-mail pedem conferência.
-    if (dados.paraConferencia > 0) {
-      toastWarn(
-        `${dados.paraConferencia} linha(s) ignorada(s) por nome já cadastrado, sem e-mail para confirmar. Confira na lista: se for outra pessoa, cadastre manualmente.`,
-        "Linhas para conferência",
-      );
     }
   } catch (e: any) {
-    erro.value =
-      e?.response?.data?.mensagem ??
-      "Não foi possível importar o arquivo. Confira o formato e tente novamente.";
+    erro.value = parseApiError(
+      e,
+      "Não foi possível importar o arquivo. Confira o formato e tente novamente.",
+    ).message;
   } finally {
     enviando.value = false;
   }
@@ -141,6 +142,12 @@ const itensOrdenados = computed(() => {
   >
     <div class="page-container">
       <InlineMessage
+        :texto="erro"
+        tipo="erro"
+        data-testid="importacao-dialogo-erro"
+      />
+
+      <InlineMessage
         texto="Importe de uma só vez o rol de membros da igreja. O arquivo precisa da coluna 'Nome'; as demais colunas do modelo (Sexo, DataNascimento, EstadoCivil, Email, Celular, Endereco, Bairro, Cidade, Estado, CEP) são opcionais e colunas fora do modelo são ignoradas. Linhas com e-mail já cadastrado são ignoradas; linhas sem e-mail cujo nome já existe são ignoradas e sinalizadas para conferência."
         tipo="info"
       />
@@ -164,8 +171,10 @@ const itensOrdenados = computed(() => {
           @click="baixarModelo"
         />
       </div>
-
-      <InlineMessage :texto="erro" tipo="erro" />
+      <FieldError
+        data-testid="importacao-arquivo-erro"
+        :texto="erroArquivo"
+      />
 
       <div
         v-if="resultado"
@@ -242,6 +251,7 @@ const itensOrdenados = computed(() => {
         label="Fechar"
         severity="secondary"
         :disabled="enviando"
+        data-testid="importacao-fechar"
         @click="limparEFechar"
       />
       <Button

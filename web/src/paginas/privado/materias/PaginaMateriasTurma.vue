@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, reactive, ref } from "vue";
+import { computed, inject, onMounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import PageHeader from "../../../components/ui/PageHeader.vue";
@@ -13,12 +13,12 @@ import { useAsync } from "../../../aplicacao/composables/useAsync";
 import { usarTelaCompacta } from "../../../aplicacao/composables/usarTelaCompacta";
 import { usarMostrarMais } from "../../../aplicacao/composables/usarMostrarMais";
 
-import {
-  toastSuccess,
-  toastWarn,
-} from "../../../aplicacao/servicos/notificacoes";
+import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-import { firstFieldError } from "../../../aplicacao/servicos/apiError";
+import {
+  firstFieldError,
+  mensagemForaDosCampos,
+} from "../../../aplicacao/servicos/apiError";
 
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -59,7 +59,42 @@ const recarregarResumoDaTurma = inject<(() => Promise<void>) | null>(
   null,
 );
 
-const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
+const { carregando, erro, run, clearErrors } = useAsync();
+
+// Corretiva G4: o erro do salvar fica no próprio diálogo — junto ao campo quando a API
+// devolve o campo (ou quando a validação local aponta o campo), senão num aviso no topo
+// — e some ao fechar ou ao alterar um campo. A instância da página continua com o erro
+// da lista e do ativar/inativar.
+const {
+  carregando: salvando,
+  erro: erroDoDialogo,
+  fieldErrors: errosDoDialogo,
+  run: executarNoDialogo,
+  clearErrors: limparErrosDaApi,
+} = useAsync();
+
+// Validação local no próprio campo (chave = nome do campo no DTO).
+const errosLocais = reactive<Record<string, string>>({});
+
+function limparErrosDoDialogo() {
+  limparErrosDaApi();
+  for (const chave of Object.keys(errosLocais)) delete errosLocais[chave];
+}
+
+function erroDoCampo(campo: string, camel: string) {
+  return (
+    errosLocais[campo] ||
+    firstFieldError(errosDoDialogo.value, campo) ||
+    firstFieldError(errosDoDialogo.value, camel)
+  );
+}
+
+// Campos com FieldError no diálogo: um erro da API fora deles (ex.: DepartamentoId, que
+// vem da rota) vai para o aviso do topo.
+const CAMPOS_DO_DIALOGO = ["Nome", "OrdemExibicao", "Ativo"];
+const avisoDoDialogo = computed(() =>
+  mensagemForaDosCampos(erroDoDialogo.value, errosDoDialogo.value, CAMPOS_DO_DIALOGO),
+);
 
 const departamentoId = computed(() => Number(route.params.departamentoId));
 
@@ -99,6 +134,11 @@ const form = reactive({
   ativo: true,
 });
 
+watch(dialogAberto, (aberto) => {
+  if (!aberto) limparErrosDoDialogo();
+});
+watch(form, limparErrosDoDialogo);
+
 function limparForm() {
   form.nome = "";
   form.ordemExibicao = null;
@@ -108,12 +148,14 @@ function limparForm() {
 
 function abrirNovo() {
   clearErrors();
+  limparErrosDoDialogo();
   limparForm();
   dialogAberto.value = true;
 }
 
 function abrirEdicao(m: MateriaVM) {
   clearErrors();
+  limparErrosDoDialogo();
   editandoId.value = m.id;
   form.nome = m.nome ?? "";
   form.ordemExibicao = m.ordemExibicao ?? null;
@@ -130,17 +172,14 @@ async function carregarTudo() {
   }, "Não foi possível carregar as matérias.");
 }
 
-function validarRapido(): string {
-  if (!form.nome.trim()) return "Informe o nome da matéria.";
-  return "";
+function validarFormulario(): boolean {
+  limparErrosDoDialogo();
+  if (!form.nome.trim()) errosLocais.Nome = "Informe o nome da matéria.";
+  return Object.keys(errosLocais).length === 0;
 }
 
 async function salvar() {
-  const msg = validarRapido();
-  if (msg) {
-    toastWarn(msg);
-    return;
-  }
+  if (!validarFormulario()) return;
 
   const payload = {
     Nome: form.nome.trim(),
@@ -152,7 +191,7 @@ async function salvar() {
     DepartamentoId: departamentoId.value,
   };
 
-  await run(async () => {
+  await executarNoDialogo(async () => {
     if (editandoId.value === null) {
       await criarMateria(payload as any);
       toastSuccess("Matéria criada com sucesso.", "Criado");
@@ -211,7 +250,7 @@ onMounted(carregarTudo);
 <template>
   <div class="page-container">
     <PageHeader
-      :titulo="turma ? `Matérias — ${turma.nome}` : 'Matérias'"
+      :titulo="turma ? `Matérias: ${turma.nome}` : 'Matérias'"
       subtitulo="Cadastre e organize as matérias desta turma"
     >
       <template #acoes>
@@ -243,7 +282,7 @@ onMounted(carregarTudo);
               :severity="m.ativo ? 'success' : 'secondary'"
             />
           </template>
-          <template #meta>Ordem de exibição: {{ m.ordemExibicao ?? "—" }}</template>
+          <template #meta>Ordem de exibição: {{ m.ordemExibicao ?? "-" }}</template>
           <template #acoes>
             <Button
               label="Editar"
@@ -330,24 +369,29 @@ onMounted(carregarTudo);
     <Dialog
       v-model:visible="dialogAberto"
       modal
-      :closable="!carregando"
-      :dismissableMask="!carregando"
+      :closable="!salvando"
+      :dismissableMask="!salvando"
       header="Matéria"
       style="width: 560px; max-width: 92vw"
     >
       <div class="page-container">
+        <InlineMessage
+          :texto="avisoDoDialogo"
+          tipo="erro"
+          data-testid="materia-dialogo-erro"
+        />
+
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label for="materia-nome">Nome</label>
           <InputText
             id="materia-nome"
             v-model="form.nome"
             placeholder="Ex.: Antigo Testamento, Doutrina..."
+            maxlength="200"
           />
           <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Nome') ||
-              firstFieldError(fieldErrors, 'nome')
-            "
+            data-testid="materia-nome-erro"
+            :texto="erroDoCampo('Nome', 'nome')"
           />
         </div>
 
@@ -358,44 +402,29 @@ onMounted(carregarTudo);
             placeholder="Ex.: 1"
             inputId="materia-ordem-exibicao"
           />
-          <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'OrdemExibicao') ||
-              firstFieldError(fieldErrors, 'ordemExibicao')
-            "
-          />
+          <FieldError :texto="erroDoCampo('OrdemExibicao', 'ordemExibicao')" />
         </div>
 
         <div style="display: flex; align-items: center; gap: 10px">
           <Checkbox v-model="form.ativo" :binary="true" inputId="matAtivo" />
           <label for="matAtivo">Ativo</label>
         </div>
-        <FieldError
-          :texto="
-            firstFieldError(fieldErrors, 'Ativo') ||
-            firstFieldError(fieldErrors, 'ativo')
-          "
-        />
-
-        <FieldError
-          :texto="
-            firstFieldError(fieldErrors, 'DepartamentoId') ||
-            firstFieldError(fieldErrors, 'departamentoId')
-          "
-        />
+        <FieldError :texto="erroDoCampo('Ativo', 'ativo')" />
       </div>
 
       <template #footer>
         <Button
           label="Cancelar"
           severity="secondary"
-          :disabled="carregando"
+          :disabled="salvando"
+          data-testid="materia-dialogo-cancelar"
           @click="dialogAberto = false"
         />
         <Button
           :label="editandoId === null ? 'Criar' : 'Salvar'"
           icon="pi pi-check"
-          :loading="carregando"
+          :loading="salvando"
+          data-testid="materia-dialogo-salvar"
           @click="salvar"
         />
       </template>

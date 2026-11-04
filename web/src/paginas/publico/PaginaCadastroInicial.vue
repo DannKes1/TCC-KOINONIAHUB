@@ -149,6 +149,7 @@ async function concluirCadastro(): Promise<void> {
                   v-model="nomeIgreja"
                   placeholder="Nome da Igreja"
                   class="login-input"
+                  maxlength="200"
                   data-testid="cadastro-nome-igreja"
                 />
                 <FieldError
@@ -168,6 +169,7 @@ async function concluirCadastro(): Promise<void> {
                   v-model="cidade"
                   placeholder="Cidade (opcional)"
                   class="login-input"
+                  maxlength="100"
                   data-testid="cadastro-cidade"
                 />
                 <FieldError
@@ -187,6 +189,7 @@ async function concluirCadastro(): Promise<void> {
                   v-model="estado"
                   placeholder="Estado (opcional)"
                   class="login-input"
+                  maxlength="2"
                   data-testid="cadastro-estado"
                 />
                 <FieldError
@@ -206,6 +209,7 @@ async function concluirCadastro(): Promise<void> {
                   v-model="emailIgreja"
                   placeholder="E-mail da igreja (opcional)"
                   class="login-input"
+                  maxlength="100"
                   data-testid="cadastro-email-igreja"
                 />
                 <FieldError
@@ -231,6 +235,7 @@ async function concluirCadastro(): Promise<void> {
                   v-model="nomeAdmin"
                   placeholder="Nome do Administrador"
                   class="login-input"
+                  maxlength="200"
                   data-testid="cadastro-nome-admin"
                 />
                 <FieldError
@@ -248,6 +253,7 @@ async function concluirCadastro(): Promise<void> {
                   v-model="emailAdmin"
                   placeholder="E-mail do Administrador"
                   class="login-input"
+                  maxlength="100"
                   data-testid="cadastro-email-admin"
                 />
                 <FieldError
@@ -267,6 +273,7 @@ async function concluirCadastro(): Promise<void> {
                   toggleMask
                   :feedback="false"
                   :inputStyle="{ width: '100%' }"
+                  :inputProps="{ maxlength: 100 }"
                   :pt="{ pcInputText: { root: { 'data-testid': 'cadastro-senha-admin' } } }"
                   style="width: 100%"
                 />

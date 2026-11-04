@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
@@ -11,12 +11,12 @@ import FieldError from "../../../components/ui/FieldError.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-import {
-  toastSuccess,
-  toastWarn,
-} from "../../../aplicacao/servicos/notificacoes";
+import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-import { firstFieldError } from "../../../aplicacao/servicos/apiError";
+import {
+  firstFieldError,
+  mensagemForaDosCampos,
+} from "../../../aplicacao/servicos/apiError";
 
 // RNF 21.5 (7.1): tag "Sem conta" / "Conta com perfil Usuário — não acessa a turma"
 // ao lado da pessoa, só na coluna Pessoa desta tela (decisão do autor). Abaixo de
@@ -55,8 +55,48 @@ const autenticacao = usarAutenticacaoStore();
 const route = useRoute();
 const confirm = useConfirm();
 
-const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
+const { carregando, erro, run, clearErrors } = useAsync();
 const compacta = usarTelaCompacta();
+
+// Corretiva G4: o erro do salvar fica no próprio diálogo (uma instância serve aos dois
+// diálogos, que nunca ficam abertos ao mesmo tempo) — junto ao campo quando a API
+// devolve o campo ou a validação local aponta o campo, senão num aviso no topo — e some
+// ao fechar ou ao alterar um campo. A instância da página continua com o erro da lista,
+// da carga da atribuição e do encerramento.
+const {
+  carregando: salvando,
+  erro: erroDoDialogo,
+  fieldErrors: errosDoDialogo,
+  run: executarNoDialogo,
+  clearErrors: limparErrosDaApi,
+} = useAsync();
+
+// Validação local no próprio campo (chave = nome do campo no DTO).
+const errosLocais = reactive<Record<string, string>>({});
+
+function limparErrosDoDialogo() {
+  limparErrosDaApi();
+  for (const chave of Object.keys(errosLocais)) delete errosLocais[chave];
+}
+
+function erroDoCampo(campo: string, camel: string) {
+  return (
+    errosLocais[campo] ||
+    firstFieldError(errosDoDialogo.value, campo) ||
+    firstFieldError(errosDoDialogo.value, camel)
+  );
+}
+
+// Campos com FieldError em cada diálogo: um erro da API fora deles (ex.: DepartamentoId,
+// que vem da rota) vai para o aviso do topo.
+const CAMPOS_CRIACAO = ["PessoaId", "Funcao", "DataInicio", "Ativo"];
+const CAMPOS_EDICAO = ["Funcao", "Ativo", "DataFim"];
+const avisoCriacao = computed(() =>
+  mensagemForaDosCampos(erroDoDialogo.value, errosDoDialogo.value, CAMPOS_CRIACAO),
+);
+const avisoEdicao = computed(() =>
+  mensagemForaDosCampos(erroDoDialogo.value, errosDoDialogo.value, CAMPOS_EDICAO),
+);
 
 const podeGerenciarAtribuicao = computed(() => {
   const perfil = (autenticacao.perfil || "").trim().toLowerCase();
@@ -123,6 +163,12 @@ const formularioEdicao = reactive({
   dataFim: null as Date | null,
 });
 
+watch([dialogCriacaoAberto, dialogEdicaoAberto], ([criacao, edicao]) => {
+  if (!criacao && !edicao) limparErrosDoDialogo();
+});
+watch(formularioCriacao, limparErrosDoDialogo);
+watch(formularioEdicao, limparErrosDoDialogo);
+
 function limparCriacao() {
   formularioCriacao.pessoaId = null;
   formularioCriacao.funcao = "Professor";
@@ -139,6 +185,7 @@ function limparEdicao() {
 
 function abrirNovo() {
   clearErrors();
+  limparErrosDoDialogo();
   limparCriacao();
   dialogCriacaoAberto.value = true;
 }
@@ -185,24 +232,23 @@ function severityFuncao(funcao: string) {
   return "secondary";
 }
 
-function validarCriacao(): string {
+function validarCriacao(): boolean {
+  limparErrosDoDialogo();
   if (!formularioCriacao.pessoaId) {
-    return "Selecione a pessoa para a atribuição.";
+    errosLocais.PessoaId = "Selecione a pessoa para a atribuição.";
   }
-
   if (!formularioCriacao.funcao.trim()) {
-    return "Informe a função da atribuição.";
+    errosLocais.Funcao = "Informe a função da atribuição.";
   }
-
-  return "";
+  return Object.keys(errosLocais).length === 0;
 }
 
-function validarEdicao(): string {
+function validarEdicao(): boolean {
+  limparErrosDoDialogo();
   if (!formularioEdicao.funcao.trim()) {
-    return "Informe a função da atribuição.";
+    errosLocais.Funcao = "Informe a função da atribuição.";
   }
-
-  return "";
+  return Object.keys(errosLocais).length === 0;
 }
 
 const pessoasOrdenadas = computed(() => {
@@ -244,6 +290,7 @@ async function carregarTela() {
 
 async function abrirEdicao(item: AtribuicaoVM) {
   clearErrors();
+  limparErrosDoDialogo();
 
   const atribuicao = await run(
     async () => await obterAtribuicao(item.id),
@@ -263,13 +310,9 @@ async function abrirEdicao(item: AtribuicaoVM) {
 }
 
 async function salvarCriacao() {
-  const msg = validarCriacao();
-  if (msg) {
-    toastWarn(msg);
-    return;
-  }
+  if (!validarCriacao()) return;
 
-  await run(async () => {
+  await executarNoDialogo(async () => {
     await criarAtribuicao({
       PessoaId: Number(formularioCriacao.pessoaId),
       DepartamentoId: departamentoId,
@@ -285,16 +328,12 @@ async function salvarCriacao() {
 }
 
 async function salvarEdicao() {
-  const msg = validarEdicao();
-  if (msg) {
-    toastWarn(msg);
-    return;
-  }
+  if (!validarEdicao()) return;
 
   const id = editandoId.value;
   if (!id) return;
 
-  await run(async () => {
+  await executarNoDialogo(async () => {
     await atualizarAtribuicao(id, {
       Funcao: formularioEdicao.funcao.trim(),
       Ativo: Boolean(formularioEdicao.ativo),
@@ -510,11 +549,17 @@ onMounted(carregarTela);
       v-model:visible="dialogCriacaoAberto"
       modal
       header="Nova atribuição"
-      :closable="!carregando"
-      :dismissableMask="!carregando"
+      :closable="!salvando"
+      :dismissableMask="!salvando"
       style="width: 680px; max-width: 96vw"
     >
       <div class="page-container">
+        <InlineMessage
+          :texto="avisoCriacao"
+          tipo="erro"
+          data-testid="atribuicao-criacao-erro"
+        />
+
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label id="atribuicao-criacao-pessoa-rotulo" for="atribuicao-criacao-pessoa">Pessoa *</label>
           <Dropdown
@@ -529,10 +574,8 @@ onMounted(carregarTela);
             placeholder="Selecione a pessoa"
           />
           <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'PessoaId') ||
-              firstFieldError(fieldErrors, 'pessoaId')
-            "
+            data-testid="atribuicao-criacao-pessoa-erro"
+            :texto="erroDoCampo('PessoaId', 'pessoaId')"
           />
         </div>
 
@@ -547,12 +590,7 @@ onMounted(carregarTela);
               optionValue="value"
               placeholder="Selecione"
             />
-            <FieldError
-              :texto="
-                firstFieldError(fieldErrors, 'Funcao') ||
-                firstFieldError(fieldErrors, 'funcao')
-              "
-            />
+            <FieldError :texto="erroDoCampo('Funcao', 'funcao')" />
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
@@ -565,6 +603,7 @@ onMounted(carregarTela);
               iconDisplay="input"
               showButtonBar
             />
+            <FieldError :texto="erroDoCampo('DataInicio', 'dataInicio')" />
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
@@ -580,6 +619,7 @@ onMounted(carregarTela);
               optionLabel="label"
               optionValue="value"
             />
+            <FieldError :texto="erroDoCampo('Ativo', 'ativo')" />
           </div>
         </div>
       </div>
@@ -588,13 +628,15 @@ onMounted(carregarTela);
         <Button
           label="Cancelar"
           severity="secondary"
-          :disabled="carregando"
+          :disabled="salvando"
+          data-testid="atribuicao-criacao-cancelar"
           @click="dialogCriacaoAberto = false"
         />
         <Button
           label="Salvar"
           icon="pi pi-check"
-          :loading="carregando"
+          :loading="salvando"
+          data-testid="atribuicao-criacao-salvar"
           @click="salvarCriacao"
         />
       </template>
@@ -604,11 +646,17 @@ onMounted(carregarTela);
       v-model:visible="dialogEdicaoAberto"
       modal
       header="Editar atribuição"
-      :closable="!carregando"
-      :dismissableMask="!carregando"
+      :closable="!salvando"
+      :dismissableMask="!salvando"
       style="width: 680px; max-width: 96vw"
     >
       <div class="page-container">
+        <InlineMessage
+          :texto="avisoEdicao"
+          tipo="erro"
+          data-testid="atribuicao-edicao-erro"
+        />
+
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label for="atribuicao-edicao-funcao">Função *</label>
           <Dropdown
@@ -619,12 +667,7 @@ onMounted(carregarTela);
             optionValue="value"
             placeholder="Selecione"
           />
-          <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Funcao') ||
-              firstFieldError(fieldErrors, 'funcao')
-            "
-          />
+          <FieldError :texto="erroDoCampo('Funcao', 'funcao')" />
         </div>
 
         <div class="atribuicao-form-linha atribuicao-form-linha--duas">
@@ -641,6 +684,7 @@ onMounted(carregarTela);
               optionLabel="label"
               optionValue="value"
             />
+            <FieldError :texto="erroDoCampo('Ativo', 'ativo')" />
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
@@ -653,11 +697,12 @@ onMounted(carregarTela);
               iconDisplay="input"
               showButtonBar
             />
+            <FieldError :texto="erroDoCampo('DataFim', 'dataFim')" />
           </div>
         </div>
 
         <InlineMessage
-          texto="Se você marcar como inativa e não informar a data fim, o backend preencherá automaticamente."
+          texto="Se você marcar como inativa e não informar a data fim, o sistema preenche a data fim automaticamente."
           tipo="info"
         />
       </div>
@@ -666,13 +711,15 @@ onMounted(carregarTela);
         <Button
           label="Cancelar"
           severity="secondary"
-          :disabled="carregando"
+          :disabled="salvando"
+          data-testid="atribuicao-edicao-cancelar"
           @click="dialogEdicaoAberto = false"
         />
         <Button
           label="Salvar"
           icon="pi pi-check"
-          :loading="carregando"
+          :loading="salvando"
+          data-testid="atribuicao-edicao-salvar"
           @click="salvarEdicao"
         />
       </template>

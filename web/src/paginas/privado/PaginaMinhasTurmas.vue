@@ -140,7 +140,7 @@ onMounted(carregar);
       </Column>
       <Column header="Responsável">
         <template #body="{ data }">
-          {{ data.responsavel ?? "—" }}
+          {{ data.responsavel ?? "-" }}
         </template>
       </Column>
       <Column header="Status" style="width: 100px">

@@ -8,10 +8,7 @@ import FieldError from "../../../components/ui/FieldError.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 
-import {
-  toastSuccess,
-  toastWarn,
-} from "../../../aplicacao/servicos/notificacoes";
+import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
 import {
   firstFieldError,
@@ -52,8 +49,25 @@ const {
   erro: erroDoDialogo,
   fieldErrors: errosDoDialogo,
   run: executarNoDialogo,
-  clearErrors: limparErrosDoDialogo,
+  clearErrors: limparErrosDaApi,
 } = useAsync();
+
+// Corretiva G4: validação local no próprio campo (chave = nome do campo no DTO), limpa
+// junto com os erros da API; nenhuma validação sai em toast.
+const errosLocais = reactive<Record<string, string>>({});
+
+function limparErrosDoDialogo() {
+  limparErrosDaApi();
+  for (const chave of Object.keys(errosLocais)) delete errosLocais[chave];
+}
+
+function erroDoCampo(campo: string, camel: string) {
+  return (
+    errosLocais[campo] ||
+    firstFieldError(errosDoDialogo.value, campo) ||
+    firstFieldError(errosDoDialogo.value, camel)
+  );
+}
 
 const usuarios = ref<UsuarioVM[]>([]);
 const pessoas = ref<PessoaVM[]>([]);
@@ -108,7 +122,7 @@ const formularioEdicao = reactive({
 
 // Campos com FieldError em cada diálogo: um erro da API fora deles vai para o aviso.
 const CAMPOS_CRIACAO = ["PessoaId", "Email", "Perfil", "Senha"];
-const CAMPOS_EDICAO = ["Email"];
+const CAMPOS_EDICAO = ["Email", "Perfil", "Ativo"];
 
 const avisoCriacao = computed(() =>
   mensagemForaDosCampos(erroDoDialogo.value, errosDoDialogo.value, CAMPOS_CRIACAO),
@@ -214,35 +228,37 @@ const usuariosFiltrados = computed(() => {
   });
 });
 
-function validarCriacao(): string {
+function validarCriacao(): boolean {
+  limparErrosDoDialogo();
+
   if (!formularioCriacao.pessoaId) {
-    return "Selecione a pessoa que será vinculada ao usuário.";
+    errosLocais.PessoaId = "Selecione a pessoa que será vinculada ao usuário.";
   }
 
   if (!emailValido(formularioCriacao.email)) {
-    return "Informe um e-mail de acesso válido.";
+    errosLocais.Email = "Informe um e-mail de acesso válido.";
   }
 
   if (formularioCriacao.definirSenhaManual) {
     if (!formularioCriacao.senha.trim()) {
-      return "Informe a senha inicial do usuário.";
-    }
-
-    if (formularioCriacao.senha.trim().length < 6) {
-      return "A senha deve ter no mínimo 6 caracteres.";
+      errosLocais.Senha = "Informe a senha inicial do usuário.";
+    } else if (formularioCriacao.senha.trim().length < 6) {
+      errosLocais.Senha = "A senha deve ter no mínimo 6 caracteres.";
     }
   }
 
-  return "";
+  return Object.keys(errosLocais).length === 0;
 }
 
-function validarEdicao(): string {
+function validarEdicao(): boolean {
+  limparErrosDoDialogo();
+
   if (!formularioEdicao.perfil.trim()) {
-    return "Informe o perfil do usuário.";
+    errosLocais.Perfil = "Informe o perfil do usuário.";
   }
 
   if (!emailValido(formularioEdicao.email)) {
-    return "Informe um e-mail de acesso válido.";
+    errosLocais.Email = "Informe um e-mail de acesso válido.";
   }
 
   if (
@@ -250,10 +266,10 @@ function validarEdicao(): string {
     editandoUsuario.value.id === autenticacao.usuarioId &&
     !formularioEdicao.ativo
   ) {
-    return "Você não pode desativar o seu próprio usuário.";
+    errosLocais.Ativo = "Você não pode desativar o seu próprio usuário.";
   }
 
-  return "";
+  return Object.keys(errosLocais).length === 0;
 }
 
 function textoOuNull(valor?: string | null) {
@@ -373,11 +389,7 @@ async function gerarConvite(usuario: UsuarioVM) {
 // ------------------------------------------------
 
 async function salvarNovo() {
-  const msg = validarCriacao();
-  if (msg) {
-    toastWarn(msg);
-    return;
-  }
+  if (!validarCriacao()) return;
 
   await executarNoDialogo(async () => {
     const criado = await criarUsuario({
@@ -411,11 +423,7 @@ async function salvarNovo() {
 }
 
 async function salvarEdicao() {
-  const msg = validarEdicao();
-  if (msg) {
-    toastWarn(msg);
-    return;
-  }
+  if (!validarEdicao()) return;
 
   const usuario = editandoUsuario.value;
   if (!usuario) return;
@@ -462,7 +470,7 @@ onMounted(carregarDados);
     <InlineMessage :texto="erro" tipo="erro" />
 
     <InlineMessage
-      texto="A criação de usuário sempre exige vínculo com uma pessoa já cadastrada. Por padrão, o sistema gera um link de convite para a própria pessoa definir a senha; para redefinir o acesso de uma conta, gere um novo convite — a senha nunca é digitada pelo administrador. Este módulo é restrito a administradores."
+      texto="A criação de usuário sempre exige vínculo com uma pessoa já cadastrada. Por padrão, o sistema gera um link de convite para a própria pessoa definir a senha; para redefinir o acesso de uma conta, gere um novo convite. A senha nunca é digitada pelo administrador. Este módulo é restrito a administradores."
       tipo="info"
     />
 
@@ -622,10 +630,8 @@ onMounted(carregarDados);
             placeholder="Selecione a pessoa"
           />
           <FieldError
-            :texto="
-              firstFieldError(errosDoDialogo, 'PessoaId') ||
-              firstFieldError(errosDoDialogo, 'pessoaId')
-            "
+            data-testid="usuario-criacao-pessoa-erro"
+            :texto="erroDoCampo('PessoaId', 'pessoaId')"
           />
         </div>
 
@@ -635,6 +641,7 @@ onMounted(carregarDados);
             id="usuario-criacao-email"
             v-model="formularioCriacao.email"
             placeholder="email@dominio.com"
+            maxlength="100"
           />
           <small
             data-testid="usuario-criacao-email-dica"
@@ -643,10 +650,8 @@ onMounted(carregarDados);
             O e-mail fica também no cadastro da pessoa.
           </small>
           <FieldError
-            :texto="
-              firstFieldError(errosDoDialogo, 'Email') ||
-              firstFieldError(errosDoDialogo, 'email')
-            "
+            data-testid="usuario-criacao-email-erro"
+            :texto="erroDoCampo('Email', 'email')"
           />
         </div>
 
@@ -661,12 +666,7 @@ onMounted(carregarDados);
             optionValue="value"
             placeholder="Selecione o perfil"
           />
-          <FieldError
-            :texto="
-              firstFieldError(errosDoDialogo, 'Perfil') ||
-              firstFieldError(errosDoDialogo, 'perfil')
-            "
-          />
+          <FieldError :texto="erroDoCampo('Perfil', 'perfil')" />
         </div>
 
         <div
@@ -709,10 +709,8 @@ onMounted(carregarDados);
             style="width: 100%"
           />
           <FieldError
-            :texto="
-              firstFieldError(errosDoDialogo, 'Senha') ||
-              firstFieldError(errosDoDialogo, 'senha')
-            "
+            data-testid="usuario-criacao-senha-erro"
+            :texto="erroDoCampo('Senha', 'senha')"
           />
         </div>
 
@@ -770,6 +768,7 @@ onMounted(carregarDados);
           <InputText
             id="usuario-edicao-email"
             v-model="formularioEdicao.email"
+            maxlength="100"
             data-testid="usuario-edicao-email"
           />
           <small
@@ -781,10 +780,7 @@ onMounted(carregarDados);
           </small>
           <FieldError
             data-testid="usuario-edicao-email-erro"
-            :texto="
-              firstFieldError(errosDoDialogo, 'Email') ||
-              firstFieldError(errosDoDialogo, 'email')
-            "
+            :texto="erroDoCampo('Email', 'email')"
           />
         </div>
 
@@ -800,6 +796,7 @@ onMounted(carregarDados);
               optionValue="value"
               data-testid="usuario-perfil"
             />
+            <FieldError :texto="erroDoCampo('Perfil', 'perfil')" />
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
@@ -815,6 +812,10 @@ onMounted(carregarDados);
               optionLabel="label"
               optionValue="value"
               data-testid="usuario-status"
+            />
+            <FieldError
+              data-testid="usuario-edicao-status-erro"
+              :texto="erroDoCampo('Ativo', 'ativo')"
             />
           </div>
         </div>
@@ -892,7 +893,7 @@ onMounted(carregarDados);
             conviteAtual.expiraEm
               ? ` e vale até ${formatarDataConvite(conviteAtual.expiraEm)}`
               : ''
-          }. Por segurança, ele é exibido apenas agora — se precisar, gere um novo pelo botão de convite na listagem.`"
+          }. Por segurança, ele é exibido apenas agora. Se precisar, gere um novo pelo botão de convite na listagem.`"
           tipo="aviso"
         />
       </div>

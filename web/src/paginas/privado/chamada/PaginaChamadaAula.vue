@@ -152,7 +152,7 @@ const voltarLabel = computed(
 );
 
 const titulo = computed(() =>
-  aula.value ? `Chamada — ${formatarData(aula.value.data)}` : "Chamada",
+  aula.value ? `Chamada de ${formatarData(aula.value.data)}` : "Chamada",
 );
 const subtitulo = computed(() =>
   aula.value

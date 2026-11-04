@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, reactive, ref } from "vue";
+import { computed, inject, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import PageHeader from "../../../components/ui/PageHeader.vue";
@@ -26,7 +26,10 @@ import {
   toastWarn,
 } from "../../../aplicacao/servicos/notificacoes";
 
-import { firstFieldError } from "../../../aplicacao/servicos/apiError";
+import {
+  firstFieldError,
+  mensagemForaDosCampos,
+} from "../../../aplicacao/servicos/apiError";
 
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -79,7 +82,41 @@ const recarregarResumoDaTurma = inject<(() => Promise<void>) | null>(
 // RNF 33.5: só o Administrador reabre uma aula fechada.
 const podeReabrir = computed(() => autenticacao.isAdmin);
 
-const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
+const { carregando, erro, run, clearErrors } = useAsync();
+
+// Corretiva G4: o erro do salvar fica no próprio diálogo — junto ao campo quando a API
+// devolve o campo (ou quando a validação local aponta o campo), senão num aviso no topo
+// — e some ao fechar ou ao alterar um campo. A instância da página continua com o erro
+// da lista e das ações do ⋮ (consolidar, não realizada, reabrir, excluir).
+const {
+  carregando: salvando,
+  erro: erroDoDialogo,
+  fieldErrors: errosDoDialogo,
+  run: executarNoDialogo,
+  clearErrors: limparErrosDaApi,
+} = useAsync();
+
+// Validação local no próprio campo (chave = nome do campo no DTO).
+const errosLocais = reactive<Record<string, string>>({});
+
+function limparErrosDoDialogo() {
+  limparErrosDaApi();
+  for (const chave of Object.keys(errosLocais)) delete errosLocais[chave];
+}
+
+function erroDoCampo(campo: string, camel: string) {
+  return (
+    errosLocais[campo] ||
+    firstFieldError(errosDoDialogo.value, campo) ||
+    firstFieldError(errosDoDialogo.value, camel)
+  );
+}
+
+// Campos com FieldError no diálogo: um erro da API fora deles vai para o aviso do topo.
+const CAMPOS_DO_DIALOGO = ["Data", "MateriaId", "ProfessorId", "Tema", "Conteudo"];
+const avisoDoDialogo = computed(() =>
+  mensagemForaDosCampos(erroDoDialogo.value, errosDoDialogo.value, CAMPOS_DO_DIALOGO),
+);
 
 const departamentoId = computed(() => Number(route.params.departamentoId));
 
@@ -143,6 +180,11 @@ const form = reactive({
   materiaId: null as number | null,
   professorId: null as number | null,
 });
+
+watch(dialogAberto, (aberto) => {
+  if (!aberto) limparErrosDoDialogo();
+});
+watch(form, limparErrosDoDialogo);
 
 function abrirChamada(aula: AulaVM) {
   router.push(`/aulas/${aula.id}/chamada`);
@@ -211,6 +253,7 @@ function limparForm() {
 
 function abrirNovo() {
   clearErrors();
+  limparErrosDoDialogo();
   limparForm();
   aulaEmEdicao.value = null;
   dialogAberto.value = true;
@@ -221,6 +264,7 @@ function abrirEditar(aula: AulaVM) {
   if (aula.situacao !== "EmAberto") return;
 
   clearErrors();
+  limparErrosDoDialogo();
   const data = new Date(aula.data);
   form.data = Number.isNaN(data.getTime()) ? null : data;
   form.tema = aula.tema ?? "";
@@ -255,23 +299,20 @@ async function carregarTudo() {
   }, "Não foi possível carregar as aulas.");
 }
 
-function validarRapido(): string {
-  if (!form.data) return "Informe a data da aula.";
-  if (!form.materiaId) return "Selecione a matéria.";
-  if (!form.professorId) return "Selecione o professor.";
-  return "";
+function validarFormulario(): boolean {
+  limparErrosDoDialogo();
+  if (!form.data) errosLocais.Data = "Informe a data da aula.";
+  if (!form.materiaId) errosLocais.MateriaId = "Selecione a matéria.";
+  if (!form.professorId) errosLocais.ProfessorId = "Selecione o professor.";
+  return Object.keys(errosLocais).length === 0;
 }
 
 async function salvar() {
-  const msg = validarRapido();
-  if (msg) {
-    toastWarn(msg);
-    return;
-  }
+  if (!validarFormulario()) return;
 
   const emEdicao = aulaEmEdicao.value;
 
-  await run(
+  await executarNoDialogo(
     async () => {
       const dados = {
         Data: (form.data as Date).toISOString(),
@@ -434,7 +475,7 @@ onMounted(carregarTudo);
 <template>
   <div class="page-container">
     <PageHeader
-      :titulo="turma ? `Aulas — ${turma.nome}` : 'Aulas'"
+      :titulo="turma ? `Aulas: ${turma.nome}` : 'Aulas'"
       subtitulo="Cadastre e gerencie as aulas desta turma"
     >
       <template #acoes>
@@ -596,13 +637,19 @@ onMounted(carregarTudo);
     <Dialog
       v-model:visible="dialogAberto"
       modal
-      :closable="!carregando"
-      :dismissableMask="!carregando"
+      :closable="!salvando"
+      :dismissableMask="!salvando"
       :header="editando ? 'Editar aula' : 'Nova aula'"
       style="width: 600px; max-width: 92vw"
       data-testid="aula-dialogo"
     >
       <div class="page-container">
+        <InlineMessage
+          :texto="avisoDoDialogo"
+          tipo="erro"
+          data-testid="aula-dialogo-erro"
+        />
+
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label for="aula-data">Data</label>
           <Calendar
@@ -612,10 +659,8 @@ onMounted(carregarTudo);
             inputId="aula-data"
           />
           <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Data') ||
-              firstFieldError(fieldErrors, 'data')
-            "
+            data-testid="aula-data-erro"
+            :texto="erroDoCampo('Data', 'data')"
           />
         </div>
 
@@ -632,12 +677,7 @@ onMounted(carregarTudo);
             ariaLabelledby="aula-materia-rotulo"
             data-testid="aula-materia"
           />
-          <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'MateriaId') ||
-              firstFieldError(fieldErrors, 'materiaId')
-            "
-          />
+          <FieldError :texto="erroDoCampo('MateriaId', 'materiaId')" />
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
@@ -653,12 +693,7 @@ onMounted(carregarTudo);
             ariaLabelledby="aula-professor-rotulo"
             data-testid="aula-professor"
           />
-          <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'ProfessorId') ||
-              firstFieldError(fieldErrors, 'professorId')
-            "
-          />
+          <FieldError :texto="erroDoCampo('ProfessorId', 'professorId')" />
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
@@ -667,14 +702,10 @@ onMounted(carregarTudo);
             id="aula-tema"
             v-model="form.tema"
             placeholder="Ex.: Fé, Salvação."
+            maxlength="200"
             data-testid="aula-tema"
           />
-          <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Tema') ||
-              firstFieldError(fieldErrors, 'tema')
-            "
-          />
+          <FieldError :texto="erroDoCampo('Tema', 'tema')" />
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
@@ -685,35 +716,25 @@ onMounted(carregarTudo);
             rows="3"
             autoResize
             placeholder="Resumo do que será ministrado."
+            maxlength="2000"
             data-testid="aula-conteudo"
           />
-          <FieldError
-            :texto="
-              firstFieldError(fieldErrors, 'Conteudo') ||
-              firstFieldError(fieldErrors, 'conteudo')
-            "
-          />
+          <FieldError :texto="erroDoCampo('Conteudo', 'conteudo')" />
         </div>
-
-        <FieldError
-          :texto="
-            firstFieldError(fieldErrors, 'DepartamentoId') ||
-            firstFieldError(fieldErrors, 'departamentoId')
-          "
-        />
       </div>
 
       <template #footer>
         <Button
           label="Cancelar"
           severity="secondary"
-          :disabled="carregando"
+          :disabled="salvando"
+          data-testid="aula-dialogo-cancelar"
           @click="dialogAberto = false"
         />
         <Button
           label="Salvar"
           icon="pi pi-check"
-          :loading="carregando"
+          :loading="salvando"
           data-testid="aula-salvar"
           @click="salvar"
         />
