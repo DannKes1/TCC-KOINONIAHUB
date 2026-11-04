@@ -7,7 +7,11 @@ import { createMemoryHistory, createRouter } from "vue-router";
 
 import PaginaMatriculasTurma from "./PaginaMatriculasTurma.vue";
 import type { OpcoesConfirmacao } from "../../../aplicacao/servicos/notificacoes";
-import { removerMatricula } from "../../../aplicacao/servicos/matriculasServico";
+import {
+  listarPessoasDisponiveisDaTurma,
+  matricular,
+  removerMatricula,
+} from "../../../aplicacao/servicos/matriculasServico";
 import { listarHistoricoPresencasDaPessoa } from "../../../aplicacao/servicos/presencasPessoaServico";
 
 // Etapa 6.4-C (RF20 / RF27–RF28): no celular a aba Alunos vira cartões — um por
@@ -189,6 +193,47 @@ describe("PaginaMatriculasTurma — cartões no celular (6.4-C)", () => {
 
     expect(removerMatricula).toHaveBeenCalledWith(7, 2);
     expect(recarregarResumo).toHaveBeenCalledTimes(1);
+    wrapper.unmount();
+  });
+
+  // Corretiva G4: a validação local fica junto ao campo (sem toast) e o erro de regra da
+  // API aparece dentro do diálogo, nunca no topo da página, e some ao alterar um campo.
+  it("Matricular: pessoa obrigatória junto ao campo; 400 da API no topo do diálogo, nada na página", async () => {
+    const JA_MATRICULADA = "Esta pessoa já está matriculada (ativa) neste departamento.";
+    vi.mocked(listarPessoasDisponiveisDaTurma).mockResolvedValueOnce([
+      { id: 20, nome: "Dani", email: null, situacao: "Ativo", possuiConta: false } as any,
+    ]);
+    vi.mocked(matricular).mockRejectedValueOnce({ response: { status: 400, data: { mensagem: JA_MATRICULADA } } });
+    const { wrapper, recarregarResumo } = await montar();
+
+    await wrapper.find('button[aria-label="Matricular"]').trigger("click");
+    await flushPromises();
+
+    const salvar = () => document.querySelector<HTMLButtonElement>('[data-testid="matricula-dialogo-salvar"]')!.click();
+    salvar();
+    await flushPromises();
+    expect(matricular).not.toHaveBeenCalled();
+    expect(document.querySelector('[data-testid="matricula-pessoa-erro"]')!.textContent)
+      .toContain("Selecione uma pessoa para matricular.");
+
+    wrapper.findAllComponents(Dropdown).find((d) => d.props("labelId") === "matricula-pessoa")!
+      .vm.$emit("update:modelValue", 20);
+    await flushPromises();
+    expect(document.querySelector('[data-testid="matricula-pessoa-erro"]')).toBeNull();
+
+    salvar();
+    await flushPromises();
+    expect(matricular).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[data-testid="matricula-dialogo-erro"]')!.textContent).toContain(JA_MATRICULADA);
+    expect(wrapper.text()).not.toContain(JA_MATRICULADA);
+    expect(recarregarResumo).not.toHaveBeenCalled();
+
+    const observacao = document.querySelector<HTMLInputElement>("#matricula-observacao")!;
+    observacao.value = "Transferido";
+    observacao.dispatchEvent(new Event("input"));
+    await flushPromises();
+    expect(document.querySelector('[data-testid="matricula-dialogo-erro"]')).toBeNull();
+
     wrapper.unmount();
   });
 });

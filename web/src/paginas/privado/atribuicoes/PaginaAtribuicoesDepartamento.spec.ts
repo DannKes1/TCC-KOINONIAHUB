@@ -4,7 +4,12 @@ import Dropdown from "primevue/dropdown";
 import Tooltip from "primevue/tooltip";
 import { createMemoryHistory, createRouter } from "vue-router";
 
-import { obterAtribuicao } from "../../../aplicacao/servicos/atribuicoesServico";
+import {
+  atualizarAtribuicao,
+  criarAtribuicao,
+  obterAtribuicao,
+} from "../../../aplicacao/servicos/atribuicoesServico";
+import { listarPessoas } from "../../../aplicacao/servicos/pessoasServico";
 import PaginaAtribuicoesDepartamento from "./PaginaAtribuicoesDepartamento.vue";
 
 // Etapa 7.1 (RNF 21.5): na lista de atribuições da turma, a pessoa sem conta de
@@ -98,7 +103,7 @@ describe("PaginaAtribuicoesDepartamento — aviso da conta (RNF 21.5)", () => {
 
     expect(porNome["Paula Lima"]!.find('[data-testid="atribuicao-aviso-conta"]').exists()).toBe(false);
     expect(porNome["Marcos Silva"]!.find('[data-testid="atribuicao-aviso-conta"]').text())
-      .toBe("Conta com perfil Usuário — não acessa a turma");
+      .toBe("Conta com perfil Usuário: não acessa a turma");
     expect(porNome["Ana Souza"]!.find('[data-testid="atribuicao-aviso-conta"]').text()).toBe("Sem conta");
     expect(wrapper.findAll('[data-testid="atribuicao-aviso-conta"]')).toHaveLength(2);
 
@@ -158,6 +163,78 @@ describe("PaginaAtribuicoesDepartamento — função em lista fechada (RF21)", (
 
     // A atribuição carregada é Auxiliar: o campo mostra o valor gravado.
     conferirDropdownFechado(wrapper, "atribuicao-edicao-funcao", "Auxiliar");
+
+    wrapper.unmount();
+  });
+});
+
+// Corretiva G4: o erro de regra da API aparece dentro do diálogo (criação e edição),
+// nunca no topo da página, e some ao alterar um campo; a validação local fica junto ao
+// campo, sem toast.
+describe("PaginaAtribuicoesDepartamento — erro dentro do diálogo (Corretiva G4)", () => {
+  const rejeicao = (mensagem: string) => ({ response: { status: 400, data: { mensagem } } });
+
+  beforeEach(() => {
+    document.body.innerHTML = "";
+    vi.mocked(criarAtribuicao).mockReset();
+    vi.mocked(atualizarAtribuicao).mockReset();
+  });
+
+  function clicar(testid: string) {
+    document.querySelector<HTMLButtonElement>(`[data-testid="${testid}"]`)!.click();
+  }
+
+  it("Nova atribuição: 400 com mensagem no topo do diálogo, nada na página, some ao trocar a função", async () => {
+    const JA_TEM = "Esta pessoa já tem uma atribuição ativa nesta turma.";
+    vi.mocked(listarPessoas).mockResolvedValueOnce([
+      { id: 10, nome: "Pessoa Dez", email: null, situacao: "Ativo", possuiConta: false } as any,
+    ]);
+    vi.mocked(criarAtribuicao).mockRejectedValue(rejeicao(JA_TEM));
+    const wrapper = await montar();
+
+    await wrapper.find("button[aria-label='Nova Atribuição']").trigger("click");
+    await flushPromises();
+
+    // Sem pessoa: erro junto ao campo e a API não é chamada.
+    clicar("atribuicao-criacao-salvar");
+    await flushPromises();
+    expect(document.querySelector('[data-testid="atribuicao-criacao-pessoa-erro"]')!.textContent)
+      .toContain("Selecione a pessoa para a atribuição.");
+    expect(criarAtribuicao).not.toHaveBeenCalled();
+
+    const pessoa = wrapper.findAllComponents(Dropdown).find((d) => d.props("labelId") === "atribuicao-criacao-pessoa");
+    pessoa!.vm.$emit("update:modelValue", 10);
+    await flushPromises();
+    expect(document.querySelector('[data-testid="atribuicao-criacao-pessoa-erro"]')).toBeNull();
+
+    clicar("atribuicao-criacao-salvar");
+    await flushPromises();
+    expect(criarAtribuicao).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[data-testid="atribuicao-criacao-erro"]')!.textContent).toContain(JA_TEM);
+    expect(wrapper.text()).not.toContain(JA_TEM);
+
+    const funcao = wrapper.findAllComponents(Dropdown).find((d) => d.props("labelId") === "atribuicao-criacao-funcao");
+    funcao!.vm.$emit("update:modelValue", "Auxiliar");
+    await flushPromises();
+    expect(document.querySelector('[data-testid="atribuicao-criacao-erro"]')).toBeNull();
+
+    wrapper.unmount();
+  });
+
+  it("Editar atribuição: 400 com mensagem no topo do diálogo, nada na página", async () => {
+    const RECUSA = "A atribuição não pode ser alterada.";
+    vi.mocked(atualizarAtribuicao).mockRejectedValue(rejeicao(RECUSA));
+    const wrapper = await montar();
+    vi.mocked(obterAtribuicao).mockResolvedValueOnce(atribuicao(1, "Paula Lima", "Professor"));
+
+    await wrapper.find("tbody tr .pi-pencil").trigger("click");
+    await flushPromises();
+    clicar("atribuicao-edicao-salvar");
+    await flushPromises();
+
+    expect(atualizarAtribuicao).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[data-testid="atribuicao-edicao-erro"]')!.textContent).toContain(RECUSA);
+    expect(wrapper.text()).not.toContain(RECUSA);
 
     wrapper.unmount();
   });

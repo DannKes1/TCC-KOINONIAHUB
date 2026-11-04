@@ -1,5 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import PrimeVue from "primevue/config";
+import Dropdown from "primevue/dropdown";
 import Tooltip from "primevue/tooltip";
 import { createMemoryHistory, createRouter } from "vue-router";
 
@@ -7,7 +8,9 @@ import PaginaPessoasLista from "./PaginaPessoasLista.vue";
 import {
   atualizarPessoa,
   criarPessoa,
+  listarPessoas,
 } from "../../../aplicacao/servicos/pessoasServico";
+import { criarParentesco } from "../../../aplicacao/servicos/parentescosServico";
 
 // Corretiva G3: o erro da API ao salvar Nova/Editar pessoa aparece dentro do diálogo —
 // no topo quando a API devolve só a mensagem (400 `{ mensagem }`), junto ao campo quando
@@ -33,6 +36,7 @@ function pessoa() {
     estado: "",
     cep: "",
     criadoEm: "2026-01-01T00:00:00Z",
+    atualizadoEm: null,
     dataInativacao: null,
     possuiConta: false,
   };
@@ -162,6 +166,60 @@ describe("PaginaPessoasLista — erro da API dentro do diálogo (Corretiva G3)",
     );
     expect(erroDoDialogo()).toBeNull();
     expect(wrapper.text()).not.toContain("Alguns campos enviados são inválidos");
+
+    wrapper.unmount();
+  });
+
+  // Corretiva G4: a validação local fica junto ao campo, sem toast.
+  it("Nova pessoa sem nome: erro junto ao campo e a API não é chamada", async () => {
+    const wrapper = await montar();
+
+    await wrapper.find('button[aria-label="Nova Pessoa"]').trigger("click");
+    await flushPromises();
+    clicar("pessoa-dialogo-salvar");
+    await flushPromises();
+
+    expect(document.querySelector('[data-testid="pessoa-nome-erro"]')!.textContent).toContain("Informe o nome da pessoa.");
+    expect(criarPessoa).not.toHaveBeenCalled();
+
+    wrapper.unmount();
+  });
+
+  // Corretiva G4: o diálogo de Parentescos tem a própria instância para o Adicionar: o
+  // erro de regra aparece dentro dele, nunca no topo da página, e some ao trocar o campo.
+  it("Parentescos: parente obrigatório junto ao campo; 400 da API no topo do diálogo, nada na página", async () => {
+    const JA_REGISTRADO = "Este vínculo já está registrado.";
+    vi.mocked(listarPessoas).mockResolvedValueOnce([
+      pessoa(),
+      { ...pessoa(), id: 2, nome: "Beto Lima", email: null },
+    ]);
+    vi.mocked(criarParentesco).mockRejectedValue(rejeicao({ mensagem: JA_REGISTRADO }));
+    const wrapper = await montar();
+
+    wrapper.find("tbody .pi-share-alt").element.closest("button")!.click();
+    await flushPromises();
+
+    clicar("parentesco-dialogo-salvar");
+    await flushPromises();
+    expect(criarParentesco).not.toHaveBeenCalled();
+    expect(document.querySelector('[data-testid="parentesco-parente-erro"]')!.textContent).toContain("Selecione o parente.");
+
+    const parente = wrapper.findAllComponents(Dropdown).find((d) => d.props("labelId") === "pessoa-parentesco-parente");
+    parente!.vm.$emit("update:modelValue", 2);
+    const relacionamento = wrapper.findAllComponents(Dropdown).find((d) => d.props("labelId") === "pessoa-parentesco-relacionamento");
+    relacionamento!.vm.$emit("update:modelValue", "Pai");
+    await flushPromises();
+    expect(document.querySelector('[data-testid="parentesco-parente-erro"]')).toBeNull();
+
+    clicar("parentesco-dialogo-salvar");
+    await flushPromises();
+    expect(criarParentesco).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[data-testid="parentesco-dialogo-erro"]')!.textContent).toContain(JA_REGISTRADO);
+    expect(wrapper.text()).not.toContain(JA_REGISTRADO);
+
+    relacionamento!.vm.$emit("update:modelValue", "Mãe");
+    await flushPromises();
+    expect(document.querySelector('[data-testid="parentesco-dialogo-erro"]')).toBeNull();
 
     wrapper.unmount();
   });

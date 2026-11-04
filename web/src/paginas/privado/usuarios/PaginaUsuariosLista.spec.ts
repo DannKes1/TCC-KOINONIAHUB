@@ -272,4 +272,22 @@ describe("PaginaUsuariosLista — erro da API dentro do diálogo (Corretiva G3)"
 
     wrapper.unmount();
   });
+
+  // Corretiva G4: a validação local fica junto ao campo, sem toast.
+  it("Novo usuário sem pessoa: erro junto ao campo e a API não é chamada", async () => {
+    const wrapper = await montar();
+
+    await wrapper.find('button[aria-label="Novo Usuário"]').trigger("click");
+    await flushPromises();
+    clicar("usuario-criacao-salvar");
+    await flushPromises();
+
+    expect(document.querySelector('[data-testid="usuario-criacao-pessoa-erro"]')!.textContent)
+      .toContain("Selecione a pessoa que será vinculada ao usuário.");
+    expect(document.querySelector('[data-testid="usuario-criacao-email-erro"]')!.textContent)
+      .toContain("Informe um e-mail de acesso válido.");
+    expect(criarUsuario).not.toHaveBeenCalled();
+
+    wrapper.unmount();
+  });
 });

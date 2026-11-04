@@ -1,5 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
+import Calendar from "primevue/calendar";
 import PrimeVue from "primevue/config";
+import Dropdown from "primevue/dropdown";
 import Tooltip from "primevue/tooltip";
 import { ref } from "vue";
 import { createMemoryHistory, createRouter } from "vue-router";
@@ -292,5 +294,45 @@ describe("PaginaAulasTurma — Editar e Excluir aula Em aberto (RF45, 6.5)", () 
       expect(rotulo!.textContent!.trim()).toBe(texto);
       expect(rotulo!.htmlFor).toBe(combobox!.id);
     }
+  });
+
+  // Corretiva G4: a validação local fica junto ao campo (sem toast) e o erro de regra da
+  // API aparece dentro do diálogo, nunca no topo da página, e some ao alterar um campo.
+  it("Nova aula: campos obrigatórios junto ao campo; 400 da API no topo do diálogo, nada na página", async () => {
+    const JA_EXISTE = "Já existe uma aula nesta data para esta turma.";
+    vi.mocked(criarAula).mockRejectedValueOnce({ response: { status: 400, data: { mensagem: JA_EXISTE } } });
+    const { wrapper } = await montar();
+    wrapperAtual = wrapper;
+
+    await wrapper.get('[data-testid="aulas-nova"]').trigger("click");
+    await flushPromises();
+
+    const salvar = () => document.querySelector<HTMLButtonElement>('[data-testid="aula-salvar"]')!.click();
+    salvar();
+    await flushPromises();
+    expect(criarAula).not.toHaveBeenCalled();
+    expect(document.querySelector('[data-testid="aula-data-erro"]')!.textContent).toContain("Informe a data da aula.");
+
+    // Preenche os três obrigatórios: data pelo componente, matéria e professor pelos Dropdowns.
+    wrapper.findAllComponents(Calendar).find((c) => c.props("inputId") === "aula-data")!
+      .vm.$emit("update:modelValue", new Date(2026, 9, 25));
+    wrapper.findAllComponents(Dropdown).find((d) => d.props("labelId") === "aula-materia")!
+      .vm.$emit("update:modelValue", 1);
+    wrapper.findAllComponents(Dropdown).find((d) => d.props("labelId") === "aula-professor")!
+      .vm.$emit("update:modelValue", 10);
+    await flushPromises();
+    expect(document.querySelector('[data-testid="aula-data-erro"]')).toBeNull();
+
+    salvar();
+    await flushPromises();
+    expect(criarAula).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[data-testid="aula-dialogo-erro"]')!.textContent).toContain(JA_EXISTE);
+    expect(wrapper.text()).not.toContain(JA_EXISTE);
+
+    const campoTema = document.querySelector<HTMLInputElement>('[data-testid="aula-tema"]')!;
+    campoTema.value = "Tema novo";
+    campoTema.dispatchEvent(new Event("input"));
+    await flushPromises();
+    expect(document.querySelector('[data-testid="aula-dialogo-erro"]')).toBeNull();
   });
 });

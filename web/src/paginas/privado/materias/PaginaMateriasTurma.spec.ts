@@ -120,4 +120,48 @@ describe("PaginaMateriasTurma — cartões no celular (6.4-C)", () => {
     expect(recarregarResumo).toHaveBeenCalledTimes(1);
     wrapper.unmount();
   });
+
+  // Corretiva G4: o erro de regra da API aparece dentro do diálogo, nunca no topo da
+  // página, e some ao alterar um campo; nome vazio fica junto ao campo, sem toast.
+  it("criar com 400 da API: aviso no topo do diálogo, nada na página, some ao digitar", async () => {
+    const EM_USO = "Já existe uma matéria com este nome nesta turma.";
+    vi.mocked(criarMateria).mockRejectedValueOnce({ response: { status: 400, data: { mensagem: EM_USO } } });
+    const { wrapper, recarregarResumo } = await montar();
+
+    await wrapper.findAll("button").find((b) => b.text().includes("Nova Matéria"))!.trigger("click");
+    await flushPromises();
+    const campoNome = document.querySelector<HTMLInputElement>("#materia-nome")!;
+    campoNome.value = "Reis";
+    campoNome.dispatchEvent(new Event("input"));
+    await flushPromises();
+
+    document.querySelector<HTMLButtonElement>('[data-testid="materia-dialogo-salvar"]')!.click();
+    await flushPromises();
+
+    expect(criarMateria).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[data-testid="materia-dialogo-erro"]')!.textContent).toContain(EM_USO);
+    expect(wrapper.text()).not.toContain(EM_USO);
+    expect(recarregarResumo).not.toHaveBeenCalled();
+
+    campoNome.value = "Reis 2";
+    campoNome.dispatchEvent(new Event("input"));
+    await flushPromises();
+    expect(document.querySelector('[data-testid="materia-dialogo-erro"]')).toBeNull();
+
+    wrapper.unmount();
+  });
+
+  it("criar sem nome: erro junto ao campo e a API não é chamada", async () => {
+    const { wrapper } = await montar();
+
+    await wrapper.findAll("button").find((b) => b.text().includes("Nova Matéria"))!.trigger("click");
+    await flushPromises();
+    document.querySelector<HTMLButtonElement>('[data-testid="materia-dialogo-salvar"]')!.click();
+    await flushPromises();
+
+    expect(document.querySelector('[data-testid="materia-nome-erro"]')!.textContent).toContain("Informe o nome da matéria.");
+    expect(criarMateria).not.toHaveBeenCalled();
+
+    wrapper.unmount();
+  });
 });
