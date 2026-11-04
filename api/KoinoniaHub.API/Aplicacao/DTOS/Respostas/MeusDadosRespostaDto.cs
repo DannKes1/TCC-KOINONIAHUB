@@ -23,6 +23,7 @@
             CEP = pessoa.CEP,
             CriadoEm = pessoa.CriadoEm,
             AtualizadoEm = pessoa.AtualizadoEm,
+            PossuiConta = pessoa.PossuiConta,
             AceiteTermo = aceite
         };
     }

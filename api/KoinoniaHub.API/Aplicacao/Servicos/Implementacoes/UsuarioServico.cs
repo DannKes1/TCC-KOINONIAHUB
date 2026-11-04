@@ -1,6 +1,7 @@
 ﻿using BCrypt.Net;
 using KoinoniaHub.API.Aplicacao.DTOs.Requisicoes;
 using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
+using KoinoniaHub.API.Aplicacao.Regras;
 using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
 using KoinoniaHub.API.Dominio.Entidades;
@@ -32,9 +33,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
         public async Task<UsuarioRespostaDto> CriarParaPessoaAsync(int igrejaId, UsuarioCriarRequisicaoDto dto)
         {
-            //  Pessoa precisa existir e ser da igreja
+            //  Pessoa precisa existir e ser da igreja. Rastreada: ela recebe o e-mail da conta
+            //  (Corretiva G2, RNF 13.5) no mesmo SaveChanges que cria o usuário.
             var pessoa = await _db.Pessoas
-                .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.IgrejaId == igrejaId && p.Id == dto.PessoaId);
 
             if (pessoa is null)
@@ -54,7 +55,10 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             var emailNormalizado = emailFinal.ToLowerInvariant();
 
-            // E-mail não pode repetir 
+            // Corretiva G2: o e-mail não pode ser de outra pessoa da igreja (cadastro ou conta)…
+            await EmailDaPessoa.GarantirDisponivelAsync(_db, igrejaId, pessoa.Id, usuarioId: 0, emailNormalizado);
+
+            // …e continua único entre todas as contas, de qualquer igreja (índice único).
             var existe = await _db.Usuarios.AnyAsync(u => u.Email.ToLower() == emailNormalizado);
             if (existe)
                 throw new InvalidOperationException("Já existe um usuário com este e-mail.");
@@ -87,6 +91,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 // utilizável quando a pessoa define a senha pelo convite.
                 senhaHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N") + tokenConvite);
             }
+
+            // Um e-mail por pessoa: o cadastro passa a ter o e-mail da conta (RNF 13.5).
+            pessoa.Email = emailNormalizado;
 
             // Criar usuário
             var usuario = new Usuario
@@ -186,6 +193,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 throw new InvalidOperationException(
                     "Não é possível inativar ou alterar o perfil do único administrador ativo da igreja.");
 
+            await AplicarEmailAsync(igrejaId, usuario, dto.Email);
+
             if (!string.IsNullOrWhiteSpace(dto.Perfil))
             {
                 var perfil = dto.Perfil.Trim();
@@ -200,6 +209,26 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             await _repositorio.AtualizarAsync(usuario);
             return true;
+        }
+
+        // Corretiva G2 (RF14, RNF 13.5): o Administrador altera o e-mail de acesso. O novo
+        // e-mail passa pela recusa cruzada da igreja e pela regra global; o cadastro da pessoa
+        // recebe o mesmo e-mail e um convite pendente, gerado para o e-mail antigo, é
+        // invalidado. Vazio ou igual ao atual: nada muda.
+        private async Task AplicarEmailAsync(int igrejaId, Usuario usuario, string? emailInformado)
+        {
+            var emailNovo = EmailDaPessoa.Normalizar(emailInformado);
+            if (emailNovo is null || emailNovo == usuario.Email.ToLowerInvariant()) return;
+
+            await EmailDaPessoa.GarantirDisponivelAsync(_db, igrejaId, usuario.PessoaId ?? 0, usuario.Id, emailNovo);
+
+            if (await _db.Usuarios.AnyAsync(u => u.Id != usuario.Id && u.Email.ToLower() == emailNovo))
+                throw new InvalidOperationException("Já existe um usuário com este e-mail.");
+
+            usuario.Email = emailNovo;
+            if (usuario.Pessoa is not null) usuario.Pessoa.Email = emailNovo;
+            usuario.ConviteTokenHash = null;
+            usuario.ConviteExpiraEm = null;
         }
 
         // Corretiva da 7.3 (RNF 40.2): inativar a conta descarta o convite pendente;

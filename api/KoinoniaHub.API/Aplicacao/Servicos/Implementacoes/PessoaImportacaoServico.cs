@@ -15,8 +15,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
     //  - Coluna "Nome" é obrigatória; as demais são opcionais (RNF 41.2).
     //  - Colunas fora do modelo são ignoradas (RF41).
     //  - Separador ";" ou "," ou TAB (detectado automaticamente).
-    //  - E-mail repetido: linha ignorada. Nome repetido sem e-mail: linha
-    //    ignorada e sinalizada para conferência (RNF 41.3).
+    //  - E-mail já em uso na igreja (cadastro de pessoa ou conta de acesso, Corretiva G2):
+    //    linha ignorada. Nome repetido sem e-mail: linha ignorada e sinalizada para
+    //    conferência (RNF 41.3).
     //  - Limite de 1.000 linhas de dados (RNF 41.4).
     public class PessoaImportacaoServico : IPessoaImportacaoServico
     {
@@ -76,10 +77,18 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 .Select(p => new { p.Nome, p.Email })
                 .ToListAsync();
 
+            // Corretiva G2: os e-mails das contas de acesso da igreja também contam como em uso.
+            var emailsDasContas = await _db.Usuarios
+                .AsNoTracking()
+                .Where(u => u.IgrejaId == igrejaId)
+                .Select(u => u.Email)
+                .ToListAsync();
+
             var emailsConhecidos = new HashSet<string>(
                 existentes
                     .Where(p => !string.IsNullOrWhiteSpace(p.Email))
-                    .Select(p => p.Email!.Trim().ToLowerInvariant()));
+                    .Select(p => p.Email!.Trim().ToLowerInvariant())
+                    .Concat(emailsDasContas.Select(e => e.Trim().ToLowerInvariant())));
 
             var nomesConhecidos = new HashSet<string>(
                 existentes.Select(p => p.Nome.Trim().ToLowerInvariant()));
@@ -138,7 +147,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                     if (emailsConhecidos.Contains(email))
                     {
                         item.Status = "Ignorado";
-                        item.Mensagem = "Já existe uma pessoa com este e-mail (linha ignorada).";
+                        item.Mensagem = "Este e-mail já está em uso por outra pessoa (linha ignorada).";
                         continue;
                     }
                 }

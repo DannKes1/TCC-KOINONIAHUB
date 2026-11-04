@@ -1,6 +1,7 @@
 ﻿using KoinoniaHub.API.Aplicacao.DTOs.Requisicoes;
 using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
 using KoinoniaHub.API.Aplicacao.DTOS.Requisicoes;
+using KoinoniaHub.API.Aplicacao.Regras;
 using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
 using KoinoniaHub.API.Dominio.Entidades;
@@ -24,14 +25,11 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
         public async Task<PessoaRespostaDto> CriarAsync(int igrejaId, PessoaCriarRequisicaoDto dto)
         {
-
-            if (!string.IsNullOrWhiteSpace(dto.Email))
-            {
-                var email = dto.Email.Trim().ToLowerInvariant();
-                var existe = await _db.Pessoas.AnyAsync(p => p.IgrejaId == igrejaId && p.Email != null && p.Email.ToLower() == email);
-                if (existe)
-                    throw new InvalidOperationException("Já existe uma pessoa com este e-mail nesta igreja.");
-            }
+            // Corretiva G2: o e-mail não pode estar em outra pessoa nem na conta de outra pessoa
+            // da igreja (EmailDaPessoa). Pessoa nova ainda não tem id nem conta (0).
+            var email = EmailDaPessoa.Normalizar(dto.Email);
+            if (email is not null)
+                await EmailDaPessoa.GarantirDisponivelAsync(_db, igrejaId, pessoaId: 0, usuarioId: 0, email);
 
             var pessoa = new Pessoa
             {
@@ -41,7 +39,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 Sexo = dto.Sexo,
                 EstadoCivil = dto.EstadoCivil,
                 Celular = dto.Celular,
-                Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim().ToLowerInvariant(),
+                Email = email,
                 Endereco = dto.Endereco,
                 Bairro = dto.Bairro,
                 Cidade = dto.Cidade,
@@ -54,19 +52,56 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             };
 
             var criada = await _repositorio.CriarAsync(pessoa);
-            return Mapear(criada);
+            return Mapear(criada, emailDaConta: null);
         }
 
         public async Task<List<PessoaRespostaDto>> ListarAsync(int igrejaId)
         {
             var pessoas = await _repositorio.ListarAsync(igrejaId);
-            return pessoas.Select(Mapear).ToList();
+
+            // Corretiva G2: e-mail da conta de cada pessoa (PossuiConta e o e-mail exibido).
+            var contas = await _db.Usuarios.AsNoTracking()
+                .Where(u => u.IgrejaId == igrejaId && u.PessoaId != null)
+                .Select(u => new { PessoaId = u.PessoaId!.Value, u.Email })
+                .ToListAsync();
+            var emailPorPessoa = new Dictionary<int, string>();
+            foreach (var conta in contas) emailPorPessoa.TryAdd(conta.PessoaId, conta.Email);
+
+            return pessoas.Select(p => Mapear(p, emailPorPessoa.GetValueOrDefault(p.Id))).ToList();
         }
 
         public async Task<PessoaRespostaDto?> ObterPorIdAsync(int igrejaId, int pessoaId)
         {
             var pessoa = await _repositorio.ObterPorIdAsync(igrejaId, pessoaId);
-            return pessoa is null ? null : Mapear(pessoa);
+            return pessoa is null ? null : Mapear(pessoa, await EmailDaContaAsync(igrejaId, pessoa.Id));
+        }
+
+        // E-mail da conta de acesso vinculada à pessoa, ou nulo quando ela não tem conta.
+        private Task<string?> EmailDaContaAsync(int igrejaId, int pessoaId) =>
+            _db.Usuarios.AsNoTracking()
+                .Where(u => u.IgrejaId == igrejaId && u.PessoaId == pessoaId)
+                .Select(u => (string?)u.Email)
+                .FirstOrDefaultAsync();
+
+        // Corretiva G2: pessoa com conta tem o e-mail da conta (só o Administrador o altera,
+        // pelo RF14); informar outro é recusado, e vazio mantém o da conta. Pessoa sem conta
+        // pode mudar o e-mail, desde que ele não esteja em outra pessoa nem na conta de outra.
+        private async Task<string?> ResolverEmailAsync(int igrejaId, int pessoaId, string? emailInformado)
+        {
+            var email = EmailDaPessoa.Normalizar(emailInformado);
+            var emailDaConta = await EmailDaContaAsync(igrejaId, pessoaId);
+
+            if (emailDaConta is not null)
+            {
+                if (email is not null && email != emailDaConta.ToLowerInvariant())
+                    throw new InvalidOperationException(EmailDaPessoa.MensagemDaConta);
+                return emailDaConta;
+            }
+
+            if (email is not null)
+                await EmailDaPessoa.GarantirDisponivelAsync(_db, igrejaId, pessoaId, usuarioId: 0, email);
+
+            return email;
         }
 
         public async Task<PessoaTurmaRespostaDto?> ObterParaTurmaAsync(int igrejaId, int pessoaId)
@@ -126,25 +161,14 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             var estavaInativa = string.Equals(pessoa.Situacao, "Inativo", StringComparison.OrdinalIgnoreCase);
 
-            if (!string.IsNullOrWhiteSpace(dto.Email))
-            {
-                var email = dto.Email.Trim().ToLowerInvariant();
-                var existe = await _db.Pessoas.AnyAsync(p =>
-                    p.IgrejaId == igrejaId &&
-                    p.Id != pessoaId &&
-                    p.Email != null &&
-                    p.Email.ToLower() == email);
-
-                if (existe)
-                    throw new InvalidOperationException("Já existe uma pessoa com este e-mail nesta igreja.");
-            }
+            var email = await ResolverEmailAsync(igrejaId, pessoa.Id, dto.Email);
 
             pessoa.Nome = dto.Nome.Trim();
             pessoa.DataNascimento = dto.DataNascimento;
             pessoa.Sexo = dto.Sexo;
             pessoa.EstadoCivil = dto.EstadoCivil;
             pessoa.Celular = dto.Celular;
-            pessoa.Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim().ToLowerInvariant();
+            pessoa.Email = email;
             pessoa.Endereco = dto.Endereco;
             pessoa.Bairro = dto.Bairro;
             pessoa.Cidade = dto.Cidade;
@@ -190,7 +214,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             return true;
         }
 
-        private static PessoaRespostaDto Mapear(Pessoa p)
+        // Corretiva G2: pessoa com conta exibe o e-mail da conta (é o mesmo, por regra; nos
+        // cadastros anteriores à regra a conta prevalece até a próxima gravação, que iguala).
+        private static PessoaRespostaDto Mapear(Pessoa p, string? emailDaConta)
         {
             return new PessoaRespostaDto
             {
@@ -202,7 +228,8 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 Situacao = p.Situacao,
                 DataInativacao = p.DataInativacao,
                 Celular = p.Celular,
-                Email = p.Email,
+                Email = emailDaConta ?? p.Email,
+                PossuiConta = emailDaConta is not null,
                 Endereco = p.Endereco,
                 Bairro = p.Bairro,
                 Cidade = p.Cidade,
@@ -222,7 +249,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (usuario?.PessoaId is null) return null;
 
             var pessoa = await _repositorio.ObterPorIdAsync(igrejaId, usuario.PessoaId.Value);
-            return pessoa is null ? null : Mapear(pessoa);
+            return pessoa is null ? null : Mapear(pessoa, usuario.Email);
         }
 
         public async Task<bool> AtualizarMeusDadosAsync(int igrejaId, int usuarioId, MeusDadosAtualizarRequisicaoDto dto)
@@ -238,21 +265,11 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             if (pessoa is null) return false;
 
-            if (!string.IsNullOrWhiteSpace(dto.Email))
-            {
-                var email = dto.Email.Trim().ToLowerInvariant();
-                var existe = await _db.Pessoas.AnyAsync(p =>
-                    p.IgrejaId == igrejaId &&
-                    p.Id != pessoa.Id &&
-                    p.Email != null &&
-                    p.Email.ToLower() == email);
-
-                if (existe)
-                    throw new InvalidOperationException("Já existe uma pessoa com este e-mail nesta igreja.");
-            }
+            // Corretiva G2: quem tem conta (sempre, em Meus Dados) não altera o próprio e-mail.
+            var email = await ResolverEmailAsync(igrejaId, pessoa.Id, dto.Email);
 
             pessoa.Celular = dto.Celular;
-            pessoa.Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim().ToLowerInvariant();
+            pessoa.Email = email;
             pessoa.Endereco = dto.Endereco;
             pessoa.Bairro = dto.Bairro;
             pessoa.Cidade = dto.Cidade;

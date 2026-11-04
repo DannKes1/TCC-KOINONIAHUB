@@ -18,5 +18,9 @@
         public string? CEP { get; set; }
         public DateTime CriadoEm { get; set; }
         public DateTime? AtualizadoEm { get; set; }
+
+        // Corretiva G2 (aditivo): a pessoa tem conta de acesso; então o e-mail é o da conta
+        // e só muda pela edição do usuário (RF14).
+        public bool PossuiConta { get; set; }
     }
 }
