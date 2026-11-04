@@ -114,6 +114,7 @@ function voltar() {
         :erro="erroCarregamento"
         :salvando="salvando"
         :mostrar-botao="!jaAceito"
+        :aceite-dispensado="jaAceito"
         @aceitar="aceitar"
       />
 

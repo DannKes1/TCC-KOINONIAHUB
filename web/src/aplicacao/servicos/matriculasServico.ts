@@ -94,5 +94,6 @@ export async function listarPessoasDisponiveisDaTurma(
     atualizadoEm: (bruto?.AtualizadoEm ?? bruto?.atualizadoEm ?? null) as
       | string
       | null,
+    possuiConta: Boolean(bruto?.PossuiConta ?? bruto?.possuiConta ?? false),
   }));
 }

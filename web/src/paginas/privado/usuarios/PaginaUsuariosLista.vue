@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import PageHeader from "../../../components/ui/PageHeader.vue";
 import InlineMessage from "../../../components/ui/InlineMessage.vue";
@@ -13,7 +13,10 @@ import {
   toastWarn,
 } from "../../../aplicacao/servicos/notificacoes";
 
-import { firstFieldError } from "../../../aplicacao/servicos/apiError";
+import {
+  firstFieldError,
+  mensagemForaDosCampos,
+} from "../../../aplicacao/servicos/apiError";
 
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
 
@@ -39,7 +42,18 @@ import Tag from "primevue/tag";
 import Checkbox from "primevue/checkbox";
 
 const autenticacao = usarAutenticacaoStore();
-const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
+const { carregando, erro, run, clearErrors } = useAsync();
+
+// Corretiva G3: o erro do salvar fica no próprio diálogo — junto ao campo quando a API
+// devolve o campo, senão num aviso no topo — e some ao fechar ou ao alterar um campo.
+// A instância da página continua só com o erro da lista.
+const {
+  carregando: salvando,
+  erro: erroDoDialogo,
+  fieldErrors: errosDoDialogo,
+  run: executarNoDialogo,
+  clearErrors: limparErrosDoDialogo,
+} = useAsync();
 
 const usuarios = ref<UsuarioVM[]>([]);
 const pessoas = ref<PessoaVM[]>([]);
@@ -87,9 +101,42 @@ const formularioCriacao = reactive({
 });
 
 const formularioEdicao = reactive({
+  email: "",
   perfil: "Usuario",
   ativo: true,
 });
+
+// Campos com FieldError em cada diálogo: um erro da API fora deles vai para o aviso.
+const CAMPOS_CRIACAO = ["PessoaId", "Email", "Perfil", "Senha"];
+const CAMPOS_EDICAO = ["Email"];
+
+const avisoCriacao = computed(() =>
+  mensagemForaDosCampos(erroDoDialogo.value, errosDoDialogo.value, CAMPOS_CRIACAO),
+);
+const avisoEdicao = computed(() =>
+  mensagemForaDosCampos(erroDoDialogo.value, errosDoDialogo.value, CAMPOS_EDICAO),
+);
+
+watch([dialogCriacaoAberto, dialogEdicaoAberto], ([criacao, edicao]) => {
+  if (!criacao && !edicao) limparErrosDoDialogo();
+});
+watch(formularioCriacao, limparErrosDoDialogo);
+watch(formularioEdicao, limparErrosDoDialogo);
+
+// Corretiva G2 (RNF 13.5): ao escolher a pessoa, o e-mail dela vem preenchido (editável);
+// ao salvar, o cadastro da pessoa fica com o e-mail da conta.
+watch(
+  () => formularioCriacao.pessoaId,
+  (id) => {
+    const pessoa = pessoas.value.find((p) => p.id === id);
+    formularioCriacao.email = pessoa?.email ?? "";
+  },
+);
+
+// Mesma regra do [EmailAddress] da API: um único "@", fora das pontas.
+function emailValido(valor: string) {
+  return /^[^@\s]+@[^@\s]+$/.test(valor.trim());
+}
 
 function limparCriacao() {
   formularioCriacao.pessoaId = null;
@@ -101,13 +148,16 @@ function limparCriacao() {
 
 function abrirNovo() {
   clearErrors();
+  limparErrosDoDialogo();
   limparCriacao();
   dialogCriacaoAberto.value = true;
 }
 
 function abrirEdicao(usuario: UsuarioVM) {
   clearErrors();
+  limparErrosDoDialogo();
   editandoUsuario.value = usuario;
+  formularioEdicao.email = usuario.email;
   formularioEdicao.perfil = usuario.perfil || "Usuario";
   formularioEdicao.ativo = Boolean(usuario.ativo);
   dialogEdicaoAberto.value = true;
@@ -169,6 +219,10 @@ function validarCriacao(): string {
     return "Selecione a pessoa que será vinculada ao usuário.";
   }
 
+  if (!emailValido(formularioCriacao.email)) {
+    return "Informe um e-mail de acesso válido.";
+  }
+
   if (formularioCriacao.definirSenhaManual) {
     if (!formularioCriacao.senha.trim()) {
       return "Informe a senha inicial do usuário.";
@@ -185,6 +239,10 @@ function validarCriacao(): string {
 function validarEdicao(): string {
   if (!formularioEdicao.perfil.trim()) {
     return "Informe o perfil do usuário.";
+  }
+
+  if (!emailValido(formularioEdicao.email)) {
+    return "Informe um e-mail de acesso válido.";
   }
 
   if (
@@ -321,7 +379,7 @@ async function salvarNovo() {
     return;
   }
 
-  await run(async () => {
+  await executarNoDialogo(async () => {
     const criado = await criarUsuario({
       PessoaId: Number(formularioCriacao.pessoaId),
       Email: textoOuNull(formularioCriacao.email),
@@ -362,10 +420,16 @@ async function salvarEdicao() {
   const usuario = editandoUsuario.value;
   if (!usuario) return;
 
-  await run(async () => {
+  // Corretiva G2 (RF14): o e-mail só vai quando muda; a API sincroniza o cadastro da
+  // pessoa e cancela um convite pendente.
+  const emailNovo = formularioEdicao.email.trim().toLowerCase();
+  const emailMudou = emailNovo !== usuario.email.trim().toLowerCase();
+
+  await executarNoDialogo(async () => {
     await atualizarUsuario(usuario.id, {
       Perfil: formularioEdicao.perfil.trim(),
       Ativo: Boolean(formularioEdicao.ativo),
+      ...(emailMudou ? { Email: emailNovo } : {}),
     });
 
     toastSuccess("Usuário atualizado com sucesso.", "Salvo");
@@ -533,11 +597,17 @@ onMounted(carregarDados);
       v-model:visible="dialogCriacaoAberto"
       modal
       header="Novo usuário"
-      :closable="!carregando"
-      :dismissableMask="!carregando"
+      :closable="!salvando"
+      :dismissableMask="!salvando"
       style="width: 620px; max-width: 96vw"
     >
       <div class="page-container">
+        <InlineMessage
+          :texto="avisoCriacao"
+          tipo="erro"
+          data-testid="usuario-criacao-erro"
+        />
+
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label id="usuario-criacao-pessoa-rotulo" for="usuario-criacao-pessoa">Pessoa *</label>
           <Dropdown
@@ -553,23 +623,29 @@ onMounted(carregarDados);
           />
           <FieldError
             :texto="
-              firstFieldError(fieldErrors, 'PessoaId') ||
-              firstFieldError(fieldErrors, 'pessoaId')
+              firstFieldError(errosDoDialogo, 'PessoaId') ||
+              firstFieldError(errosDoDialogo, 'pessoaId')
             "
           />
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label for="usuario-criacao-email">E-mail</label>
+          <label for="usuario-criacao-email">E-mail de acesso *</label>
           <InputText
             id="usuario-criacao-email"
             v-model="formularioCriacao.email"
-            placeholder="Deixe em branco para usar o e-mail da pessoa"
+            placeholder="email@dominio.com"
           />
+          <small
+            data-testid="usuario-criacao-email-dica"
+            style="font-size: 12px; color: var(--ipb-cinza-claro, #7a7a7a)"
+          >
+            O e-mail fica também no cadastro da pessoa.
+          </small>
           <FieldError
             :texto="
-              firstFieldError(fieldErrors, 'Email') ||
-              firstFieldError(fieldErrors, 'email')
+              firstFieldError(errosDoDialogo, 'Email') ||
+              firstFieldError(errosDoDialogo, 'email')
             "
           />
         </div>
@@ -587,8 +663,8 @@ onMounted(carregarDados);
           />
           <FieldError
             :texto="
-              firstFieldError(fieldErrors, 'Perfil') ||
-              firstFieldError(fieldErrors, 'perfil')
+              firstFieldError(errosDoDialogo, 'Perfil') ||
+              firstFieldError(errosDoDialogo, 'perfil')
             "
           />
         </div>
@@ -634,8 +710,8 @@ onMounted(carregarDados);
           />
           <FieldError
             :texto="
-              firstFieldError(fieldErrors, 'Senha') ||
-              firstFieldError(fieldErrors, 'senha')
+              firstFieldError(errosDoDialogo, 'Senha') ||
+              firstFieldError(errosDoDialogo, 'senha')
             "
           />
         </div>
@@ -651,13 +727,15 @@ onMounted(carregarDados);
         <Button
           label="Cancelar"
           severity="secondary"
-          :disabled="carregando"
+          :disabled="salvando"
+          data-testid="usuario-criacao-cancelar"
           @click="dialogCriacaoAberto = false"
         />
         <Button
           label="Salvar"
           icon="pi pi-check"
-          :loading="carregando"
+          :loading="salvando"
+          data-testid="usuario-criacao-salvar"
           @click="salvarNovo"
         />
       </template>
@@ -667,11 +745,17 @@ onMounted(carregarDados);
       v-model:visible="dialogEdicaoAberto"
       modal
       header="Editar usuário"
-      :closable="!carregando"
-      :dismissableMask="!carregando"
+      :closable="!salvando"
+      :dismissableMask="!salvando"
       style="width: 520px; max-width: 96vw"
     >
       <div class="page-container">
+        <InlineMessage
+          :texto="avisoEdicao"
+          tipo="erro"
+          data-testid="usuario-edicao-erro"
+        />
+
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label for="usuario-edicao-pessoa">Pessoa vinculada</label>
           <InputText
@@ -682,11 +766,25 @@ onMounted(carregarDados);
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px">
-          <label for="usuario-edicao-email">E-mail</label>
+          <label for="usuario-edicao-email">E-mail de acesso *</label>
           <InputText
             id="usuario-edicao-email"
-            :modelValue="editandoUsuario?.email ?? ''"
-            disabled
+            v-model="formularioEdicao.email"
+            data-testid="usuario-edicao-email"
+          />
+          <small
+            data-testid="usuario-edicao-email-dica"
+            style="font-size: 12px; color: var(--ipb-cinza-claro, #7a7a7a)"
+          >
+            Alterar o e-mail muda o login da pessoa, atualiza o cadastro dela e cancela
+            um convite pendente.
+          </small>
+          <FieldError
+            data-testid="usuario-edicao-email-erro"
+            :texto="
+              firstFieldError(errosDoDialogo, 'Email') ||
+              firstFieldError(errosDoDialogo, 'email')
+            "
           />
         </div>
 
@@ -736,13 +834,14 @@ onMounted(carregarDados);
         <Button
           label="Cancelar"
           severity="secondary"
-          :disabled="carregando"
+          :disabled="salvando"
+          data-testid="usuario-edicao-cancelar"
           @click="dialogEdicaoAberto = false"
         />
         <Button
           label="Salvar"
           icon="pi pi-check"
-          :loading="carregando"
+          :loading="salvando"
           data-testid="usuario-salvar"
           @click="salvarEdicao"
         />

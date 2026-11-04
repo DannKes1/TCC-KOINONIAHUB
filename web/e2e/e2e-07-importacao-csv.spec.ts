@@ -39,7 +39,7 @@ test("E2E-07 importação CSV: criadas, e-mail repetido ignorado e nome repetido
   await expect(linhas.first()).toContainText(PESSOA_JA_CADASTRADA.nome);
   await expect(linhas.first()).toContainText("Conferir");
   await expect(linhas.first()).toHaveClass(/linha-conferencia/);
-  await expect(linhas.filter({ hasText: "Outro Nome Mesmo Email E2E" })).toContainText("Já existe uma pessoa com este e-mail");
+  await expect(linhas.filter({ hasText: "Outro Nome Mesmo Email E2E" })).toContainText("Este e-mail já está em uso por outra pessoa");
   await expect(linhas.filter({ hasText: "Importada Com Email E2E" })).toContainText("Criado");
   await expect(linhas.filter({ hasText: "Importada Sem Email E2E" })).toContainText("Criado");
   await expect(dialogo.locator("tr.linha-conferencia")).toHaveCount(1);

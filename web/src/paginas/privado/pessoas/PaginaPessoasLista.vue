@@ -15,7 +15,10 @@ import {
   toastWarn,
 } from "../../../aplicacao/servicos/notificacoes";
 
-import { firstFieldError } from "../../../aplicacao/servicos/apiError";
+import {
+  firstFieldError,
+  mensagemForaDosCampos,
+} from "../../../aplicacao/servicos/apiError";
 
 import {
   listarPessoas,
@@ -51,6 +54,17 @@ import { useConfirm } from "primevue/useconfirm";
 const confirm = useConfirm();
 const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
 
+// Corretiva G3: o erro do salvar fica no próprio diálogo Nova/Editar pessoa — junto ao
+// campo quando a API devolve o campo, senão num aviso no topo — e some ao fechar ou ao
+// alterar um campo. A instância da página continua com o erro da lista e dos parentescos.
+const {
+  carregando: salvando,
+  erro: erroDoDialogo,
+  fieldErrors: errosDoDialogo,
+  run: executarNoDialogo,
+  clearErrors: limparErrosDoDialogo,
+} = useAsync();
+
 const dialogImportarAberto = ref(false);
 
 const pessoas = ref<PessoaVM[]>([]);
@@ -64,6 +78,9 @@ const pessoaSelecionadaParentescos = ref<PessoaVM | null>(null);
 const pessoaSelecionadaHistorico = ref<PessoaVM | null>(null);
 
 const editandoId = ref<number | null>(null);
+// Corretiva G2: pessoa com conta de acesso tem o e-mail da conta; o campo fica bloqueado
+// e só o Administrador o altera, na edição do usuário (RF14).
+const editandoPossuiConta = ref(false);
 
 const busca = ref("");
 // Entrega G: a lista abre com as pessoas ativas; "Todas" é escolha explícita (limpar).
@@ -116,6 +133,31 @@ const formularioParentesco = reactive({
   tipoRelacionamento: "" as string,
 });
 
+// Todos os campos do diálogo têm FieldError; um erro da API fora deles vai para o aviso.
+const CAMPOS_PESSOA = [
+  "Nome",
+  "DataNascimento",
+  "Sexo",
+  "EstadoCivil",
+  "Celular",
+  "Email",
+  "Endereco",
+  "Bairro",
+  "Cidade",
+  "Estado",
+  "CEP",
+  "Situacao",
+];
+
+const avisoDoDialogo = computed(() =>
+  mensagemForaDosCampos(erroDoDialogo.value, errosDoDialogo.value, CAMPOS_PESSOA),
+);
+
+watch(dialogPessoaAberto, (aberto) => {
+  if (!aberto) limparErrosDoDialogo();
+});
+watch(formulario, limparErrosDoDialogo);
+
 function limparFormulario() {
   formulario.nome = "";
   formulario.dataNascimento = null;
@@ -130,6 +172,7 @@ function limparFormulario() {
   formulario.cep = "";
   formulario.situacao = "Ativo";
   editandoId.value = null;
+  editandoPossuiConta.value = false;
 }
 
 function popularFormulario(p: PessoaVM) {
@@ -156,17 +199,20 @@ function limparFormularioParentesco() {
 
 function abrirNovo() {
   clearErrors();
+  limparErrosDoDialogo();
   limparFormulario();
   dialogPessoaAberto.value = true;
 }
 
 async function abrirEdicao(pessoa: PessoaVM) {
   clearErrors();
+  limparErrosDoDialogo();
   limparFormulario();
 
   await run(async () => {
     const completa = await obterPessoa(pessoa.id);
     editandoId.value = completa.id;
+    editandoPossuiConta.value = completa.possuiConta;
     popularFormulario(completa);
     dialogPessoaAberto.value = true;
   }, "Não foi possível carregar os dados desta pessoa.");
@@ -335,7 +381,7 @@ async function salvarPessoa() {
     Situacao: textoOuNull(formulario.situacao) ?? "Ativo",
   };
 
-  await run(async () => {
+  await executarNoDialogo(async () => {
     if (editandoId.value === null) {
       await criarPessoa(payload);
       toastSuccess("Pessoa cadastrada com sucesso.", "Criado");
@@ -532,12 +578,18 @@ onMounted(carregarLista);
     <Dialog
       v-model:visible="dialogPessoaAberto"
       modal
-      :closable="!carregando"
-      :dismissableMask="!carregando"
+      :closable="!salvando"
+      :dismissableMask="!salvando"
       :header="editandoId === null ? 'Nova pessoa' : 'Editar pessoa'"
       style="width: 920px; max-width: 96vw"
     >
       <div style="display: flex; flex-direction: column; gap: 16px">
+        <InlineMessage
+          :texto="avisoDoDialogo"
+          tipo="erro"
+          data-testid="pessoa-dialogo-erro"
+        />
+
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px">
           <div style="display: flex; flex-direction: column; gap: 6px">
             <label for="pessoa-formulario-nome">Nome *</label>
@@ -548,8 +600,8 @@ onMounted(carregarLista);
             />
             <FieldError
               :texto="
-                firstFieldError(fieldErrors, 'Nome') ||
-                firstFieldError(fieldErrors, 'nome')
+                firstFieldError(errosDoDialogo, 'Nome') ||
+                firstFieldError(errosDoDialogo, 'nome')
               "
             />
           </div>
@@ -571,8 +623,8 @@ onMounted(carregarLista);
             />
             <FieldError
               :texto="
-                firstFieldError(fieldErrors, 'Situacao') ||
-                firstFieldError(fieldErrors, 'situacao')
+                firstFieldError(errosDoDialogo, 'Situacao') ||
+                firstFieldError(errosDoDialogo, 'situacao')
               "
             />
           </div>
@@ -597,6 +649,12 @@ onMounted(carregarLista);
               iconDisplay="input"
               showButtonBar
             />
+            <FieldError
+              :texto="
+                firstFieldError(errosDoDialogo, 'DataNascimento') ||
+                firstFieldError(errosDoDialogo, 'dataNascimento')
+              "
+            />
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
@@ -614,6 +672,12 @@ onMounted(carregarLista);
               optionValue="value"
               showClear
               placeholder="Selecione"
+            />
+            <FieldError
+              :texto="
+                firstFieldError(errosDoDialogo, 'Sexo') ||
+                firstFieldError(errosDoDialogo, 'sexo')
+              "
             />
           </div>
 
@@ -633,6 +697,12 @@ onMounted(carregarLista);
               showClear
               placeholder="Selecione"
             />
+            <FieldError
+              :texto="
+                firstFieldError(errosDoDialogo, 'EstadoCivil') ||
+                firstFieldError(errosDoDialogo, 'estadoCivil')
+              "
+            />
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
@@ -641,6 +711,12 @@ onMounted(carregarLista);
               id="pessoa-formulario-cep"
               v-model="formulario.cep"
               placeholder="00000-000"
+            />
+            <FieldError
+              :texto="
+                firstFieldError(errosDoDialogo, 'CEP') ||
+                firstFieldError(errosDoDialogo, 'cep')
+              "
             />
           </div>
         </div>
@@ -653,6 +729,13 @@ onMounted(carregarLista);
               v-model="formulario.celular"
               placeholder="Celular / WhatsApp"
             />
+            <FieldError
+              data-testid="pessoa-celular-erro"
+              :texto="
+                firstFieldError(errosDoDialogo, 'Celular') ||
+                firstFieldError(errosDoDialogo, 'celular')
+              "
+            />
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
@@ -661,11 +744,19 @@ onMounted(carregarLista);
               id="pessoa-formulario-email"
               v-model="formulario.email"
               placeholder="email@dominio.com"
+              :disabled="editandoPossuiConta"
             />
+            <small
+              v-if="editandoPossuiConta"
+              data-testid="pessoa-email-dica"
+              style="font-size: 12px; color: var(--ipb-cinza-claro, #7a7a7a)"
+            >
+              E-mail de acesso; definido na criação da conta.
+            </small>
             <FieldError
               :texto="
-                firstFieldError(fieldErrors, 'Email') ||
-                firstFieldError(fieldErrors, 'email')
+                firstFieldError(errosDoDialogo, 'Email') ||
+                firstFieldError(errosDoDialogo, 'email')
               "
             />
           </div>
@@ -685,6 +776,12 @@ onMounted(carregarLista);
               v-model="formulario.endereco"
               placeholder="Rua, número, complemento"
             />
+            <FieldError
+              :texto="
+                firstFieldError(errosDoDialogo, 'Endereco') ||
+                firstFieldError(errosDoDialogo, 'endereco')
+              "
+            />
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
@@ -694,6 +791,12 @@ onMounted(carregarLista);
               v-model="formulario.bairro"
               placeholder="Bairro"
             />
+            <FieldError
+              :texto="
+                firstFieldError(errosDoDialogo, 'Bairro') ||
+                firstFieldError(errosDoDialogo, 'bairro')
+              "
+            />
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px">
@@ -702,6 +805,12 @@ onMounted(carregarLista);
               id="pessoa-formulario-cidade"
               v-model="formulario.cidade"
               placeholder="Cidade"
+            />
+            <FieldError
+              :texto="
+                firstFieldError(errosDoDialogo, 'Cidade') ||
+                firstFieldError(errosDoDialogo, 'cidade')
+              "
             />
           </div>
 
@@ -713,6 +822,12 @@ onMounted(carregarLista);
               placeholder="UF"
               maxlength="2"
             />
+            <FieldError
+              :texto="
+                firstFieldError(errosDoDialogo, 'Estado') ||
+                firstFieldError(errosDoDialogo, 'estado')
+              "
+            />
           </div>
         </div>
       </div>
@@ -721,13 +836,15 @@ onMounted(carregarLista);
         <Button
           label="Cancelar"
           severity="secondary"
-          :disabled="carregando"
+          :disabled="salvando"
+          data-testid="pessoa-dialogo-cancelar"
           @click="dialogPessoaAberto = false"
         />
         <Button
           :label="editandoId === null ? 'Salvar' : 'Atualizar'"
           icon="pi pi-check"
-          :loading="carregando"
+          :loading="salvando"
+          data-testid="pessoa-dialogo-salvar"
           @click="salvarPessoa"
         />
       </template>

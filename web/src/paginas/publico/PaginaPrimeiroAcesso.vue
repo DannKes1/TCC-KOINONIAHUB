@@ -303,7 +303,12 @@ function irParaLogin() {
   align-items: center;
   justify-content: center;
   padding: 48px;
-  position: relative;
+  /* Corretiva G3: numa janela baixa o formulário é mais alto que a tela; a marca fica
+     fixa e só o formulário rola (mesma regra do Cadastro Inicial). */
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  min-height: 100vh;
   overflow: hidden;
 }
 
@@ -510,6 +515,9 @@ function irParaLogin() {
 
   .login-marca {
     padding: 36px 24px;
+    /* relative (não static): mantém o recorte dos círculos decorativos. */
+    position: relative;
+    align-self: auto;
     min-height: auto;
   }
 

@@ -27,6 +27,7 @@ function normalizarPessoa(bruto: any): PessoaVM {
     atualizadoEm: (bruto?.AtualizadoEm ?? bruto?.atualizadoEm ?? null) as
       | string
       | null,
+    possuiConta: Boolean(bruto?.PossuiConta ?? bruto?.possuiConta ?? false),
   };
 }
 

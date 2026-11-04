@@ -11,9 +11,10 @@ import {
 } from "../../../aplicacao/servicos/meusDadosServico";
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-// RF4 / RNF 4.3 (aderência, Entrega A): a validação prévia de Meus Dados barra
-// e-mail inválido, UF fora de 2 letras e celular fora de 8 a 11 dígitos com a mensagem
-// no campo, sem chamar a API; o envio normaliza vazio para nulo e a UF para maiúsculas.
+// RF4 / RNF 4.3 (aderência, Entrega A): a validação prévia de Meus Dados barra UF fora
+// de 2 letras e celular fora de 8 a 11 dígitos com a mensagem no campo, sem chamar a
+// API; o envio normaliza vazio para nulo e a UF para maiúsculas. Corretiva G2: o e-mail é
+// somente leitura (é o e-mail de acesso) e vai como está.
 vi.mock("../../../aplicacao/servicos/meusDadosServico", () => ({
   obterMeusDados: vi.fn(async () => dadosDaApi()),
   atualizarMeusDados: vi.fn(async () => undefined),
@@ -42,6 +43,7 @@ function dadosDaApi() {
     cep: "76900-000",
     criadoEm: "2026-01-01T00:00:00Z",
     atualizadoEm: null,
+    possuiConta: true,
     aceiteTermo: { versao: "1.0", aceitoEm: "2026-10-01T12:00:00Z", meio: "web", vigente: true },
   };
 }
@@ -90,22 +92,23 @@ describe("PaginaMeusDados — validação prévia e envio (RNF 4.3)", () => {
   it("carrega os dados no formulário", async () => {
     const wrapper = await montar();
 
-    expect((wrapper.find("input#meus-dados-email").element as HTMLInputElement).value).toBe("maria@teste.com");
+    const email = wrapper.find("input#meus-dados-email").element as HTMLInputElement;
+    expect(email.value).toBe("maria@teste.com");
+    expect(email.disabled).toBe(true); // Corretiva G2: e-mail de acesso, somente leitura
+    expect(wrapper.find('[data-testid="meus-dados-email-dica"]').text()).toBe("E-mail de acesso; definido na criação da conta.");
     expect((wrapper.find("input#meus-dados-uf").element as HTMLInputElement).value).toBe("RO");
     expect(wrapper.text()).toContain("Maria Souza");
 
     wrapper.unmount();
   });
 
-  it("e-mail inválido e UF com três letras são barrados no campo, sem chamar a API", async () => {
+  it("UF com três letras é barrada no campo, sem chamar a API", async () => {
     const wrapper = await montar();
 
-    await preencher(wrapper, "meus-dados-email", "nao-e-email");
     await preencher(wrapper, "meus-dados-uf", "ROO");
     await salvar(wrapper);
 
     expect(atualizarMeusDados).not.toHaveBeenCalled();
-    expect(wrapper.text()).toContain("Informe um e-mail válido.");
     expect(wrapper.text()).toContain("Informe a UF com 2 letras (ex.: RO).");
     expect(wrapper.text()).toContain("Corrija os campos destacados.");
 
@@ -127,28 +130,21 @@ describe("PaginaMeusDados — validação prévia e envio (RNF 4.3)", () => {
     wrapper.unmount();
   });
 
-  it("dados válidos: e-mail vazio vai como nulo, UF em maiúsculas, e-mail com um @ aceito como na API", async () => {
+  it("dados válidos: e-mail da conta vai como está, UF em maiúsculas", async () => {
     const wrapper = await montar();
 
-    await preencher(wrapper, "meus-dados-email", "   ");
     await preencher(wrapper, "meus-dados-uf", "ro");
     await preencher(wrapper, "meus-dados-cidade", "Ouro Preto do Oeste");
     await salvar(wrapper);
 
     expect(atualizarMeusDados).toHaveBeenCalledTimes(1);
     expect(atualizarMeusDados).toHaveBeenCalledWith(
-      expect.objectContaining({ Email: null, Estado: "RO", Cidade: "Ouro Preto do Oeste", Celular: "69999990001" }),
+      expect.objectContaining({ Email: "maria@teste.com", Estado: "RO", Cidade: "Ouro Preto do Oeste", Celular: "69999990001" }),
     );
     expect(toastSuccess).toHaveBeenCalledTimes(1);
     // Depois de salvar, os dados são recarregados.
     expect(obterMeusDados).toHaveBeenCalledTimes(2);
     expect(wrapper.text()).not.toContain("Corrija os campos destacados.");
-
-    await preencher(wrapper, "meus-dados-email", "a@b");
-    await salvar(wrapper);
-
-    expect(atualizarMeusDados).toHaveBeenCalledTimes(2);
-    expect(vi.mocked(atualizarMeusDados).mock.calls[1]![0]).toEqual(expect.objectContaining({ Email: "a@b" }));
 
     wrapper.unmount();
   });
@@ -156,15 +152,15 @@ describe("PaginaMeusDados — validação prévia e envio (RNF 4.3)", () => {
   it("Descartar volta aos dados originais e limpa as mensagens de validação", async () => {
     const wrapper = await montar();
 
-    await preencher(wrapper, "meus-dados-email", "nao-e-email");
+    await preencher(wrapper, "meus-dados-uf", "ROO");
     await salvar(wrapper);
-    expect(wrapper.text()).toContain("Informe um e-mail válido.");
+    expect(wrapper.text()).toContain("Informe a UF com 2 letras (ex.: RO).");
 
     await wrapper.find('button[aria-label="Descartar"]').trigger("click");
     await flushPromises();
 
-    expect((wrapper.find("input#meus-dados-email").element as HTMLInputElement).value).toBe("maria@teste.com");
-    expect(wrapper.text()).not.toContain("Informe um e-mail válido.");
+    expect((wrapper.find("input#meus-dados-uf").element as HTMLInputElement).value).toBe("RO");
+    expect(wrapper.text()).not.toContain("Informe a UF com 2 letras (ex.: RO).");
     expect(atualizarMeusDados).not.toHaveBeenCalled();
 
     wrapper.unmount();

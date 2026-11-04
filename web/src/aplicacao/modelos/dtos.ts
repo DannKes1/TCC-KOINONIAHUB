@@ -36,6 +36,9 @@ export type PessoaVM = {
   cep: string | null;
   criadoEm: string;
   atualizadoEm: string | null;
+  // Corretiva G2 (aditivo): pessoa com conta de acesso tem o e-mail da conta; a tela
+  // bloqueia o campo e só o Administrador o altera, na edição do usuário (RF14).
+  possuiConta: boolean;
 };
 
 export type PessoaCriarDTO = {
@@ -96,6 +99,8 @@ export type UsuarioCriarDTO = {
 export type UsuarioAtualizarDTO = {
   Perfil?: string | null;
   Ativo?: boolean | null;
+  // Corretiva G2 (RF14): e-mail de acesso; ausente = sem alteração.
+  Email?: string | null;
 };
 
 // Retorno da criação de usuário (pode vir com o token do convite,

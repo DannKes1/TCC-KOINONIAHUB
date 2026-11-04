@@ -59,3 +59,19 @@ export function firstFieldError(
 ): string {
   return fieldErrors[field]?.[0] ?? "";
 }
+
+// Corretiva G3: mensagem geral de um erro da API para o aviso no topo de um diálogo.
+// Fica vazia quando todos os campos devolvidos pela API (`errors` do
+// ValidationProblemDetails) têm um FieldError exibido no diálogo — o erro já está
+// junto do campo. Um campo sem lugar na tela mantém o aviso geral, para o erro nunca
+// ficar invisível. A comparação ignora a caixa ("Email" e "email").
+export function mensagemForaDosCampos(
+  erro: string,
+  fieldErrors: Record<string, string[]>,
+  camposExibidos: string[],
+): string {
+  const chaves = Object.keys(fieldErrors);
+  if (chaves.length === 0) return erro;
+  const exibidos = new Set(camposExibidos.map((c) => c.toLowerCase()));
+  return chaves.every((c) => exibidos.has(c.toLowerCase())) ? "" : erro;
+}

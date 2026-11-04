@@ -85,8 +85,9 @@ watch(
 );
 
 // RNF 4.3: validação prévia com a mensagem junto ao campo; a API aplica as mesmas
-// regras (formato do e-mail e UF com 2 letras) e responde 400 por campo. O celular
-// (8 a 11 dígitos) é regra só do front; a API limita a 20 caracteres.
+// regras (UF com 2 letras) e responde 400 por campo. O celular (8 a 11 dígitos) é
+// regra só do front; a API limita a 20 caracteres. O e-mail é somente leitura
+// (Corretiva G2): é o e-mail de acesso, definido na criação da conta.
 const errosLocais = reactive<Record<string, string>>({});
 
 function limparErrosLocais() {
@@ -99,13 +100,6 @@ function validarLocal(): boolean {
   const celDigitos = contarDigitos(form.celular);
   if (celDigitos > 0 && (celDigitos < 8 || celDigitos > 11)) {
     errosLocais.celular = "Celular inválido. Informe DDD + número (8 a 11 dígitos).";
-  }
-
-  // Mesma regra do [EmailAddress] da API: um único "@", que não seja o primeiro nem o
-  // último caractere; vazio é aceito (campo opcional, enviado como nulo).
-  const email = form.email.trim();
-  if (email && !/^[^@]+@[^@]+$/.test(email)) {
-    errosLocais.email = "Informe um e-mail válido.";
   }
 
   const uf = form.estado.trim();
@@ -284,15 +278,15 @@ onMounted(carregar);
 
         <div style="display: flex; flex-direction: column; gap: 6px">
           <label for="meus-dados-email">E-mail</label>
-          <InputText
-            id="meus-dados-email"
-            v-model="form.email"
-            type="email"
-            placeholder="seu@email.com"
-          />
+          <InputText id="meus-dados-email" v-model="form.email" disabled />
+          <small
+            data-testid="meus-dados-email-dica"
+            style="font-size: 12px; color: var(--ipb-cinza-claro, #7a7a7a)"
+          >
+            E-mail de acesso; definido na criação da conta.
+          </small>
           <FieldError
             :texto="
-              errosLocais.email ||
               firstFieldError(fieldErrors, 'Email') ||
               firstFieldError(fieldErrors, 'email')
             "

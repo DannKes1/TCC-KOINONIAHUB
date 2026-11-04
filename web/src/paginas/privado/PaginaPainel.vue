@@ -634,184 +634,188 @@ onMounted(carregarPainel);
         :loading="carregando"
         texto="Carregando suas informações..."
       >
-        <div class="card-tabela">
-          <div class="card-tabela-titulo">Minhas turmas</div>
+        <!-- Corretiva G3: os três blocos no mesmo espaçamento dos outros painéis
+             (`.page-container`: 16 px, 12 px no celular); antes encostavam. -->
+        <div class="page-container" data-testid="painel-usuario-blocos">
+          <div class="card-tabela">
+            <div class="card-tabela-titulo">Minhas turmas</div>
 
-          <div
-            v-if="compacta"
-            class="lista-cartoes"
-            data-testid="painel-aluno-turmas-cartoes"
-          >
-            <CartaoItem
-              v-for="t in minhasTurmas"
-              :key="t.departamentoId"
-              :titulo="t.nome"
+            <div
+              v-if="compacta"
+              class="lista-cartoes"
+              data-testid="painel-aluno-turmas-cartoes"
             >
-              <template #chips>
-                <Tag :value="t.vinculo" :severity="severityVinculo(t.vinculo)" />
-                <Tag v-if="!t.ativo" value="Inativa" severity="secondary" />
-              </template>
-              <template #meta>{{ t.tipo || "EBD" }}</template>
-              <template #acoes>
-                <Button
-                  v-if="ehVinculoAluno(t)"
-                  label="Minha frequência"
-                  icon="pi pi-chart-line"
-                  class="acao-principal"
-                  :disabled="!t.ativo"
-                  data-testid="painel-aluno-turma-acao"
-                  @click="abrirMinhaFrequencia(t)"
-                />
-              </template>
-            </CartaoItem>
-            <p v-if="minhasTurmas.length === 0" class="lista-vazia">
-              Você ainda não está matriculado(a) em nenhuma turma. Procure a
-              secretaria/administração da igreja.
-            </p>
-          </div>
+              <CartaoItem
+                v-for="t in minhasTurmas"
+                :key="t.departamentoId"
+                :titulo="t.nome"
+              >
+                <template #chips>
+                  <Tag :value="t.vinculo" :severity="severityVinculo(t.vinculo)" />
+                  <Tag v-if="!t.ativo" value="Inativa" severity="secondary" />
+                </template>
+                <template #meta>{{ t.tipo || "EBD" }}</template>
+                <template #acoes>
+                  <Button
+                    v-if="ehVinculoAluno(t)"
+                    label="Minha frequência"
+                    icon="pi pi-chart-line"
+                    class="acao-principal"
+                    :disabled="!t.ativo"
+                    data-testid="painel-aluno-turma-acao"
+                    @click="abrirMinhaFrequencia(t)"
+                  />
+                </template>
+              </CartaoItem>
+              <p v-if="minhasTurmas.length === 0" class="lista-vazia">
+                Você ainda não está matriculado(a) em nenhuma turma. Procure a
+                secretaria/administração da igreja.
+              </p>
+            </div>
 
-          <DataTable
-            v-else
-            :value="minhasTurmas"
-            dataKey="departamentoId"
-            responsiveLayout="scroll"
-          >
-            <template #empty>
-              <div style="padding: 14px; opacity: 0.7">Você ainda não está matriculado(a) em nenhuma turma. Procure a secretaria/administração da igreja.</div>
-            </template>
-            <Column field="nome" header="Turma" sortable />
-            <Column field="tipo" header="Tipo" style="width: 110px" sortable />
-            <Column header="Vínculo" style="width: 140px">
-              <template #body="{ data }">
-                <Tag
-                  :value="data.vinculo"
-                  :severity="severityVinculo(data.vinculo)"
-                />
-              </template>
-            </Column>
-            <Column header="Status" style="width: 110px">
-              <template #body="{ data }">
-                <Tag
-                  :value="data.ativo ? 'Ativa' : 'Inativa'"
-                  :severity="data.ativo ? 'success' : 'secondary'"
-                />
-              </template>
-            </Column>
-            <Column header="Ação" style="width: 170px">
-              <template #body="{ data }">
-                <Button
-                  v-if="ehVinculoAluno(data)"
-                  label="Minha frequência"
-                  icon="pi pi-chart-line"
-                  size="small"
-                  severity="secondary"
-                  outlined
-                  :disabled="!data.ativo"
-                  data-testid="painel-aluno-turma-acao"
-                  @click="abrirMinhaFrequencia(data)"
-                />
-              </template>
-            </Column>
-          </DataTable>
-        </div>
-
-        <div class="stats-grid" data-testid="painel-aluno-indicadores">
-          <div class="stat-card">
-            <div class="stat-card-label">Aulas consolidadas ({{ rotuloJanela }})</div>
-            <div class="stat-card-valor">{{ totalAulasConsolidadas }}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card-label">Presenças ({{ rotuloJanela }})</div>
-            <div class="stat-card-valor">{{ totalPresencas }}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card-label">Faltas ({{ rotuloJanela }})</div>
-            <div class="stat-card-valor">{{ totalFaltas }}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card-label">Frequência ({{ rotuloJanela }})</div>
-            <div class="stat-card-valor">{{ percentualPresenca }}</div>
-          </div>
-        </div>
-
-        <div class="card-tabela">
-          <div class="card-tabela-titulo">
-            Meu histórico de presenças — {{ rotuloJanela }}
-          </div>
-          <p class="card-tabela-nota">
-            Mesma janela e mesma regra de Minha Frequência, somando todas as suas
-            turmas: só aulas Consolidadas entram nos números acima; aulas Em aberto
-            ou Não realizadas aparecem na lista, mas não contam.
-          </p>
-
-          <div
-            v-if="compacta"
-            class="lista-cartoes"
-            data-testid="painel-aluno-historico-cartoes"
-          >
-            <CartaoItem
-              v-for="p in presencasVisiveis"
-              :key="p.aulaId"
-              :titulo="formatarData(p.dataAula)"
+            <DataTable
+              v-else
+              :value="minhasTurmas"
+              dataKey="departamentoId"
+              responsiveLayout="scroll"
             >
-              <template #chips>
-                <Tag
-                  :value="p.presente ? 'Presente' : 'Ausente'"
-                  :severity="severityPresenca(p.presente)"
-                />
-                <TagSituacaoAula :situacao="p.situacaoAula" />
+              <template #empty>
+                <div style="padding: 14px; opacity: 0.7">Você ainda não está matriculado(a) em nenhuma turma. Procure a secretaria/administração da igreja.</div>
               </template>
-              <template #meta>
-                {{ p.departamentoNome }} · {{ p.materiaNome }}
-                <template v-if="p.observacao"><br />Obs.: {{ p.observacao }}</template>
-              </template>
-            </CartaoItem>
-            <p v-if="presencasOrdenadas.length === 0" class="lista-vazia">
-              Nenhum registro de presença nos {{ rotuloJanela }}.
-            </p>
-            <Button
-              v-if="presencasRestantes > 0"
-              :label="`Mostrar mais (${presencasRestantes} restantes)`"
-              severity="secondary"
-              text
-              class="mostrar-mais"
-              @click="mostrarMaisPresencas"
-            />
+              <Column field="nome" header="Turma" sortable />
+              <Column field="tipo" header="Tipo" style="width: 110px" sortable />
+              <Column header="Vínculo" style="width: 140px">
+                <template #body="{ data }">
+                  <Tag
+                    :value="data.vinculo"
+                    :severity="severityVinculo(data.vinculo)"
+                  />
+                </template>
+              </Column>
+              <Column header="Status" style="width: 110px">
+                <template #body="{ data }">
+                  <Tag
+                    :value="data.ativo ? 'Ativa' : 'Inativa'"
+                    :severity="data.ativo ? 'success' : 'secondary'"
+                  />
+                </template>
+              </Column>
+              <Column header="Ação" style="width: 170px">
+                <template #body="{ data }">
+                  <Button
+                    v-if="ehVinculoAluno(data)"
+                    label="Minha frequência"
+                    icon="pi pi-chart-line"
+                    size="small"
+                    severity="secondary"
+                    outlined
+                    :disabled="!data.ativo"
+                    data-testid="painel-aluno-turma-acao"
+                    @click="abrirMinhaFrequencia(data)"
+                  />
+                </template>
+              </Column>
+            </DataTable>
           </div>
 
-          <DataTable
-            v-else
-            :value="presencasOrdenadas"
-            :paginator="presencasOrdenadas.length > 10"
-            :rows="10"
-            dataKey="aulaId"
-            responsiveLayout="scroll"
-          >
-            <template #empty>
-              <div style="padding: 14px; opacity: 0.7">Nenhum registro de presença nos {{ rotuloJanela }}.</div>
-            </template>
-            <Column header="Data" style="width: 120px">
-              <template #body="{ data }">
-                {{ formatarData(data.dataAula) }}
+          <div class="stats-grid" data-testid="painel-aluno-indicadores">
+            <div class="stat-card">
+              <div class="stat-card-label">Aulas consolidadas ({{ rotuloJanela }})</div>
+              <div class="stat-card-valor">{{ totalAulasConsolidadas }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-label">Presenças ({{ rotuloJanela }})</div>
+              <div class="stat-card-valor">{{ totalPresencas }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-label">Faltas ({{ rotuloJanela }})</div>
+              <div class="stat-card-valor">{{ totalFaltas }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-label">Frequência ({{ rotuloJanela }})</div>
+              <div class="stat-card-valor">{{ percentualPresenca }}</div>
+            </div>
+          </div>
+
+          <div class="card-tabela">
+            <div class="card-tabela-titulo">
+              Meu histórico de presenças — {{ rotuloJanela }}
+            </div>
+            <p class="card-tabela-nota">
+              Mesma janela e mesma regra de Minha Frequência, somando todas as suas
+              turmas: só aulas Consolidadas entram nos números acima; aulas Em aberto
+              ou Não realizadas aparecem na lista, mas não contam.
+            </p>
+
+            <div
+              v-if="compacta"
+              class="lista-cartoes"
+              data-testid="painel-aluno-historico-cartoes"
+            >
+              <CartaoItem
+                v-for="p in presencasVisiveis"
+                :key="p.aulaId"
+                :titulo="formatarData(p.dataAula)"
+              >
+                <template #chips>
+                  <Tag
+                    :value="p.presente ? 'Presente' : 'Ausente'"
+                    :severity="severityPresenca(p.presente)"
+                  />
+                  <TagSituacaoAula :situacao="p.situacaoAula" />
+                </template>
+                <template #meta>
+                  {{ p.departamentoNome }} · {{ p.materiaNome }}
+                  <template v-if="p.observacao"><br />Obs.: {{ p.observacao }}</template>
+                </template>
+              </CartaoItem>
+              <p v-if="presencasOrdenadas.length === 0" class="lista-vazia">
+                Nenhum registro de presença nos {{ rotuloJanela }}.
+              </p>
+              <Button
+                v-if="presencasRestantes > 0"
+                :label="`Mostrar mais (${presencasRestantes} restantes)`"
+                severity="secondary"
+                text
+                class="mostrar-mais"
+                @click="mostrarMaisPresencas"
+              />
+            </div>
+
+            <DataTable
+              v-else
+              :value="presencasOrdenadas"
+              :paginator="presencasOrdenadas.length > 10"
+              :rows="10"
+              dataKey="aulaId"
+              responsiveLayout="scroll"
+            >
+              <template #empty>
+                <div style="padding: 14px; opacity: 0.7">Nenhum registro de presença nos {{ rotuloJanela }}.</div>
               </template>
-            </Column>
-            <Column field="departamentoNome" header="Turma" />
-            <Column field="materiaNome" header="Matéria" />
-            <Column header="Presença" style="width: 130px">
-              <template #body="{ data }">
-                <Tag
-                  :value="data.presente ? 'Presente' : 'Ausente'"
-                  :severity="severityPresenca(data.presente)"
-                />
-              </template>
-            </Column>
-            <Column header="Aula" style="width: 170px">
-              <template #body="{ data }">
-                <TagSituacaoAula :situacao="data.situacaoAula" />
-              </template>
-            </Column>
-            <Column field="observacao" header="Observação" />
-          </DataTable>
+              <Column header="Data" style="width: 120px">
+                <template #body="{ data }">
+                  {{ formatarData(data.dataAula) }}
+                </template>
+              </Column>
+              <Column field="departamentoNome" header="Turma" />
+              <Column field="materiaNome" header="Matéria" />
+              <Column header="Presença" style="width: 130px">
+                <template #body="{ data }">
+                  <Tag
+                    :value="data.presente ? 'Presente' : 'Ausente'"
+                    :severity="severityPresenca(data.presente)"
+                  />
+                </template>
+              </Column>
+              <Column header="Aula" style="width: 170px">
+                <template #body="{ data }">
+                  <TagSituacaoAula :situacao="data.situacaoAula" />
+                </template>
+              </Column>
+              <Column field="observacao" header="Observação" />
+            </DataTable>
+          </div>
         </div>
       </LoadingOverlay>
     </template>

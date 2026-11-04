@@ -44,6 +44,7 @@ function normalizarMeusDados(bruto: any): MeusDadosVM {
     atualizadoEm: (bruto?.AtualizadoEm ?? bruto?.atualizadoEm ?? null) as
       | string
       | null,
+    possuiConta: Boolean(bruto?.PossuiConta ?? bruto?.possuiConta ?? false),
     aceiteTermo: normalizarAceiteTermo(bruto?.AceiteTermo ?? bruto?.aceiteTermo),
   };
 }
