@@ -56,6 +56,64 @@ namespace KoinoniaHub.API.Tests
             Assert.NotEqual("Ji-Paraná", atual.RootElement.GetProperty("cidade").GetString());
         }
 
+        // Corretiva G4: toda mensagem de validacao dos DTOs e em portugues, no padrao
+        // "O campo {nome} deve ter no maximo {N} caracteres." (nenhuma mensagem padrao do .NET).
+        [Fact]
+        public async Task Atualizar_CepCom60Caracteres_Retorna400ComMensagemEmPortugues()
+        {
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf4g4");
+            var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
+
+            var resposta = await professor.PutAsJsonAsync("/api/meus-dados", new { CEP = new string('7', 60), Cidade = "Ji-Paraná" });
+
+            Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+            using (var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync()))
+            {
+                // G4b: 60 caracteres ferem o tamanho e o formato; as duas mensagens em português.
+                var mensagens = json.RootElement.GetProperty("errors").GetProperty("CEP").EnumerateArray().Select(e => e.GetString()).ToList();
+                Assert.Contains("O campo CEP deve ter no máximo 10 caracteres.", mensagens);
+                Assert.Contains(Cep.Mensagem, mensagens);
+            }
+
+            using var atual = JsonDocument.Parse(await (await professor.GetAsync("/api/meus-dados")).Content.ReadAsStringAsync());
+            Assert.NotEqual("Ji-Paraná", atual.RootElement.GetProperty("cidade").GetString());
+        }
+
+        // Corretiva G4b: CEP com 8 dígitos, com ou sem hífen; outro formato volta 400 em
+        // errors.CEP com a mensagem do formato e nada é gravado.
+        [Fact]
+        public async Task Atualizar_CepComDezDigitos_Retorna400ComMensagemDoFormato()
+        {
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf4g4b1");
+            var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
+
+            var resposta = await professor.PutAsJsonAsync("/api/meus-dados", new { CEP = "7777777777", Cidade = "Ji-Paraná" });
+
+            Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+            using (var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync()))
+            {
+                var mensagens = json.RootElement.GetProperty("errors").GetProperty("CEP").EnumerateArray().Select(e => e.GetString()).ToList();
+                Assert.Equal("Informe o CEP no formato 00000-000.", Assert.Single(mensagens));
+            }
+
+            using var atual = JsonDocument.Parse(await (await professor.GetAsync("/api/meus-dados")).Content.ReadAsStringAsync());
+            Assert.NotEqual("Ji-Paraná", atual.RootElement.GetProperty("cidade").GetString());
+        }
+
+        // Corretiva G4b: CEP sem hífen é aceito e gravado como 00000-000.
+        [Fact]
+        public async Task Atualizar_CepSemHifen_Retorna204EGravaComHifen()
+        {
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf4g4b2");
+            var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
+
+            var resposta = await professor.PutAsJsonAsync("/api/meus-dados", new { CEP = "76900000" });
+
+            Assert.Equal(HttpStatusCode.NoContent, resposta.StatusCode);
+            using var atual = JsonDocument.Parse(await (await professor.GetAsync("/api/meus-dados")).Content.ReadAsStringAsync());
+            Assert.Equal("76900-000", atual.RootElement.GetProperty("cep").GetString());
+        }
+
         [Fact]
         public async Task Atualizar_EmailVazio_MantemOEmailDaConta_Retorna204()
         {
