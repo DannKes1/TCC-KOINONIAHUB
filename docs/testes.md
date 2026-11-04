@@ -2174,3 +2174,69 @@ com senha manual continua caindo no gate do termo (RNF 2.5).
 
 **Anotado no registro do projeto:** decisões da Entrega G e trabalhos futuros (exclusão de pessoa
 por anonimização, exclusão da igreja como procedimento, menu lateral retrátil no desktop).
+
+## Corretiva G2 — um e-mail por pessoa, /termo e ícone (03/11/2026)
+
+**Escopo.** Corretiva antes de subir a versão da avaliação no servidor. (1) Um e-mail por
+pessoa, compartilhado entre o cadastro e a conta de acesso; (2) `/termo` sem a caixa "Li e
+aceito" para quem já aceitou a versão vigente; (3) ícone da sarça com fundo transparente;
+(4) o Administrador altera o e-mail de acesso na edição do usuário (RF14). Rotas inalteradas;
+campos aditivos `possuiConta` nas respostas de Pessoas e Meus Dados e `Email` no PATCH de
+usuário. Texto da monografia decidido pelo autor em 03/11/2026: RNF 13.5, RNF 7.6 e RNF 8.4
+(unicidade do e-mail na igreja) e a redação nova do RF14 (o texto anterior dizia que o e-mail
+não era alterado após a criação). Blocos de commit: api · testes · front · e2e · docs.
+
+**Defeito corrigido (1): `Pessoa.Email` e `Usuario.Email` independentes.** Criar a conta com um
+e-mail digitado não gravava nada no cadastro da pessoa; Pessoas e Meus Dados aceitavam qualquer
+e-mail (a duplicidade era conferida só entre pessoas); a importação só comparava com os e-mails
+das pessoas. Agora: ao criar a conta, o cadastro recebe o e-mail da conta (o diálogo Novo usuário
+vem preenchido com o e-mail da pessoa, editável); dentro da igreja um e-mail não pode estar no
+cadastro de uma pessoa e na conta de outra (400 "Este e-mail já está em uso por outra pessoa."
+em Pessoas, Meus Dados, Usuários e, na importação, linha ignorada com a mesma mensagem); pessoa
+com conta tem o e-mail da conta, bloqueado em Pessoas e em Meus Dados com a dica "E-mail de
+acesso; definido na criação da conta." (a API recusa outro valor com 400 "O e-mail de uma pessoa
+com conta de acesso não pode ser alterado."); a regra global de e-mail único entre igrejas não
+mudou. Cadastros anteriores à regra (pessoa sem e-mail, conta com e-mail) mostram o e-mail da
+conta na leitura e se igualam na primeira gravação. **RF14 (4):** o PATCH aceita `Email`; o novo
+e-mail passa pela recusa cruzada e pela regra global, o cadastro da pessoa recebe o mesmo e um
+convite pendente é invalidado; a senha não muda.
+
+**Validação automatizada (03/11/2026, ambiente do autor):** `dotnet build` 0 avisos e 0 erros ·
+`dotnet test` = **208 aprovados** (196 + 12: `RF13_UsuarioTests` 6 — conta preenche o cadastro,
+conta substitui e-mail diferente, e-mail de outra pessoa ou de conta de outra → 400, RF14 troca o
+login e iguala o cadastro e invalida o convite, e-mail em uso → 400 cruzado e global, Professor
+→ 403; `RF7_RF8_EmailPessoaTests` 4; `RF4_MeusDadosTests` 1 e dois casos ajustados;
+`RF41_ImportacaoTests` 1) · `vue-tsc -b` limpo · `npm run test` = **31 arquivos, 155 casos**
+(153 + `PaginaUsuariosLista.spec` 2; `PaginaMeusDados.spec` reescrito para o campo bloqueado) ·
+`npm run build` ok · `npm run test:e2e` = **20 aprovados** (10 `chromium` + 10 `mobile`; E2E-07
+com o texto novo da linha ignorada). Suíte completa executada antes (196 / 153 / 20) e depois.
+
+**Ícone (3).** Os quatro PNGs da sarça em `web/public` tinham o fundo preto opaco (38 % dos
+pixels; só os cantos eram transparentes), por isso o quadrado escuro em `/termo`. Regenerados
+com a folhagem verde (0, 81, 49) sobre transparência, mesmos nomes e tamanhos; a aba passa a
+mostrar só a sarça.
+
+**Testes manuais (perfil `https` + `npm run dev`, Admin), executados pelo autor em 03/11/2026:**
+T1 ✔ Novo usuário com pessoa que tem e-mail: campo "E-mail de acesso" preenchido e editável; ao
+salvar, o cadastro da pessoa passa ao e-mail da conta e o campo fica bloqueado com a dica · T2 ✔
+pessoa sem e-mail: campo vazio, "Informe um e-mail de acesso válido." ao salvar sem preencher;
+com o e-mail, o cadastro recebe o da conta · T3 ✔ recusa cruzada "Este e-mail já está em uso por
+outra pessoa." em Nova Pessoa (e-mail da conta do Admin) e em Novo Usuário (e-mail do cadastro de
+outra pessoa) · T4 ✔ Meus Dados com o e-mail bloqueado e a dica; os demais campos gravam · T5 ✔
+importação com o e-mail da conta do Admin: linha ignorada com a mensagem única · T6 ✔ Editar
+usuário troca o e-mail: lista e cadastro da pessoa com o novo, login com o novo e-mail entra e com
+o antigo não; e-mail de outra conta recusado na edição; em conta com convite pendente a tag some ·
+T7 ✔ `/termo` para quem já aceitou: aviso verde, sem a caixa "Li e aceito", botão Voltar · T8 ✔
+sarça sem fundo em `/termo` e na aba. Na execução do T3 o autor registrou que a mensagem de erro
+da API aparece no topo da página, atrás do diálogo, e fica até recarregar
+(`UI-aviso-erro-fora-do-dialogo.png`): defeito de interface a corrigir na corretiva G3.
+
+**Prints (`docs/evidencias/`, 12 arquivos):** `RF13-conta-preenche-pessoa.png`,
+`RF13-pessoa-sem-email-recebe-conta.png`, `RNF-13.5-email-em-uso-pessoas.png`,
+`RNF-13.5-email-em-uso-usuarios.png`, `RF4-email-bloqueado.png`,
+`RF41-email-de-conta-ignorado.png`, `RF14-email-alterado.png`, `RF14-email-em-uso-editar.png`,
+`RF14-convite-invalidado.png`, `RNF-2.5-termo-sem-caixa.png`, `UI-termo-sarca-transparente.png`,
+`UI-aviso-erro-fora-do-dialogo.png`.
+
+**Anotado no registro do projeto:** regra do e-mail único, decisões e o que explicar na banca;
+os quatro textos da monografia na lista de correções do .docx.
