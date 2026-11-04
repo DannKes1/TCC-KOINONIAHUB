@@ -268,6 +268,59 @@ namespace KoinoniaHub.API.Tests
             var validar = await publico.GetAsync($"/api/auth/primeiro-acesso/{token}");
             Assert.Equal(HttpStatusCode.OK, validar.StatusCode);
             Assert.Equal(0, await ContarAceitesAsync(cenario.EmailAlvo));
+
+            // Entrega G: a validação informa que a conta ainda não tem aceite vigente.
+            using var jsonValidar = JsonDocument.Parse(await validar.Content.ReadAsStringAsync());
+            Assert.False(jsonValidar.RootElement.GetProperty("aceiteVigente").GetBoolean());
+        }
+
+        // ---------- redefinição de acesso com aceite vigente (Entrega G; CSU20) ----------
+
+        [Fact]
+        public async Task PrimeiroAcesso_ContaComAceiteVigente_ValidacaoInformaEAtivaSemAceiteSemDuplicar()
+        {
+            // Defeito corrigido na Entrega G: a ativação sempre exigia e gravava um novo
+            // aceite, então "Redefinir acesso" numa conta com aceite vigente duplicava o registro.
+            var cenario = await CenarioConvite.CriarAsync(_fabrica, "rf42pc");
+            await RegistrarAceiteVigenteAsync(cenario.AlvoId);
+            var token = await GerarConviteAsync(cenario);
+            Assert.Equal(1, await ContarAceitesAsync(cenario.EmailAlvo));
+
+            var publico = _fabrica.CreateClient();
+            var validar = await publico.GetAsync($"/api/auth/primeiro-acesso/{token}");
+            Assert.Equal(HttpStatusCode.OK, validar.StatusCode);
+            using (var json = JsonDocument.Parse(await validar.Content.ReadAsStringAsync()))
+                Assert.True(json.RootElement.GetProperty("aceiteVigente").GetBoolean());
+
+            // Ativação sem AceiteTermoVersao: passa, a senha muda e nenhum aceite novo é gravado.
+            var ativar = await publico.PostAsJsonAsync("/api/auth/primeiro-acesso", new { Token = token, NovaSenha = "NovaSenha@456" });
+            Assert.Equal(HttpStatusCode.OK, ativar.StatusCode);
+            Assert.Equal(1, await ContarAceitesAsync(cenario.EmailAlvo));
+            Assert.Equal(MeioAceiteTermo.Login, (await LerAceiteAsync(cenario.EmailAlvo)).Meio);
+
+            var login = await _fabrica.CreateClient().PostAsJsonAsync("/api/auth/login", new { Email = cenario.EmailAlvo, Senha = "NovaSenha@456" });
+            Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+            using var jsonLogin = JsonDocument.Parse(await login.Content.ReadAsStringAsync());
+            Assert.False(jsonLogin.RootElement.GetProperty("termoPendente").GetBoolean());
+        }
+
+        [Fact]
+        public async Task PrimeiroAcesso_ContaComAceiteVigente_VersaoEnviadaNaoDuplica()
+        {
+            // Um cliente que ainda mande a versão (tela antiga, chamada direta) também não duplica.
+            var cenario = await CenarioConvite.CriarAsync(_fabrica, "rf42pd");
+            await RegistrarAceiteVigenteAsync(cenario.AlvoId);
+            var token = await GerarConviteAsync(cenario);
+
+            var ativar = await _fabrica.CreateClient().PostAsJsonAsync("/api/auth/primeiro-acesso", new
+            {
+                Token = token,
+                NovaSenha = "NovaSenha@456",
+                AceiteTermoVersao = TermosDeUso.Vigente.Versao
+            });
+
+            Assert.Equal(HttpStatusCode.OK, ativar.StatusCode);
+            Assert.Equal(1, await ContarAceitesAsync(cenario.EmailAlvo));
         }
 
         [Fact]
@@ -363,6 +416,16 @@ namespace KoinoniaHub.API.Tests
             var resposta = await admin.PostAsync($"/api/usuarios/{cenario.AlvoId}/convite", content: null);
             using var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
             return json.RootElement.GetProperty("token").GetString()!;
+        }
+
+        // Aceite da versão vigente já registrado (conta em uso que pede redefinição de acesso).
+        private async Task RegistrarAceiteVigenteAsync(int usuarioId)
+        {
+            using var escopo = _fabrica.Services.CreateScope();
+            var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+            var usuario = await db.Usuarios.Include(u => u.Igreja).SingleAsync(u => u.Id == usuarioId);
+            db.Add(SementeTermo.AceiteDe(usuario));
+            await db.SaveChangesAsync();
         }
 
         private async Task<int> ContarAceitesAsync(string email)
