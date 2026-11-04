@@ -82,6 +82,32 @@ namespace KoinoniaHub.API.Tests
             Assert.Equal(0, resposta.ParaConferencia); // e-mail repetido é ignorado sem sinalização (41.3)
             Assert.Equal("Ignorado", resposta.Itens.Single().Status);
             Assert.False(resposta.Itens.Single().ParaConferencia);
+            Assert.Equal("Este e-mail já está em uso por outra pessoa (linha ignorada).", resposta.Itens.Single().Mensagem);
+            Assert.Equal(1, await ContarPessoasAsync(ctx, igrejaId));
+        }
+
+        [Fact]
+        public async Task Importar_EmailDeContaDeOutraPessoa_Ignora()
+        {
+            // Corretiva G2: o e-mail da conta de acesso de uma pessoa (mesmo sem e-mail no
+            // cadastro dela) também está em uso na igreja.
+            using var ctx = new ContextoDeTeste();
+            var igrejaId = await SemearIgrejaAsync(ctx);
+            var pessoa = new Pessoa { Nome = "Pessoa Com Conta", IgrejaId = igrejaId };
+            ctx.Db.Pessoas.Add(pessoa);
+            ctx.Db.Usuarios.Add(new Usuario { Email = "conta@teste.com", SenhaHash = "hash", Perfil = "Usuario", IgrejaId = igrejaId, Pessoa = pessoa });
+            await ctx.Db.SaveChangesAsync();
+            var servico = new PessoaImportacaoServico(ctx.Db);
+
+            var csv =
+                "Nome;Email\n" +
+                "Outra Pessoa;CONTA@teste.com\n";
+
+            var resposta = await servico.ImportarCsvAsync(igrejaId, Fluxo(csv));
+
+            Assert.Equal(0, resposta.Criados);
+            Assert.Equal(1, resposta.Ignorados);
+            Assert.Equal("Este e-mail já está em uso por outra pessoa (linha ignorada).", resposta.Itens.Single().Mensagem);
             Assert.Equal(1, await ContarPessoasAsync(ctx, igrejaId));
         }
 

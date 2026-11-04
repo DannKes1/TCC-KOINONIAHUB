@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using KoinoniaHub.API.Aplicacao.Regras;
 using KoinoniaHub.API.Aplicacao.Seguranca;
 using KoinoniaHub.API.Infraestrutura.Dados;
 using KoinoniaHub.API.Tests.Infraestrutura;
@@ -13,7 +14,9 @@ namespace KoinoniaHub.API.Tests
     // conta criada com senha informada pelo Admin guarda só o hash BCrypt (RNF 13.2) e as
     // rotas de /api/usuarios são só do Administrador (RNFs 13.1, 14.1, 16.1) — nem Professor,
     // nem Pastor ou Superintendente. O convite
-    // (15.1/39.1) já é coberto por RF39_RF40_ConviteTests.
+    // (15.1/39.1) já é coberto por RF39_RF40_ConviteTests. Corretiva G2 (RNF 13.5, RF14): um
+    // e-mail por pessoa — a conta preenche o cadastro, a recusa cruzada na igreja e a troca do
+    // e-mail de acesso pelo Administrador.
     public class RF13_UsuarioTests : IClassFixture<KoinoniaHubWebApplicationFactory>
     {
         private readonly KoinoniaHubWebApplicationFactory _fabrica;
@@ -106,6 +109,147 @@ namespace KoinoniaHub.API.Tests
 
             Assert.Equal(HttpStatusCode.Forbidden, resposta.StatusCode);
             Assert.Equal(RespostaAutorizacaoHandler.MensagemSemPermissao, await LerMensagemAsync(resposta));
+        }
+
+        // ---- Corretiva G2: um e-mail por pessoa (RNF 13.5) ----
+
+        [Fact]
+        public async Task Criar_PessoaSemEmail_CadastroRecebeOEmailDaConta()
+        {
+            const string email = "conta.rf13d@teste.com";
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf13d");
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+
+            var resposta = await admin.PostAsJsonAsync("/api/usuarios", new { PessoaId = cenario.AlunoForaId, Email = email, Perfil = "Usuario" });
+            Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+
+            // No banco e na leitura da pessoa: o mesmo e-mail, com possuiConta.
+            Assert.Equal(email, await LerEmailDaPessoaAsync(cenario.AlunoForaId));
+            using var json = JsonDocument.Parse(await (await admin.GetAsync($"/api/pessoas/{cenario.AlunoForaId}")).Content.ReadAsStringAsync());
+            Assert.Equal(email, json.RootElement.GetProperty("email").GetString());
+            Assert.True(json.RootElement.GetProperty("possuiConta").GetBoolean());
+        }
+
+        [Fact]
+        public async Task Criar_PessoaComOutroEmail_CadastroPassaAoEmailDaConta()
+        {
+            // Aluno Dentro nasce com e-mail próprio; a conta é criada com outro (o diálogo vem
+            // preenchido com o da pessoa, mas é editável): o cadastro passa ao da conta.
+            const string email = "conta.rf13e@teste.com";
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf13e");
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+            Assert.Equal("aluno.dentro.rf13e@teste.com", await LerEmailDaPessoaAsync(cenario.AlunoDentroId));
+
+            var resposta = await admin.PostAsJsonAsync("/api/usuarios", new { PessoaId = cenario.AlunoDentroId, Email = email, Perfil = "Usuario" });
+
+            Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+            Assert.Equal(email, await LerEmailDaPessoaAsync(cenario.AlunoDentroId));
+        }
+
+        [Fact]
+        public async Task Criar_EmailDeOutraPessoa_Retorna400ENaoCria()
+        {
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf13f");
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+
+            // Cadastro de outra pessoa (Aluno Dentro) e conta de outra pessoa (Professor).
+            foreach (var email in new[] { "aluno.dentro.rf13f@teste.com", cenario.EmailProfessor })
+            {
+                var resposta = await admin.PostAsJsonAsync("/api/usuarios", new { PessoaId = cenario.AlunoForaId, Email = email, Perfil = "Usuario" });
+
+                Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+                Assert.Equal(EmailDaPessoa.MensagemEmUso, await LerMensagemAsync(resposta));
+            }
+
+            using var escopo = _fabrica.Services.CreateScope();
+            var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+            Assert.False(await db.Usuarios.AnyAsync(u => u.PessoaId == cenario.AlunoForaId));
+        }
+
+        [Fact]
+        public async Task AtualizarEmail_AlteraOLoginSincronizaOCadastroEInvalidaOConvite()
+        {
+            // RF14 (Corretiva G2): o Administrador troca o e-mail de acesso; a pessoa passa a
+            // entrar com o novo, o cadastro recebe o mesmo e o convite pendente deixa de valer.
+            const string novo = "alvo.novo.rf14g@teste.com";
+            var cenario = await CenarioConvite.CriarAsync(_fabrica, "rf14g");
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+            Assert.Equal(HttpStatusCode.OK, (await admin.PostAsync($"/api/usuarios/{cenario.AlvoId}/convite", content: null)).StatusCode);
+
+            var resposta = await admin.PatchAsJsonAsync($"/api/usuarios/{cenario.AlvoId}", new { Email = novo });
+            Assert.Equal(HttpStatusCode.NoContent, resposta.StatusCode);
+
+            using (var escopo = _fabrica.Services.CreateScope())
+            {
+                var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+                var usuario = await db.Usuarios.AsNoTracking().Include(u => u.Pessoa).SingleAsync(u => u.Id == cenario.AlvoId);
+                Assert.Equal(novo, usuario.Email);
+                Assert.Equal(novo, usuario.Pessoa!.Email);
+                Assert.Null(usuario.ConviteTokenHash);
+                Assert.Null(usuario.ConviteExpiraEm);
+            }
+
+            // A senha é a mesma: entra com o e-mail novo e não entra mais com o antigo.
+            Assert.Equal(HttpStatusCode.OK, (await _fabrica.CreateClient().PostAsJsonAsync("/api/auth/login", new { Email = novo, Senha = CenarioAcessoPessoa.Senha })).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, (await _fabrica.CreateClient().PostAsJsonAsync("/api/auth/login", new { Email = cenario.EmailAlvo, Senha = CenarioAcessoPessoa.Senha })).StatusCode);
+        }
+
+        [Fact]
+        public async Task AtualizarEmail_EmUso_Retorna400ENadaMuda()
+        {
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf14h");
+            var outraIgreja = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf14h2");
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+            var professorId = await LerUsuarioIdAsync(cenario.EmailProfessor);
+
+            // Cadastro de outra pessoa e conta de outra pessoa da igreja: recusa cruzada;
+            // conta de outra igreja: regra global, inalterada (c).
+            foreach (var (email, mensagem) in new[]
+            {
+                ("aluno.dentro.rf14h@teste.com", EmailDaPessoa.MensagemEmUso),
+                (cenario.EmailUsuarioComum, EmailDaPessoa.MensagemEmUso),
+                (outraIgreja.EmailAdmin, "Já existe um usuário com este e-mail.")
+            })
+            {
+                var resposta = await admin.PatchAsJsonAsync($"/api/usuarios/{professorId}", new { Email = email, Perfil = "Pastor" });
+
+                Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+                Assert.Equal(mensagem, await LerMensagemAsync(resposta));
+            }
+
+            using var escopo = _fabrica.Services.CreateScope();
+            var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+            var professor = await db.Usuarios.AsNoTracking().SingleAsync(u => u.Id == professorId);
+            Assert.Equal(cenario.EmailProfessor, professor.Email);
+            Assert.Equal("Professor", professor.Perfil); // nada da requisição recusada entrou
+        }
+
+        [Fact]
+        public async Task AtualizarEmail_ComoProfessor_Retorna403()
+        {
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf14i");
+            var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
+            var professorId = await LerUsuarioIdAsync(cenario.EmailProfessor);
+
+            var resposta = await professor.PatchAsJsonAsync($"/api/usuarios/{professorId}", new { Email = "professor.novo.rf14i@teste.com" });
+
+            Assert.Equal(HttpStatusCode.Forbidden, resposta.StatusCode);
+            Assert.Equal(RespostaAutorizacaoHandler.MensagemSemPermissao, await LerMensagemAsync(resposta));
+            Assert.Equal(cenario.EmailProfessor, await LerEmailDoUsuarioAsync(professorId));
+        }
+
+        private async Task<string?> LerEmailDaPessoaAsync(int pessoaId)
+        {
+            using var escopo = _fabrica.Services.CreateScope();
+            var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+            return (await db.Pessoas.AsNoTracking().SingleAsync(p => p.Id == pessoaId)).Email;
+        }
+
+        private async Task<string> LerEmailDoUsuarioAsync(int usuarioId)
+        {
+            using var escopo = _fabrica.Services.CreateScope();
+            var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+            return (await db.Usuarios.AsNoTracking().SingleAsync(u => u.Id == usuarioId)).Email;
         }
 
         private static async Task<string?> LerMensagemAsync(HttpResponseMessage resposta)
