@@ -2164,8 +2164,9 @@ senha definida e a coluna Termo de Usuários com a mesma data de aceite (nenhum 
 T7 ✔ primeiro acesso de conta nova: caixa obrigatória, botão desabilitado até marcar; conta criada
 com senha manual continua caindo no gate do termo (RNF 2.5).
 
-**Prints (`docs/evidencias/`, 12 arquivos):** `UI-termo-sarca-verde.png`,
-`RNF-responsividade-painel-gestao-360.png`, `RNF-responsividade-atribuicoes-360.png`,
+**Prints (`docs/evidencias/`, 13 arquivos):** `UI-termo-sarca-verde.png`,
+`RNF-responsividade-painel-gestao-360.png`, `RNF-responsividade-usuarios-360-g.png`,
+`RNF-responsividade-atribuicoes-360.png`,
 `RNF-responsividade-termo-360.png`, `RNF-responsividade-atribuicoes-1024.png`,
 `UI-avisos-sem-codigo.png`, `RF27-alunos-filtro.png`, `UI-filtros-padrao-ativos.png`,
 `RF40-redefinicao-sem-novo-aceite.png`, `RF40-redefinicao-aceite-mantido.png`,
