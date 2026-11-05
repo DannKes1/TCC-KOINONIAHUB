@@ -117,10 +117,11 @@ namespace KoinoniaHub.API.Controllers
         public async Task<IActionResult> Atualizar([FromRoute] int id, [FromBody] PessoaAtualizarRequisicaoDto dto)
         {
             var igrejaId = UsuarioAutenticado.ObterIgrejaId(User);
+            var usuarioId = UsuarioAutenticado.ObterUsuarioId(User);
 
             try
             {
-                var ok = await _pessoaServico.AtualizarAsync(igrejaId, id, dto);
+                var ok = await _pessoaServico.AtualizarAsync(igrejaId, id, usuarioId, dto);
                 if (!ok) return NotFound();
                 return NoContent();
             }

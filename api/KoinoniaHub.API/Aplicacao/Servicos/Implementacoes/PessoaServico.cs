@@ -153,13 +153,21 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             };
         }
 
-        public async Task<bool> AtualizarAsync(int igrejaId, int pessoaId, PessoaAtualizarRequisicaoDto dto)
+        public async Task<bool> AtualizarAsync(int igrejaId, int pessoaId, int usuarioLogadoId, PessoaAtualizarRequisicaoDto dto)
         {
             var pessoa = await _db.Pessoas.FirstOrDefaultAsync(p => p.IgrejaId == igrejaId && p.Id == pessoaId);
             if (pessoa is null) return false;
 
 
             var estavaInativa = string.Equals(pessoa.Situacao, "Inativo", StringComparison.OrdinalIgnoreCase);
+            var vaiInativar = !estavaInativa &&
+                string.Equals(dto.Situacao, "Inativo", StringComparison.OrdinalIgnoreCase);
+
+            // Corretiva G5 (RF9, RNF 9.3 proposta): a conta de acesso da pessoa é inativada junto
+            // com ela. As guardas vêm antes de qualquer alteração.
+            var conta = vaiInativar
+                ? await GarantirInativacaoPermitidaAsync(igrejaId, pessoaId, usuarioLogadoId)
+                : null;
 
             var email = await ResolverEmailAsync(igrejaId, pessoa.Id, dto.Email);
 
@@ -202,6 +210,16 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 {
                     atribuicao.Ativo = false;
                     atribuicao.DataFim ??= agora;
+                }
+
+                // A conta fica inativa e o convite pendente é descartado (mesma regra de
+                // inativar a conta em Usuários, RNF 40.2). Reativar a pessoa não reativa a
+                // conta: o Administrador decide em Usuários.
+                if (conta is not null)
+                {
+                    conta.Ativo = false;
+                    conta.ConviteTokenHash = null;
+                    conta.ConviteExpiraEm = null;
                 }
             }
             else if (estavaInativa && !ficaInativa)
@@ -250,6 +268,35 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             var pessoa = await _repositorio.ObterPorIdAsync(igrejaId, usuario.PessoaId.Value);
             return pessoa is null ? null : Mapear(pessoa, usuario.Email);
+        }
+
+        // Corretiva G5: não se inativa o próprio cadastro (a sessão seria encerrada no meio da
+        // operação) nem a pessoa do último Admin ativo da igreja (mesma regra da RNF 14.3).
+        // Devolve a conta da pessoa, se houver, já rastreada para a inativação.
+        private async Task<Usuario?> GarantirInativacaoPermitidaAsync(int igrejaId, int pessoaId, int usuarioLogadoId)
+        {
+            var pessoaDoLogado = await _db.Usuarios
+                .Where(u => u.Id == usuarioLogadoId)
+                .Select(u => u.PessoaId)
+                .FirstOrDefaultAsync();
+
+            if (pessoaDoLogado == pessoaId)
+                throw new InvalidOperationException("Você não pode inativar o seu próprio cadastro.");
+
+            var conta = await _db.Usuarios
+                .FirstOrDefaultAsync(u => u.IgrejaId == igrejaId && u.PessoaId == pessoaId);
+
+            if (conta is { Ativo: true, Perfil: Perfis.Admin })
+            {
+                var adminsAtivos = await _db.Usuarios
+                    .CountAsync(u => u.IgrejaId == igrejaId && u.Ativo && u.Perfil == Perfis.Admin);
+
+                if (adminsAtivos <= 1)
+                    throw new InvalidOperationException(
+                        "Não é possível inativar a pessoa do único administrador ativo da igreja.");
+            }
+
+            return conta;
         }
 
         public async Task<bool> AtualizarMeusDadosAsync(int igrejaId, int usuarioId, MeusDadosAtualizarRequisicaoDto dto)

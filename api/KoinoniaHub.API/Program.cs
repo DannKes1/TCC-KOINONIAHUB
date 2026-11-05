@@ -231,6 +231,11 @@ app.Use(async (contexto, proximo) =>
 });
 
 app.UseAuthentication();
+
+// Corretiva G5 (RF14, RNF 14.4 proposta): conta inativa perde o acesso na hora, mesmo com
+// token válido; antes, só as operações de turma conferiam a conta.
+app.UseMiddleware<ContaAtivaMiddleware>();
+
 app.UseAuthorization();
 
 app.MapControllers();

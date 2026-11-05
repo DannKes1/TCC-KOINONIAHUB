@@ -10,7 +10,7 @@ namespace KoinoniaHub.API.Controllers
     [Route("api/auth")]
     public class AuthController : ControllerBase
     {
-        private const string NomeCookieToken = "kh_token";
+        internal const string NomeCookieToken = "kh_token";
         private readonly IAuthServico _authServico;
 
         public AuthController(IAuthServico authServico)
@@ -115,7 +115,7 @@ namespace KoinoniaHub.API.Controllers
         }
 
 
-        private static CookieOptions OpcoesCookie(DateTime expiraEm) => new()
+        internal static CookieOptions OpcoesCookie(DateTime expiraEm) => new()
         {
             HttpOnly = true,
             Secure = true,
