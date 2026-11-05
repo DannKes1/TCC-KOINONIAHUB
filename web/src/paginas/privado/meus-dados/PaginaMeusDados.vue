@@ -9,16 +9,13 @@ import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
+import { usarFormularioDialogo } from "../../../aplicacao/composables/usarFormularioDialogo";
 // Corretiva G4b: máscara 00000-000 (InputMask) e validação do CEP.
-import { MENSAGEM_CEP, cepValido } from "../../../aplicacao/dominio/cep";
+import { MENSAGEM_CEP, cepParaFormulario, cepValido } from "../../../aplicacao/dominio/cep";
 import InputMask from "primevue/inputmask";
 
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-import {
-  firstFieldError,
-  mensagemForaDosCampos,
-} from "../../../aplicacao/servicos/apiError";
 
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
@@ -38,26 +35,19 @@ const isAdministrativo = computed(() => autenticacao.isAdministrativo);
 
 const { carregando, erro, run, clearErrors } = useAsync();
 
-// Corretiva G4: o erro do salvar fica no topo do formulário — junto ao campo quando a
-// API devolve o campo (ou quando a validação local aponta o campo), senão num aviso —
-// e some ao alterar um campo. A instância da página fica só com a carga dos dados.
+// Corretiva G5: erro do salvar no topo do formulário, validação local no campo e limpeza
+// ao alterar ficam no composable; a instância da página fica só com a carga dos dados.
 const {
-  carregando: salvando,
-  erro: erroDoFormulario,
-  fieldErrors: errosDoFormulario,
-  run: executarNoFormulario,
-  clearErrors: limparErrosDaApi,
-} = useAsync();
+  salvando, executar: executarNoFormulario, errosLocais, limpar, erroDoCampo, aviso,
+  semErrosLocais,
+} = usarFormularioDialogo();
 
 const CAMPOS_DO_FORMULARIO = ["Celular", "Email", "Endereco", "Bairro", "Cidade", "Estado", "CEP"];
 // Linha geral da validação local ("Corrija os campos destacados."), no mesmo lugar do
 // aviso de regra da API.
 const avisoLocal = ref("");
-const avisoDoFormulario = computed(
-  () =>
-    mensagemForaDosCampos(erroDoFormulario.value, errosDoFormulario.value, CAMPOS_DO_FORMULARIO) ||
-    avisoLocal.value,
-);
+const avisoDaApi = aviso(CAMPOS_DO_FORMULARIO);
+const avisoDoFormulario = computed(() => avisoDaApi.value || avisoLocal.value);
 
 const dadosOriginais = ref<MeusDadosVM | null>(null);
 
@@ -78,7 +68,7 @@ function popularForm(dados: MeusDadosVM) {
   form.bairro = dados.bairro ?? "";
   form.cidade = dados.cidade ?? "";
   form.estado = dados.estado ?? "";
-  form.cep = dados.cep ?? "";
+  form.cep = cepParaFormulario(dados.cep);
 }
 
 async function carregar() {
@@ -115,24 +105,11 @@ watch(
 // regras (UF com 2 letras) e responde 400 por campo. O celular (8 a 11 dígitos) é
 // regra só do front; a API limita a 20 caracteres. O e-mail é somente leitura
 // (Corretiva G2): é o e-mail de acesso, definido na criação da conta.
-const errosLocais = reactive<Record<string, string>>({});
-
-function limparErrosLocais() {
-  Object.keys(errosLocais).forEach((k) => delete errosLocais[k]);
-}
-
+// Corretiva G5: os erros locais usam o nome do campo no DTO (Celular, Estado, CEP), como nas
+// outras telas.
 function limparErrosDoFormulario() {
-  limparErrosDaApi();
-  limparErrosLocais();
+  limpar();
   avisoLocal.value = "";
-}
-
-function erroDoCampo(campo: string, camel: string) {
-  return (
-    errosLocais[camel] ||
-    firstFieldError(errosDoFormulario.value, campo) ||
-    firstFieldError(errosDoFormulario.value, camel)
-  );
 }
 
 // Qualquer alteração limpa os erros (o watch de sanitizar o celular também dispara aqui,
@@ -140,21 +117,21 @@ function erroDoCampo(campo: string, camel: string) {
 watch(form, limparErrosDoFormulario);
 
 function validarLocal(): boolean {
-  limparErrosLocais();
+  limpar();
 
   const celDigitos = contarDigitos(form.celular);
   if (celDigitos > 0 && (celDigitos < 8 || celDigitos > 11)) {
-    errosLocais.celular = "Celular inválido. Informe DDD + número (8 a 11 dígitos).";
+    errosLocais.Celular = "Celular inválido. Informe DDD + número (8 a 11 dígitos).";
   }
 
   const uf = form.estado.trim();
   if (uf && !/^[A-Za-z]{2}$/.test(uf)) {
-    errosLocais.estado = "Informe a UF com 2 letras (ex.: RO).";
+    errosLocais.Estado = "Informe a UF com 2 letras (ex.: RO).";
   }
 
-  if (!cepValido(form.cep)) errosLocais.cep = MENSAGEM_CEP;
+  if (!cepValido(form.cep)) errosLocais.CEP = MENSAGEM_CEP;
 
-  return Object.keys(errosLocais).length === 0;
+  return semErrosLocais();
 }
 
 async function salvar() {

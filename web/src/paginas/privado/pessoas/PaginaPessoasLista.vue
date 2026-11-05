@@ -7,18 +7,15 @@ import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
+import { usarFormularioDialogo } from "../../../aplicacao/composables/usarFormularioDialogo";
 // Corretiva G4b: máscara 00000-000 (InputMask) e validação do CEP.
-import { MENSAGEM_CEP, cepValido } from "../../../aplicacao/dominio/cep";
+import { MENSAGEM_CEP, cepParaFormulario, cepValido } from "../../../aplicacao/dominio/cep";
 import InputMask from "primevue/inputmask";
 
 import DialogImportarPessoas from "./DialogImportarPessoas.vue";
 
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-import {
-  firstFieldError,
-  mensagemForaDosCampos,
-} from "../../../aplicacao/servicos/apiError";
 
 import {
   listarPessoas,
@@ -54,63 +51,25 @@ import { useConfirm } from "primevue/useconfirm";
 const confirm = useConfirm();
 const { carregando, erro, run, clearErrors } = useAsync();
 
-// Corretiva G3: o erro do salvar fica no próprio diálogo Nova/Editar pessoa — junto ao
-// campo quando a API devolve o campo, senão num aviso no topo — e some ao fechar ou ao
-// alterar um campo. A instância da página continua com o erro da lista e dos parentescos.
+// Corretiva G5: erro do salvar dentro do diálogo, validação local no campo e limpeza ao
+// fechar ou alterar ficam no composable (antes o bloco se repetia em cada página).
 const {
-  carregando: salvando,
-  erro: erroDoDialogo,
-  fieldErrors: errosDoDialogo,
-  run: executarNoDialogo,
-  clearErrors: limparErrosDaApi,
-} = useAsync();
+  salvando, executar: executarNoDialogo, errosLocais, limpar: limparErrosDoDialogo,
+  erroDoCampo, aviso, semErrosLocais, limparAoFechar, limparAoAlterar,
+} = usarFormularioDialogo();
 
-// Corretiva G4: validação local no próprio campo (chave = nome do campo no DTO), limpa
-// junto com os erros da API.
-const errosLocais = reactive<Record<string, string>>({});
-
-function limparErrosDoDialogo() {
-  limparErrosDaApi();
-  for (const chave of Object.keys(errosLocais)) delete errosLocais[chave];
-}
-
-function erroDoCampo(campo: string, camel: string) {
-  return (
-    errosLocais[campo] ||
-    firstFieldError(errosDoDialogo.value, campo) ||
-    firstFieldError(errosDoDialogo.value, camel)
-  );
-}
-
-// Corretiva G4: o diálogo de Parentescos (que não fecha ao salvar) tem a própria
-// instância para o Adicionar; carregar e remover continuam na instância da página.
+// Parentescos (o diálogo não fecha ao salvar): segunda instância, para o Adicionar;
+// carregar e remover continuam na instância da página.
 const {
-  carregando: salvandoParentesco,
-  erro: erroDoParentesco,
-  fieldErrors: errosDoParentesco,
-  run: executarNoParentesco,
-  clearErrors: limparErrosDaApiDoParentesco,
-} = useAsync();
-
-const errosLocaisParentesco = reactive<Record<string, string>>({});
-
-function limparErrosDoParentesco() {
-  limparErrosDaApiDoParentesco();
-  for (const chave of Object.keys(errosLocaisParentesco)) delete errosLocaisParentesco[chave];
-}
-
-function erroDoCampoParentesco(campo: string, camel: string) {
-  return (
-    errosLocaisParentesco[campo] ||
-    firstFieldError(errosDoParentesco.value, campo) ||
-    firstFieldError(errosDoParentesco.value, camel)
-  );
-}
+  salvando: salvandoParentesco, executar: executarNoParentesco,
+  errosLocais: errosLocaisParentesco, limpar: limparErrosDoParentesco,
+  erroDoCampo: erroDoCampoParentesco, aviso: avisoParentesco,
+  semErrosLocais: semErrosLocaisParentesco, limparAoFechar: limparParentescoAoFechar,
+  limparAoAlterar: limparParentescoAoAlterar,
+} = usarFormularioDialogo();
 
 const CAMPOS_PARENTESCO = ["ParenteId", "TipoRelacionamento"];
-const avisoDoParentesco = computed(() =>
-  mensagemForaDosCampos(erroDoParentesco.value, errosDoParentesco.value, CAMPOS_PARENTESCO),
-);
+const avisoDoParentesco = avisoParentesco(CAMPOS_PARENTESCO);
 
 const dialogImportarAberto = ref(false);
 
@@ -196,19 +155,13 @@ const CAMPOS_PESSOA = [
   "Situacao",
 ];
 
-const avisoDoDialogo = computed(() =>
-  mensagemForaDosCampos(erroDoDialogo.value, errosDoDialogo.value, CAMPOS_PESSOA),
-);
+const avisoDoDialogo = aviso(CAMPOS_PESSOA);
 
-watch(dialogPessoaAberto, (aberto) => {
-  if (!aberto) limparErrosDoDialogo();
-});
-watch(formulario, limparErrosDoDialogo);
+limparAoFechar(dialogPessoaAberto);
+limparAoAlterar(formulario);
 
-watch(dialogParentescosAberto, (aberto) => {
-  if (!aberto) limparErrosDoParentesco();
-});
-watch(formularioParentesco, limparErrosDoParentesco);
+limparParentescoAoFechar(dialogParentescosAberto);
+limparParentescoAoAlterar(formularioParentesco);
 
 function limparFormulario() {
   formulario.nome = "";
@@ -240,7 +193,7 @@ function popularFormulario(p: PessoaVM) {
   formulario.bairro = p.bairro ?? "";
   formulario.cidade = p.cidade ?? "";
   formulario.estado = p.estado ?? "";
-  formulario.cep = p.cep ?? "";
+  formulario.cep = cepParaFormulario(p.cep);
   formulario.situacao = p.situacao ?? "Ativo";
 }
 
@@ -336,7 +289,7 @@ function validarFormulario(): boolean {
 
   if (!cepValido(formulario.cep)) errosLocais.CEP = MENSAGEM_CEP;
 
-  return Object.keys(errosLocais).length === 0;
+  return semErrosLocais();
 }
 
 function validarFormularioParentesco(): boolean {
@@ -356,7 +309,7 @@ function validarFormularioParentesco(): boolean {
     errosLocaisParentesco.TipoRelacionamento = "Informe o tipo de relacionamento.";
   }
 
-  return Object.keys(errosLocaisParentesco).length === 0;
+  return semErrosLocaisParentesco();
 }
 
 const pessoasFiltradas = computed(() => {
@@ -494,11 +447,12 @@ onMounted(carregarLista);
       subtitulo="Cadastro, consulta, vínculos familiares e histórico de presença das pessoas da igreja"
     >
       <template #acoes>
-        <Button label="Nova Pessoa" icon="pi pi-plus" @click="abrirNovo" />
+        <Button label="Nova Pessoa" icon="pi pi-plus" data-testid="pessoa-nova" @click="abrirNovo" />
         <Button
           label="Importar CSV"
           icon="pi pi-upload"
           severity="secondary"
+          data-testid="pessoa-importar"
           @click="dialogImportarAberto = true"
         />
         <Button
@@ -513,14 +467,7 @@ onMounted(carregarLista);
 
     <InlineMessage :texto="erro" tipo="erro" />
 
-    <div
-      style="
-        display: grid;
-        grid-template-columns: 1.6fr 220px;
-        gap: 10px;
-        align-items: end;
-      "
-    >
+    <div class="pessoas-filtros">
       <div style="display: flex; flex-direction: column; gap: 6px">
         <label for="pessoas-filtro-busca">Buscar</label>
         <InputText
@@ -598,6 +545,7 @@ onMounted(carregarLista);
                 size="small"
                 v-tooltip.top="'Editar'"
                 :disabled="carregando"
+                data-testid="pessoa-editar"
                 @click="abrirEdicao(data)"
               />
               <Button
@@ -606,6 +554,7 @@ onMounted(carregarLista);
                 size="small"
                 v-tooltip.top="'Parentescos'"
                 :disabled="carregando"
+                data-testid="pessoa-parentescos"
                 @click="abrirParentescos(data)"
               />
               <Button
@@ -614,6 +563,7 @@ onMounted(carregarLista);
                 size="small"
                 v-tooltip.top="'Histórico de Presenças'"
                 :disabled="carregando"
+                data-testid="pessoa-historico"
                 @click="abrirHistorico(data)"
               />
             </div>
@@ -637,7 +587,7 @@ onMounted(carregarLista);
           data-testid="pessoa-dialogo-erro"
         />
 
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px">
+        <div class="pessoa-form-linha pessoa-form-linha--nome">
           <div style="display: flex; flex-direction: column; gap: 6px">
             <label for="pessoa-formulario-nome">Nome *</label>
             <InputText
@@ -668,21 +618,12 @@ onMounted(carregarLista);
               placeholder="Selecione a situação"
             />
             <FieldError
-              :texto="
-                firstFieldError(errosDoDialogo, 'Situacao') ||
-                firstFieldError(errosDoDialogo, 'situacao')
-              "
+              :texto="erroDoCampo('Situacao', 'situacao')"
             />
           </div>
         </div>
 
-        <div
-          style="
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr;
-            gap: 12px;
-          "
-        >
+        <div class="pessoa-form-linha pessoa-form-linha--quatro">
           <div style="display: flex; flex-direction: column; gap: 6px">
             <label for="pessoa-formulario-nascimento"
               >Data de nascimento</label
@@ -696,10 +637,7 @@ onMounted(carregarLista);
               showButtonBar
             />
             <FieldError
-              :texto="
-                firstFieldError(errosDoDialogo, 'DataNascimento') ||
-                firstFieldError(errosDoDialogo, 'dataNascimento')
-              "
+              :texto="erroDoCampo('DataNascimento', 'dataNascimento')"
             />
           </div>
 
@@ -720,10 +658,7 @@ onMounted(carregarLista);
               placeholder="Selecione"
             />
             <FieldError
-              :texto="
-                firstFieldError(errosDoDialogo, 'Sexo') ||
-                firstFieldError(errosDoDialogo, 'sexo')
-              "
+              :texto="erroDoCampo('Sexo', 'sexo')"
             />
           </div>
 
@@ -744,10 +679,7 @@ onMounted(carregarLista);
               placeholder="Selecione"
             />
             <FieldError
-              :texto="
-                firstFieldError(errosDoDialogo, 'EstadoCivil') ||
-                firstFieldError(errosDoDialogo, 'estadoCivil')
-              "
+              :texto="erroDoCampo('EstadoCivil', 'estadoCivil')"
             />
           </div>
 
@@ -768,7 +700,7 @@ onMounted(carregarLista);
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
+        <div class="pessoa-form-linha pessoa-form-linha--duas">
           <div style="display: flex; flex-direction: column; gap: 6px">
             <label for="pessoa-formulario-celular">Celular</label>
             <InputText
@@ -800,21 +732,12 @@ onMounted(carregarLista);
               E-mail de acesso; definido na criação da conta.
             </small>
             <FieldError
-              :texto="
-                firstFieldError(errosDoDialogo, 'Email') ||
-                firstFieldError(errosDoDialogo, 'email')
-              "
+              :texto="erroDoCampo('Email', 'email')"
             />
           </div>
         </div>
 
-        <div
-          style="
-            display: grid;
-            grid-template-columns: 1.4fr 1fr 1fr 120px;
-            gap: 12px;
-          "
-        >
+        <div class="pessoa-form-linha pessoa-form-linha--endereco">
           <div style="display: flex; flex-direction: column; gap: 6px">
             <label for="pessoa-formulario-endereco">Endereço</label>
             <InputText
@@ -857,10 +780,7 @@ onMounted(carregarLista);
               maxlength="2"
             />
             <FieldError
-              :texto="
-                firstFieldError(errosDoDialogo, 'Estado') ||
-                firstFieldError(errosDoDialogo, 'estado')
-              "
+              :texto="erroDoCampo('Estado', 'estado')"
             />
           </div>
         </div>
@@ -901,14 +821,7 @@ onMounted(carregarLista);
         <!-- Erro de carregar ou remover (instância da página). -->
         <InlineMessage :texto="erro" tipo="erro" />
 
-        <div
-          style="
-            display: grid;
-            grid-template-columns: 1.2fr 1fr 140px;
-            gap: 12px;
-            align-items: end;
-          "
-        >
+        <div class="pessoa-form-linha pessoa-form-linha--parentesco">
           <div style="display: flex; flex-direction: column; gap: 6px">
             <label
               id="pessoa-parentesco-parente-rotulo"
@@ -996,3 +909,94 @@ onMounted(carregarLista);
     />
   </div>
 </template>
+
+<style scoped>
+/* Corretiva G5: filtros Buscar · Situação. As colunas fixas (1.6fr 220px) passavam da borda
+   a 360 px e, ao abrir a lista de Situação, a página inteira rolava para o lado. Mesmo
+   padrão de Usuários: abaixo de 576 px os campos empilham em largura total. */
+.pessoas-filtros {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) 220px;
+  gap: 10px;
+  align-items: end;
+}
+
+.pessoas-filtros > * {
+  min-width: 0;
+}
+
+@media (max-width: 575.98px) {
+  .pessoas-filtros {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pessoas-filtros :deep(.p-inputtext),
+  .pessoas-filtros :deep(.p-select) {
+    width: 100%;
+  }
+}
+
+/* Corretiva G5: os diálogos Nova/Editar pessoa e Parentescos tinham grades inline com
+   colunas fixas (quatro lado a lado) que não quebravam: a 360 px o conteúdo ficava com
+   794 px e rolava para o lado dentro do diálogo, com o CEP, o E-mail e o Bairro cortados.
+   Mesmo padrão dos diálogos de Atribuições: colunas que encolhem (minmax(0, ...)), duas
+   colunas abaixo de 768 px e uma coluna abaixo de 576 px. */
+.pessoa-form-linha {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+}
+
+.pessoa-form-linha > * {
+  min-width: 0;
+}
+
+.pessoa-form-linha :deep(.p-inputtext),
+.pessoa-form-linha :deep(.p-select),
+.pessoa-form-linha :deep(.p-datepicker) {
+  width: 100%;
+}
+
+.pessoa-form-linha--nome {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
+
+.pessoa-form-linha--quatro {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.pessoa-form-linha--duas {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pessoa-form-linha--endereco {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) 120px;
+}
+
+.pessoa-form-linha--parentesco {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+@media (max-width: 767.98px) {
+  .pessoa-form-linha--quatro,
+  .pessoa-form-linha--endereco {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 575.98px) {
+  .pessoa-form-linha--nome,
+  .pessoa-form-linha--quatro,
+  .pessoa-form-linha--duas,
+  .pessoa-form-linha--endereco,
+  .pessoa-form-linha--parentesco {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pessoa-form-linha--parentesco :deep(.p-button) {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>

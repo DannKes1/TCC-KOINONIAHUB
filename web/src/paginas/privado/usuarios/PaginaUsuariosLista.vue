@@ -7,13 +7,10 @@ import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
+import { usarFormularioDialogo } from "../../../aplicacao/composables/usarFormularioDialogo";
 
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-import {
-  firstFieldError,
-  mensagemForaDosCampos,
-} from "../../../aplicacao/servicos/apiError";
 
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
 
@@ -41,33 +38,12 @@ import Checkbox from "primevue/checkbox";
 const autenticacao = usarAutenticacaoStore();
 const { carregando, erro, run, clearErrors } = useAsync();
 
-// Corretiva G3: o erro do salvar fica no próprio diálogo — junto ao campo quando a API
-// devolve o campo, senão num aviso no topo — e some ao fechar ou ao alterar um campo.
-// A instância da página continua só com o erro da lista.
+// Corretiva G5: erro do salvar dentro do diálogo, validação local no campo e limpeza ao
+// fechar ou alterar ficam no composable (antes o bloco se repetia em cada página).
 const {
-  carregando: salvando,
-  erro: erroDoDialogo,
-  fieldErrors: errosDoDialogo,
-  run: executarNoDialogo,
-  clearErrors: limparErrosDaApi,
-} = useAsync();
-
-// Corretiva G4: validação local no próprio campo (chave = nome do campo no DTO), limpa
-// junto com os erros da API; nenhuma validação sai em toast.
-const errosLocais = reactive<Record<string, string>>({});
-
-function limparErrosDoDialogo() {
-  limparErrosDaApi();
-  for (const chave of Object.keys(errosLocais)) delete errosLocais[chave];
-}
-
-function erroDoCampo(campo: string, camel: string) {
-  return (
-    errosLocais[campo] ||
-    firstFieldError(errosDoDialogo.value, campo) ||
-    firstFieldError(errosDoDialogo.value, camel)
-  );
-}
+  salvando, executar: executarNoDialogo, errosLocais, limpar: limparErrosDoDialogo,
+  erroDoCampo, aviso, semErrosLocais, limparAoFechar, limparAoAlterar,
+} = usarFormularioDialogo();
 
 const usuarios = ref<UsuarioVM[]>([]);
 const pessoas = ref<PessoaVM[]>([]);
@@ -124,18 +100,11 @@ const formularioEdicao = reactive({
 const CAMPOS_CRIACAO = ["PessoaId", "Email", "Perfil", "Senha"];
 const CAMPOS_EDICAO = ["Email", "Perfil", "Ativo"];
 
-const avisoCriacao = computed(() =>
-  mensagemForaDosCampos(erroDoDialogo.value, errosDoDialogo.value, CAMPOS_CRIACAO),
-);
-const avisoEdicao = computed(() =>
-  mensagemForaDosCampos(erroDoDialogo.value, errosDoDialogo.value, CAMPOS_EDICAO),
-);
+const avisoCriacao = aviso(CAMPOS_CRIACAO);
+const avisoEdicao = aviso(CAMPOS_EDICAO);
 
-watch([dialogCriacaoAberto, dialogEdicaoAberto], ([criacao, edicao]) => {
-  if (!criacao && !edicao) limparErrosDoDialogo();
-});
-watch(formularioCriacao, limparErrosDoDialogo);
-watch(formularioEdicao, limparErrosDoDialogo);
+limparAoFechar(dialogCriacaoAberto, dialogEdicaoAberto);
+limparAoAlterar(formularioCriacao, formularioEdicao);
 
 // Corretiva G2 (RNF 13.5): ao escolher a pessoa, o e-mail dela vem preenchido (editável);
 // ao salvar, o cadastro da pessoa fica com o e-mail da conta.
@@ -247,7 +216,7 @@ function validarCriacao(): boolean {
     }
   }
 
-  return Object.keys(errosLocais).length === 0;
+  return semErrosLocais();
 }
 
 function validarEdicao(): boolean {
@@ -269,7 +238,7 @@ function validarEdicao(): boolean {
     errosLocais.Ativo = "Você não pode desativar o seu próprio usuário.";
   }
 
-  return Object.keys(errosLocais).length === 0;
+  return semErrosLocais();
 }
 
 function textoOuNull(valor?: string | null) {
@@ -456,7 +425,7 @@ onMounted(carregarDados);
       subtitulo="Gestão administrativa de acesso ao sistema"
     >
       <template #acoes>
-        <Button label="Novo Usuário" icon="pi pi-plus" @click="abrirNovo" />
+        <Button label="Novo Usuário" icon="pi pi-plus" data-testid="usuario-novo" @click="abrirNovo" />
         <Button
           label="Recarregar"
           icon="pi pi-refresh"
@@ -593,6 +562,7 @@ onMounted(carregarDados);
                     : 'Redefinir acesso: gerar link para a pessoa definir uma nova senha'
                 "
                 :disabled="carregando || !data.ativo"
+                data-testid="usuario-convite"
                 @click="gerarConvite(data)"
               />
             </div>
@@ -856,7 +826,8 @@ onMounted(carregarDados);
       style="width: 620px; max-width: 96vw"
     >
       <div class="page-container" v-if="conviteAtual">
-        <p style="margin: 0">
+        <!-- Corretiva G5: e-mail longo quebra dentro do diálogo a 360 px. -->
+        <p style="margin: 0; overflow-wrap: anywhere">
           Envie o link abaixo para
           <strong>{{ conviteAtual.nomePessoa ?? conviteAtual.email }}</strong
           >. Ao abrir o link, a pessoa define a própria senha e já pode entrar
@@ -869,7 +840,7 @@ onMounted(carregarDados);
           <InputText
             :modelValue="conviteAtual.link"
             readonly
-            style="flex: 1"
+            style="flex: 1; min-width: 0"
             @focus="($event.target as HTMLInputElement).select()"
           />
           <Button

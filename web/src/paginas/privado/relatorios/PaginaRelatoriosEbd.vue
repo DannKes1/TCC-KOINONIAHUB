@@ -38,6 +38,7 @@ import {
 } from "../../../aplicacao/servicos/relatoriosServico";
 
 import type { DepartamentoVM } from "../../../aplicacao/modelos/dtos";
+import { textoRegraAcompanhamento } from "../../../aplicacao/dominio/acompanhamento";
 
 type FrequenciaVM = Awaited<ReturnType<typeof obterFrequenciaTurma>>;
 type AcompanhamentoVM = Awaited<ReturnType<typeof obterPainelAcompanhamento>>;
@@ -76,6 +77,15 @@ const topRanking = ref<number>(10);
 const limiarAtencao = ref<number>(75);
 const limiarCritico = ref<number>(50);
 const faltasConsecutivasCritico = ref<number>(3);
+
+// Corretiva G5: a regra aplicada, com os valores digitados, fica escrita abaixo dos filtros.
+const regraAcompanhamento = computed(() =>
+  textoRegraAcompanhamento(
+    limiarAtencao.value,
+    limiarCritico.value,
+    faltasConsecutivasCritico.value,
+  ),
+);
 
 const CORES = {
   verde: "#234f32",
@@ -477,7 +487,7 @@ onMounted(async () => {
 
       <template v-if="abaAtiva === 'acompanhamento'">
         <div class="filtro-campo">
-          <label for="relatorio-filtro-limiar-atencao">Atenção: freq. ≤ (%)</label>
+          <label for="relatorio-filtro-limiar-atencao" data-testid="relatorio-limiar-atencao-rotulo">Atenção se frequência ≤ (%)</label>
           <InputNumber
             v-model="limiarAtencao"
             :min="0"
@@ -487,7 +497,7 @@ onMounted(async () => {
           />
         </div>
         <div class="filtro-campo">
-          <label for="relatorio-filtro-limiar-critico">Crítico: freq. ≤ (%)</label>
+          <label for="relatorio-filtro-limiar-critico" data-testid="relatorio-limiar-critico-rotulo">Crítico se frequência ≤ (%)</label>
           <InputNumber
             v-model="limiarCritico"
             :min="0"
@@ -497,7 +507,7 @@ onMounted(async () => {
           />
         </div>
         <div class="filtro-campo">
-          <label for="relatorio-filtro-faltas-seguidas">Faltas seguidas</label>
+          <label for="relatorio-filtro-faltas-seguidas" data-testid="relatorio-faltas-seguidas-rotulo">Crítico se faltas seguidas ≥</label>
           <InputNumber
             v-model="faltasConsecutivasCritico"
             :min="1"
@@ -519,6 +529,14 @@ onMounted(async () => {
         </div>
       </template>
     </div>
+
+    <p
+      v-if="abaAtiva === 'acompanhamento'"
+      class="regra-acompanhamento"
+      data-testid="relatorio-acompanhamento-regra"
+    >
+      {{ regraAcompanhamento }}
+    </p>
 
     <LoadingOverlay :loading="carregando" texto="Gerando relatório...">
       <Tabs v-model:value="abaAtiva">
@@ -697,6 +715,21 @@ onMounted(async () => {
           </TabPanel>
 
           <TabPanel value="acompanhamento">
+            <!-- Corretiva G5: o que o relatório é, conforme RelatorioEbdServico
+                 (ObterPainelAcompanhamentoAsync). Sai também na impressão. -->
+            <p
+              v-if="abaAtiva === 'acompanhamento'"
+              class="descricao-acompanhamento"
+              data-testid="relatorio-acompanhamento-descricao"
+            >
+              Este relatório aponta os alunos que precisam de acompanhamento: para cada
+              aluno com matrícula ativa na turma, no período escolhido, calcula a frequência
+              (presenças divididas pelas aulas consolidadas em que o aluno tem chamada
+              registrada) e as faltas seguidas mais recentes (contadas da última aula
+              consolidada para trás, até a última presença), e classifica em Crítico,
+              Atenção ou regular; a lista mostra só Crítico e Atenção. Ajuste os limiares
+              conforme o critério da igreja.
+            </p>
             <div v-if="acompanhamento" class="conteudo-relatorio">
               <div class="linha-indicadores">
                 <CardIndicador
@@ -1120,6 +1153,23 @@ onMounted(async () => {
 
 .filtro-turma {
   min-width: 260px;
+}
+
+/* Corretiva G5 (RF36): regra do Acompanhamento em texto corrido, quebra em 360 px. */
+.descricao-acompanhamento {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ipb-cinza, #4d4d4d);
+  overflow-wrap: anywhere;
+}
+
+.regra-acompanhamento {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ipb-cinza, #4d4d4d);
+  overflow-wrap: anywhere;
 }
 
 .conteudo-relatorio {

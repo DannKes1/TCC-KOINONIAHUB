@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, reactive, ref, watch } from "vue";
+import { computed, inject, onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import PageHeader from "../../../components/ui/PageHeader.vue";
@@ -10,15 +10,12 @@ import CartaoItem from "../../../components/ui/CartaoItem.vue";
 import MenuAcoes from "../../../components/ui/MenuAcoes.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
+import { usarFormularioDialogo } from "../../../aplicacao/composables/usarFormularioDialogo";
 import { usarTelaCompacta } from "../../../aplicacao/composables/usarTelaCompacta";
 import { usarMostrarMais } from "../../../aplicacao/composables/usarMostrarMais";
 
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-import {
-  firstFieldError,
-  mensagemForaDosCampos,
-} from "../../../aplicacao/servicos/apiError";
 
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -61,40 +58,17 @@ const recarregarResumoDaTurma = inject<(() => Promise<void>) | null>(
 
 const { carregando, erro, run, clearErrors } = useAsync();
 
-// Corretiva G4: o erro do salvar fica no próprio diálogo — junto ao campo quando a API
-// devolve o campo (ou quando a validação local aponta o campo), senão num aviso no topo
-// — e some ao fechar ou ao alterar um campo. A instância da página continua com o erro
-// da lista e do ativar/inativar.
+// Corretiva G5: erro do salvar dentro do diálogo, validação local no campo e limpeza ao
+// fechar ou alterar ficam no composable (antes o bloco se repetia em cada página).
 const {
-  carregando: salvando,
-  erro: erroDoDialogo,
-  fieldErrors: errosDoDialogo,
-  run: executarNoDialogo,
-  clearErrors: limparErrosDaApi,
-} = useAsync();
-
-// Validação local no próprio campo (chave = nome do campo no DTO).
-const errosLocais = reactive<Record<string, string>>({});
-
-function limparErrosDoDialogo() {
-  limparErrosDaApi();
-  for (const chave of Object.keys(errosLocais)) delete errosLocais[chave];
-}
-
-function erroDoCampo(campo: string, camel: string) {
-  return (
-    errosLocais[campo] ||
-    firstFieldError(errosDoDialogo.value, campo) ||
-    firstFieldError(errosDoDialogo.value, camel)
-  );
-}
+  salvando, executar: executarNoDialogo, errosLocais, limpar: limparErrosDoDialogo,
+  erroDoCampo, aviso, semErrosLocais, limparAoFechar, limparAoAlterar,
+} = usarFormularioDialogo();
 
 // Campos com FieldError no diálogo: um erro da API fora deles (ex.: DepartamentoId, que
 // vem da rota) vai para o aviso do topo.
 const CAMPOS_DO_DIALOGO = ["Nome", "OrdemExibicao", "Ativo"];
-const avisoDoDialogo = computed(() =>
-  mensagemForaDosCampos(erroDoDialogo.value, errosDoDialogo.value, CAMPOS_DO_DIALOGO),
-);
+const avisoDoDialogo = aviso(CAMPOS_DO_DIALOGO);
 
 const departamentoId = computed(() => Number(route.params.departamentoId));
 
@@ -134,10 +108,8 @@ const form = reactive({
   ativo: true,
 });
 
-watch(dialogAberto, (aberto) => {
-  if (!aberto) limparErrosDoDialogo();
-});
-watch(form, limparErrosDoDialogo);
+limparAoFechar(dialogAberto);
+limparAoAlterar(form);
 
 function limparForm() {
   form.nome = "";
@@ -175,7 +147,7 @@ async function carregarTudo() {
 function validarFormulario(): boolean {
   limparErrosDoDialogo();
   if (!form.nome.trim()) errosLocais.Nome = "Informe o nome da matéria.";
-  return Object.keys(errosLocais).length === 0;
+  return semErrosLocais();
 }
 
 async function salvar() {
@@ -254,7 +226,7 @@ onMounted(carregarTudo);
       subtitulo="Cadastre e organize as matérias desta turma"
     >
       <template #acoes>
-        <Button label="Nova Matéria" icon="pi pi-plus" @click="abrirNovo" />
+        <Button label="Nova Matéria" icon="pi pi-plus" data-testid="materia-nova" @click="abrirNovo" />
         <Button
           label="Recarregar"
           icon="pi pi-refresh"

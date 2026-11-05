@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
 
@@ -9,11 +9,8 @@ import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
+import { usarFormularioDialogo } from "../../../aplicacao/composables/usarFormularioDialogo";
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
-import {
-  firstFieldError,
-  mensagemForaDosCampos,
-} from "../../../aplicacao/servicos/apiError";
 
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
@@ -31,37 +28,15 @@ import type { IgrejaVM } from "../../../aplicacao/modelos/dtos";
 const autenticacao = usarAutenticacaoStore();
 const { carregando, erro, run, clearErrors } = useAsync();
 
-// Corretiva G4: o erro do salvar fica no topo do formulário — junto ao campo quando a
-// API devolve o campo (ou quando a validação local aponta o campo), senão num aviso —
-// e some ao alterar um campo. A instância da página fica só com a carga dos dados.
+// Corretiva G5: erro do salvar no topo do formulário, validação local no campo e limpeza
+// ao alterar ficam no composable; a instância da página fica só com a carga dos dados.
 const {
-  carregando: salvando,
-  erro: erroDoFormulario,
-  fieldErrors: errosDoFormulario,
-  run: executarNoFormulario,
-  clearErrors: limparErrosDaApi,
-} = useAsync();
-
-// Validação local no próprio campo (chave = nome do campo no DTO).
-const errosLocais = reactive<Record<string, string>>({});
-
-function limparErrosDoFormulario() {
-  limparErrosDaApi();
-  for (const chave of Object.keys(errosLocais)) delete errosLocais[chave];
-}
-
-function erroDoCampo(campo: string, camel: string) {
-  return (
-    errosLocais[campo] ||
-    firstFieldError(errosDoFormulario.value, campo) ||
-    firstFieldError(errosDoFormulario.value, camel)
-  );
-}
+  salvando, executar: executarNoFormulario, errosLocais, limpar: limparErrosDoFormulario,
+  erroDoCampo, aviso, semErrosLocais, limparAoAlterar,
+} = usarFormularioDialogo();
 
 const CAMPOS_DO_FORMULARIO = ["Nome", "Cidade", "Estado", "Email", "Telefone"];
-const avisoDoFormulario = computed(() =>
-  mensagemForaDosCampos(erroDoFormulario.value, errosDoFormulario.value, CAMPOS_DO_FORMULARIO),
-);
+const avisoDoFormulario = aviso(CAMPOS_DO_FORMULARIO);
 
 const dadosOriginais = ref<IgrejaVM | null>(null);
 
@@ -73,7 +48,7 @@ const form = reactive({
   telefone: "",
 });
 
-watch(form, limparErrosDoFormulario);
+limparAoAlterar(form);
 
 function popularForm(dados: IgrejaVM) {
   form.nome = dados.nome ?? "";
@@ -137,7 +112,7 @@ function validarFormulario(): boolean {
     errosLocais.Telefone = "Telefone inválido. Informe DDD + número (8 a 11 dígitos).";
   }
 
-  return Object.keys(errosLocais).length === 0;
+  return semErrosLocais();
 }
 
 async function salvar() {

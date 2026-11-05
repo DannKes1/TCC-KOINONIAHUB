@@ -50,7 +50,7 @@ function explicacaoDerivado(item: ParentescoVM) {
 
 <template>
   <div style="display: flex; flex-direction: column; gap: 8px">
-    <DataTable :value="itens" dataKey="id" responsiveLayout="scroll">
+    <DataTable :value="itens" dataKey="id" responsiveLayout="scroll" class="tabela-parentescos">
       <template #empty>
         <div style="padding: 14px; opacity: 0.7">Nenhum parentesco cadastrado.</div>
       </template>
@@ -82,7 +82,7 @@ function explicacaoDerivado(item: ParentescoVM) {
         </template>
       </Column>
 
-      <Column header="Ações" style="width: 110px">
+      <Column header="Ações" headerClass="tabela-parentescos-acoes" bodyClass="tabela-parentescos-acoes">
         <template #body="{ data }">
           <Button
             v-if="!data.derivado"
@@ -120,3 +120,24 @@ function explicacaoDerivado(item: ParentescoVM) {
     </small>
   </div>
 </template>
+
+<style scoped>
+.tabela-parentescos :deep(.tabela-parentescos-acoes) {
+  width: 110px;
+}
+
+/* Corretiva G5: a 360 px a coluna Ações ficava cortada na borda do diálogo de
+   Parentescos (a tabela rolava para o lado). Abaixo de 576 px as células ficam mais
+   estreitas, o cabeçalho quebra e a coluna Ações tem só a largura do botão. */
+@media (max-width: 575.98px) {
+  .tabela-parentescos :deep(.p-datatable-thead > tr > th),
+  .tabela-parentescos :deep(.p-datatable-tbody > tr > td) {
+    padding: 10px 8px;
+    overflow-wrap: anywhere;
+  }
+
+  .tabela-parentescos :deep(.tabela-parentescos-acoes) {
+    width: auto;
+  }
+}
+</style>

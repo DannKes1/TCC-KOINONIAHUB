@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
@@ -10,13 +10,10 @@ import LoadingOverlay from "../../../components/ui/LoadingOverplay.vue";
 import FieldError from "../../../components/ui/FieldError.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
+import { usarFormularioDialogo } from "../../../aplicacao/composables/usarFormularioDialogo";
 
 import { toastSuccess } from "../../../aplicacao/servicos/notificacoes";
 
-import {
-  firstFieldError,
-  mensagemForaDosCampos,
-} from "../../../aplicacao/servicos/apiError";
 
 // RNF 21.5 (7.1): tag "Sem conta" / "Conta com perfil Usuário — não acessa a turma"
 // ao lado da pessoa, só na coluna Pessoa desta tela (decisão do autor). Abaixo de
@@ -58,45 +55,19 @@ const confirm = useConfirm();
 const { carregando, erro, run, clearErrors } = useAsync();
 const compacta = usarTelaCompacta();
 
-// Corretiva G4: o erro do salvar fica no próprio diálogo (uma instância serve aos dois
-// diálogos, que nunca ficam abertos ao mesmo tempo) — junto ao campo quando a API
-// devolve o campo ou a validação local aponta o campo, senão num aviso no topo — e some
-// ao fechar ou ao alterar um campo. A instância da página continua com o erro da lista,
-// da carga da atribuição e do encerramento.
+// Corretiva G5: erro do salvar dentro do diálogo, validação local no campo e limpeza ao
+// fechar ou alterar ficam no composable (antes o bloco se repetia em cada página).
 const {
-  carregando: salvando,
-  erro: erroDoDialogo,
-  fieldErrors: errosDoDialogo,
-  run: executarNoDialogo,
-  clearErrors: limparErrosDaApi,
-} = useAsync();
-
-// Validação local no próprio campo (chave = nome do campo no DTO).
-const errosLocais = reactive<Record<string, string>>({});
-
-function limparErrosDoDialogo() {
-  limparErrosDaApi();
-  for (const chave of Object.keys(errosLocais)) delete errosLocais[chave];
-}
-
-function erroDoCampo(campo: string, camel: string) {
-  return (
-    errosLocais[campo] ||
-    firstFieldError(errosDoDialogo.value, campo) ||
-    firstFieldError(errosDoDialogo.value, camel)
-  );
-}
+  salvando, executar: executarNoDialogo, errosLocais, limpar: limparErrosDoDialogo,
+  erroDoCampo, aviso, semErrosLocais, limparAoFechar, limparAoAlterar,
+} = usarFormularioDialogo();
 
 // Campos com FieldError em cada diálogo: um erro da API fora deles (ex.: DepartamentoId,
 // que vem da rota) vai para o aviso do topo.
 const CAMPOS_CRIACAO = ["PessoaId", "Funcao", "DataInicio", "Ativo"];
 const CAMPOS_EDICAO = ["Funcao", "Ativo", "DataFim"];
-const avisoCriacao = computed(() =>
-  mensagemForaDosCampos(erroDoDialogo.value, errosDoDialogo.value, CAMPOS_CRIACAO),
-);
-const avisoEdicao = computed(() =>
-  mensagemForaDosCampos(erroDoDialogo.value, errosDoDialogo.value, CAMPOS_EDICAO),
-);
+const avisoCriacao = aviso(CAMPOS_CRIACAO);
+const avisoEdicao = aviso(CAMPOS_EDICAO);
 
 const podeGerenciarAtribuicao = computed(() => {
   const perfil = (autenticacao.perfil || "").trim().toLowerCase();
@@ -163,11 +134,8 @@ const formularioEdicao = reactive({
   dataFim: null as Date | null,
 });
 
-watch([dialogCriacaoAberto, dialogEdicaoAberto], ([criacao, edicao]) => {
-  if (!criacao && !edicao) limparErrosDoDialogo();
-});
-watch(formularioCriacao, limparErrosDoDialogo);
-watch(formularioEdicao, limparErrosDoDialogo);
+limparAoFechar(dialogCriacaoAberto, dialogEdicaoAberto);
+limparAoAlterar(formularioCriacao, formularioEdicao);
 
 function limparCriacao() {
   formularioCriacao.pessoaId = null;
@@ -240,7 +208,7 @@ function validarCriacao(): boolean {
   if (!formularioCriacao.funcao.trim()) {
     errosLocais.Funcao = "Informe a função da atribuição.";
   }
-  return Object.keys(errosLocais).length === 0;
+  return semErrosLocais();
 }
 
 function validarEdicao(): boolean {
@@ -248,7 +216,7 @@ function validarEdicao(): boolean {
   if (!formularioEdicao.funcao.trim()) {
     errosLocais.Funcao = "Informe a função da atribuição.";
   }
-  return Object.keys(errosLocais).length === 0;
+  return semErrosLocais();
 }
 
 const pessoasOrdenadas = computed(() => {
@@ -383,6 +351,7 @@ onMounted(carregarTela);
       <template #acoes>
         <Button
           v-if="podeGerenciarAtribuicao"
+          data-testid="atribuicao-nova"
           label="Nova Atribuição"
           icon="pi pi-plus"
           @click="abrirNovo"
@@ -523,6 +492,7 @@ onMounted(carregarTela);
                 severity="secondary"
                 v-tooltip.top="'Editar atribuição'"
                 :disabled="carregando"
+                data-testid="atribuicao-editar"
                 @click="abrirEdicao(data)"
               />
               <Button
