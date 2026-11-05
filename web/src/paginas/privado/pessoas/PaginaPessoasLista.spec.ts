@@ -9,6 +9,7 @@ import {
   atualizarPessoa,
   criarPessoa,
   listarPessoas,
+  obterPessoa,
 } from "../../../aplicacao/servicos/pessoasServico";
 import { criarParentesco } from "../../../aplicacao/servicos/parentescosServico";
 
@@ -220,6 +221,38 @@ describe("PaginaPessoasLista — erro da API dentro do diálogo (Corretiva G3)",
     relacionamento!.vm.$emit("update:modelValue", "Mãe");
     await flushPromises();
     expect(document.querySelector('[data-testid="parentesco-dialogo-erro"]')).toBeNull();
+
+    wrapper.unmount();
+  });
+  // Corretiva G5: CEP gravado antes da máscara (10 dígitos). O InputMask mostra
+  // "77777-777"; o formulário passa a guardar o mesmo valor, então a validação local não
+  // barra o envio e a guarda da API (pessoa do único Admin) aparece no topo do diálogo.
+  it("Editar pessoa com CEP antigo: envia o CEP mostrado e exibe a guarda do único Admin no topo", async () => {
+    const UNICO_ADMIN = "Não é possível inativar a pessoa do único administrador ativo da igreja.";
+    vi.mocked(obterPessoa).mockResolvedValueOnce({
+      ...pessoa(),
+      nome: "Daniel ADMIN",
+      cep: "7777777777",
+      possuiConta: true,
+    });
+    vi.mocked(atualizarPessoa).mockRejectedValue(rejeicao({ mensagem: UNICO_ADMIN }));
+    const wrapper = await montar();
+
+    clicar("pessoa-editar");
+    await flushPromises();
+    expect(document.querySelector<HTMLInputElement>("#pessoa-formulario-cep")!.value).toBe("77777-777");
+
+    const situacao = wrapper.findAllComponents(Dropdown).find((d) => d.props("labelId") === "pessoa-formulario-situacao");
+    situacao!.vm.$emit("update:modelValue", "Inativo");
+    await flushPromises();
+
+    clicar("pessoa-dialogo-salvar");
+    await flushPromises();
+    expect(atualizarPessoa).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(atualizarPessoa).mock.calls[0]?.[1]).toMatchObject({ CEP: "77777-777", Situacao: "Inativo" });
+    expect(document.querySelector('[data-testid="pessoa-cep-erro"]')).toBeNull();
+    expect(erroDoDialogo()!.textContent).toContain(UNICO_ADMIN);
+    expect(wrapper.text()).not.toContain(UNICO_ADMIN);
 
     wrapper.unmount();
   });

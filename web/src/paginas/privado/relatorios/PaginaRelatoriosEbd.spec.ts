@@ -121,6 +121,10 @@ describe("PaginaRelatoriosEbd — limiares do Acompanhamento (RF36)", () => {
     expect(campoNumerico(wrapper, "relatorio-filtro-limiar-atencao").props("modelValue")).toBe(75);
     expect(campoNumerico(wrapper, "relatorio-filtro-limiar-critico").props("modelValue")).toBe(50);
     expect(campoNumerico(wrapper, "relatorio-filtro-faltas-seguidas").props("modelValue")).toBe(3);
+    // Corretiva G5: os rótulos dizem a condição de cada campo.
+    expect(wrapper.get('[data-testid="relatorio-limiar-atencao-rotulo"]').text()).toBe("Atenção se frequência ≤ (%)");
+    expect(wrapper.get('[data-testid="relatorio-limiar-critico-rotulo"]').text()).toBe("Crítico se frequência ≤ (%)");
+    expect(wrapper.get('[data-testid="relatorio-faltas-seguidas-rotulo"]').text()).toBe("Crítico se faltas seguidas ≥");
 
     // Ao abrir a aba, a busca automática já envia os três parâmetros.
     expect(obterPainelAcompanhamento).toHaveBeenCalledTimes(1);
@@ -150,5 +154,82 @@ describe("PaginaRelatoriosEbd — limiares do Acompanhamento (RF36)", () => {
 
     expect(obterPainelAcompanhamento).toHaveBeenCalledTimes(2);
     expect(ultimaChamada()).toMatchObject({ limiarAtencao: 80, limiarCritico: 40, faltasConsecutivasCritico: 3 });
+  });
+
+  // Corretiva G5: limiares, regra e descrição do relatório só na aba Acompanhamento; turma
+  // e período continuam nas outras abas.
+  it("limiares, regra e descrição aparecem só na aba Acompanhamento", async () => {
+    const wrapper = await montar();
+    wrapperAtual = wrapper;
+    const SO_NO_ACOMPANHAMENTO = [
+      "#relatorio-filtro-limiar-atencao",
+      "#relatorio-filtro-limiar-critico",
+      "#relatorio-filtro-faltas-seguidas",
+      '[data-testid="relatorio-acompanhamento-regra"]',
+      '[data-testid="relatorio-acompanhamento-descricao"]',
+    ];
+    const abas = wrapper.findAll('[role="tab"]');
+
+    for (const indice of [0, 2]) {
+      await abas[indice]!.trigger("click");
+      await flushPromises();
+      for (const seletor of SO_NO_ACOMPANHAMENTO) expect(wrapper.find(seletor).exists(), seletor).toBe(false);
+      expect(wrapper.find("#relatorio-filtro-data-inicio").exists()).toBe(true);
+    }
+
+    await abas[1]!.trigger("click");
+    await flushPromises();
+    for (const seletor of SO_NO_ACOMPANHAMENTO) expect(wrapper.find(seletor).exists(), seletor).toBe(true);
+    expect(wrapper.get('[data-testid="relatorio-acompanhamento-descricao"]').text()).toBe(
+      "Este relatório aponta os alunos que precisam de acompanhamento: para cada aluno com " +
+        "matrícula ativa na turma, no período escolhido, calcula a frequência (presenças " +
+        "divididas pelas aulas consolidadas em que o aluno tem chamada registrada) e as faltas " +
+        "seguidas mais recentes (contadas da última aula consolidada para trás, até a última " +
+        "presença), e classifica em Crítico, Atenção ou regular; a lista mostra só Crítico e " +
+        "Atenção. Ajuste os limiares conforme o critério da igreja.",
+    );
+  });
+
+  // Corretiva G5: a regra aplicada fica escrita abaixo dos filtros, com os padrões da API.
+  it("mostra a regra do Acompanhamento com os valores padrão", async () => {
+    const wrapper = await montar();
+    wrapperAtual = wrapper;
+
+    expect(wrapper.find('[data-testid="relatorio-acompanhamento-regra"]').exists()).toBe(false);
+    await wrapper.get('[role="tab"][aria-label="Acompanhamento"], [role="tab"]:nth-of-type(2)').trigger("click");
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="relatorio-acompanhamento-regra"]').text()).toBe(
+      "Atenção: frequência igual ou abaixo de 75 % ou 2 faltas seguidas (número fixo). " +
+        "Crítico: frequência igual ou abaixo de 50 % ou 3 faltas seguidas.",
+    );
+  });
+
+  // Corretiva G5: o texto acompanha os valores digitados e os ajustes da API (crítico acima
+  // da atenção vale a atenção; com 2 faltas seguidas no crítico, a atenção fica só com a
+  // frequência).
+  it("o texto da regra acompanha os valores digitados e os ajustes da API", async () => {
+    const wrapper = await montar();
+    wrapperAtual = wrapper;
+
+    await wrapper.get('[role="tab"][aria-label="Acompanhamento"], [role="tab"]:nth-of-type(2)').trigger("click");
+    await flushPromises();
+
+    campoNumerico(wrapper, "relatorio-filtro-limiar-atencao").vm.$emit("update:modelValue", 80);
+    campoNumerico(wrapper, "relatorio-filtro-limiar-critico").vm.$emit("update:modelValue", 60.5);
+    campoNumerico(wrapper, "relatorio-filtro-faltas-seguidas").vm.$emit("update:modelValue", 4);
+    await flushPromises();
+    expect(wrapper.get('[data-testid="relatorio-acompanhamento-regra"]').text()).toBe(
+      "Atenção: frequência igual ou abaixo de 80 % ou 2 faltas seguidas (número fixo). " +
+        "Crítico: frequência igual ou abaixo de 60,5 % ou 4 faltas seguidas.",
+    );
+
+    campoNumerico(wrapper, "relatorio-filtro-limiar-critico").vm.$emit("update:modelValue", 90);
+    campoNumerico(wrapper, "relatorio-filtro-faltas-seguidas").vm.$emit("update:modelValue", 2);
+    await flushPromises();
+    expect(wrapper.get('[data-testid="relatorio-acompanhamento-regra"]').text()).toBe(
+      "Atenção: frequência igual ou abaixo de 80 %. " +
+        "Crítico: frequência igual ou abaixo de 80 % ou 2 faltas seguidas.",
+    );
   });
 });
