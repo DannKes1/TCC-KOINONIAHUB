@@ -4,8 +4,10 @@ Material para o capítulo de Resultados do TCC (registro do projeto, seções 5 
 7.5; monografia, seção 5.1). Etapa 7.3, 19 a 22/10/2026; atualizado em 31/10/2026 com as entregas
 de aderência à monografia (A a D, 28 a 31/10/2026; seção 7) e com a análise estática do código
 (seção 8), em 02/11/2026 com a implantação em VPS (HTTPS e HSTS na nota 3.1; implantação e
-backup na seção 4) e em 03/11/2026 com a Corretiva G2 (um e-mail por pessoa: RNFs 7.6, 8.4 e 13.5
-na seção 4; RF14 na seção 7).
+backup na seção 4), em 03/11/2026 com a Corretiva G2 (um e-mail por pessoa: RNFs 7.6, 8.4 e 13.5
+na seção 4; RF14 na seção 7) e em 04/11/2026 com a Corretiva G5 (pessoa inativa sem acesso e
+sessão encerrada na hora: RNFs 9.3 e 14.4 na seção 7; diálogos e páginas conferidos a 360 px
+pelos E2E-M4 e E2E-M5).
 
 A monografia avalia o sistema por quatro características da ISO/IEC 25010. Este documento reúne
 a evidência de três delas:
@@ -22,13 +24,13 @@ código no SonarCloud, evidência complementar de Segurança, Confiabilidade e M
 
 ## 1. Base da avaliação
 
-**Suítes automatizadas** (todas verdes em 03/11/2026):
+**Suítes automatizadas** (todas verdes em 04/11/2026):
 
 | Ferramenta | Camada | Casos |
 | --- | --- | --- |
-| xUnit + WebApplicationFactory + SQLite em memória | API (regras, autorização, integridade) | 208 (34 classes) |
-| Vitest + @vue/test-utils | Front (funções, componentes, guardas de rota) | 155 (31 arquivos) |
-| Playwright | Fluxos ponta a ponta, desktop e celular 360 × 640 | 20 (10 `chromium` + 10 `mobile`) |
+| xUnit + WebApplicationFactory + SQLite em memória | API (regras, autorização, integridade) | 217 (35 classes) |
+| Vitest + @vue/test-utils | Front (funções, componentes, guardas de rota) | 192 (38 arquivos) |
+| Playwright | Fluxos ponta a ponta, desktop e celular 360 × 640 | 25 (11 `chromium` + 14 `mobile`) |
 
 **Testes manuais**: registrados por etapa em `docs/testes.md`, com o passo, o resultado esperado,
 a marca ✔ quando executado e o print correspondente em `docs/evidencias/`. Os roteiros da 7.3
@@ -36,7 +38,8 @@ a marca ✔ quando executado e o print correspondente em `docs/evidencias/`. Os 
 executados pelo autor em 22/10/2026, todos ✔. Os roteiros das entregas de aderência (T1 a T10,
 29 e 30/10/2026, 38 prints) estão nos blocos "Aderência à monografia — Entrega A" a "C" do
 mesmo arquivo, todos ✔; são citados abaixo como "manual aderência Tn". Os da Corretiva G2 (T1 a T8,
-03/11/2026, 12 prints) estão no bloco "Corretiva G2" e são citados como "manual G2 Tn".
+03/11/2026, 12 prints) estão no bloco "Corretiva G2" e são citados como "manual G2 Tn"; os da
+Corretiva G5 (04/11/2026, 22 prints), no bloco "Corretiva G5", citados como "manual G5".
 
 **Como ler o resultado de cada caso de uso:**
 
@@ -55,7 +58,8 @@ registro do projeto.
 **Como os testes são citados.** xUnit: `Classe.Metodo`; `Classe` (n) quando todos os n casos da
 classe se aplicam (cada `InlineData` de um `[Theory]` conta um caso); para um recorte, os métodos
 pelo nome ou "(k dos n casos: …)". Vitest: `arquivo.spec`, com a mesma regra para (n).
-Playwright: E2E-01 a E2E-08, E2E-M1 e E2E-M2 (seção 7.3 do registro do projeto). Manual: "manual Etapa X,
+Playwright: E2E-01 a E2E-09 e E2E-M1 a E2E-M5 (seção 7.3 do registro do projeto; E2E-09,
+E2E-M4 e E2E-M5 desde a Corretiva G5). Manual: "manual Etapa X,
 passo N" (`docs/testes.md`).
 
 ## 2. Adequação Funcional — CSU → teste → resultado
@@ -318,6 +322,8 @@ cobertura do código novo no SonarCloud. As correções de texto foram aplicadas
 | CSU15: "percentual sobre os registros efetivos"; o percentual por aula dividia pelo total de alunos ativos hoje, e uma matrícula nova rebaixava aulas já consolidadas e o gráfico | Código | Entrega C: denominador = registros da própria aula (`RelatorioEbdServico`), rota e DTO inalterados; `RF35_RelatorioTests` (+2); manual T9 e T10 |
 | `Pessoa.Email` e `Usuario.Email` independentes: criar a conta não gravava o e-mail na pessoa, Pessoas e Meus Dados aceitavam o e-mail da conta de outra pessoa e a importação só comparava com pessoas; o texto não tinha a regra | Texto (acréscimo) e código | Corretiva G2 (03/11/2026): RNFs 7.6, 8.4 e 13.5 no .docx em 03/11; `Aplicacao/Regras/EmailDaPessoa`, criação da conta grava o cadastro no mesmo `SaveChanges`, campo bloqueado em Pessoas e Meus Dados; `RF7_RF8_EmailPessoaTests` (4), `RF13_UsuarioTests` (+3), `RF4_MeusDadosTests` (+1), `RF41_ImportacaoTests` (+1); manual G2 T1 a T5 |
 | RF14: "o e-mail não é alterado após a criação"; o Administrador precisa corrigir o e-mail de acesso de uma conta | Texto e código (decisão do autor, 03/11/2026) | RF14 reescrito no .docx em 03/11 ("Permite alterar o perfil, a situação (ativo/inativo) e o e-mail de acesso de um usuário; a senha só é redefinida por convite (RF15)."); `PATCH /api/usuarios/{id}` aceita `Email` com a recusa cruzada e a global, iguala o cadastro e invalida o convite pendente; `RF13_UsuarioTests` (+3 de RF14); `PaginaUsuariosLista.spec` (+1); manual G2 T6 |
+| CSU16 FA2 / RF9: inativar a pessoa encerrava matrículas e atribuições, mas a conta de acesso continuava ativa e a pessoa inativa ainda entrava no sistema | Texto (acréscimo) e código (decisão do autor, 04/11/2026) | Corretiva G5: RNF 9.3 ("A inativação da pessoa inativa também a sua conta de acesso e descarta convite pendente; a reativação da pessoa não reativa a conta.") e CSU16 FA2, passo 2 ("e inativa a conta de acesso, se houver"), texto pendente no .docx (seção 9 do registro do projeto); `PessoaServico.AtualizarAsync` inativa a conta e descarta o convite na mesma gravação, recusa o próprio cadastro e a pessoa do último Admin ativo (400); `RF9_InativarPessoaContaTests` (4 dos 6 casos), `PaginaPessoasLista.spec` (1), E2E-09; manual G5 (`RF9-*.png`, 9). **Atendida** |
+| RF14: só as operações de turma conferiam se a conta continuava ativa; nas demais rotas uma sessão aberta seguia válida até o token expirar | Texto (acréscimo) e código (decisão do autor, 04/11/2026) | Corretiva G5: RNF 14.4 ("A inativação da conta bloqueia o acesso imediatamente, mesmo com sessão aberta."), texto pendente no .docx (seção 9 do registro do projeto); `Aplicacao/Seguranca/ContaAtivaMiddleware` confere a conta em toda requisição autenticada a endpoint não público (401 e cookie apagado), rotas públicas abertas; `RF9_InativarPessoaContaTests.ContaInativadaComTokenValido_Recebe401EmRotaAutenticada`, `ContaInativada_RotaPublicaContinuaRespondendo`; manual G5 (`RNF-14.4-sessao-encerrada.png`). **Atendida** |
 
 Efeito na tabela da seção 2.1: CSU05 e CSU12 passaram de Parcial a Aprovado, e as lacunas de
 CSU11, CSU18, CSU22 e CSU23 encolheram (seção 2.2). Efeito nas suítes: 170 → 191 xUnit (31
@@ -329,7 +335,9 @@ aulas anteriores, como no geral e no por aluno); a lista fechada de funções n�
 (o valor antigo "Secretário" foi editado pela tela); nenhuma rota, DTO de resposta ou migration
 mudou nas três entregas. A Corretiva G2 acrescentou as duas últimas linhas, com os campos aditivos
 `possuiConta` (Pessoas e Meus Dados) e `Email` (PATCH de usuário): 196 → 208 xUnit, 153 → 155 Vitest,
-20 Playwright inalterados.
+20 Playwright inalterados. A Corretiva G5 acrescentou as RNFs 9.3 e 14.4, sem mudar rota nem DTO:
+211 → 217 xUnit (35 classes), 182 → 192 Vitest (38 arquivos), 20 → 25 Playwright (E2E-09, E2E-M4
+e E2E-M5).
 
 ## 8. Análise estática (SonarCloud)
 

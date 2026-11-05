@@ -995,7 +995,9 @@ verificados). O E2E rodou contra o PostgreSQL local no ambiente `E2E`.
 4. Aluno a 360 px (CSU07): painel com os indicadores em duas colunas; Minha Frequência com
    cartões em duas colunas e tabela rolando internamente. ✔
 5. Administrativa (Pessoas) a 360 px: abre, tabela rola dentro do container, diálogo de nova
-   pessoa a 96 vw — utilizável, sem polimento (fora do critério). ✔
+   pessoa a 96 vw — utilizável, sem polimento (fora do critério). ✔ Atendido na Corretiva G5
+   (04/11/2026): campos em uma coluna a 360 px, conferido pelo E2E-M4 (diálogos) e pelo E2E-M5
+   (páginas).
 
 **Avaliação do autor (09/10/2026).** O critério foi atendido, mas o resultado é uma tela
 web comprimida, não uma interface de celular: ação principal cortada na tabela "Aulas em
@@ -2341,3 +2343,86 @@ Presenças, rodapé e histórico do painel sem travessão.
 
 **Anotado no registro do projeto:** a regra do CEP, a troca do `watch` pelo `InputMask` e o
 motivo de manter o texto do termo. Código congelado a partir deste lote até o fim da avaliação.
+
+## Corretiva G5 — pessoa inativa sem acesso, sessão encerrada, Acompanhamento explicado e telas no celular (04/11/2026)
+
+**Escopo.** Última corretiva antes do congelamento do código. (1) Inativar a pessoa (CSU16 FA2)
+inativa a conta de acesso e descarta o convite pendente, na mesma gravação; reativar a pessoa
+não reativa a conta; não se inativa o próprio cadastro nem a pessoa do último Admin ativo (400
+com a mensagem no topo do diálogo). (2) Conta inativa perde o acesso na hora: toda requisição
+autenticada a um endpoint não público confere a conta (`ContaAtivaMiddleware`; 401 e cookie da
+sessão apagado); login, cadastro inicial, primeiro acesso e termo vigente continuam abertos. (3)
+Relatórios, aba Acompanhamento (RF36): parágrafo que diz o que o relatório calcula, rótulos
+"Atenção se frequência ≤ (%)", "Crítico se frequência ≤ (%)" e "Crítico se faltas seguidas ≥" e
+a regra aplicada escrita abaixo dos filtros, com os valores digitados e os ajustes da API (as 2
+faltas seguidas da atenção são número fixo, como no RF36); limiares, regra e parágrafo só nessa
+aba; tudo cabe a 360 px e sai na impressão. (4) Duplicação do código novo do front no SonarCloud
+(5,36 %, 226 linhas em 25 blocos, todas em páginas; os specs já estavam declarados como testes):
+o bloco de erro dos diálogos, repetido em sete páginas, passou ao composable
+`usarFormularioDialogo`, também usado por Parentescos, Igreja e Meus Dados, sem mudar
+comportamento. (5) Telas no celular: diálogos de Pessoas, Parentescos e Convite e filtros de
+Pessoas dentro da tela a 360 px (detalhe abaixo). Rotas e DTOs inalterados. Texto da monografia
+registrado como pendência: RNF 9.3, CSU16 FA2 passo 2 e RNF 14.4. Blocos de commit: api ·
+testes · front · specs · e2e · docs.
+
+**Defeitos corrigidos no teste manual.** (a) Como Superintendente, inativar a pessoa do único
+Admin mostrava "Informe o CEP no formato 00000-000." e a guarda não aparecia. A API respondia
+certo; o CEP gravado era `7777777777`, de antes da máscara da G4b. O `InputMask` mostrava só os 8
+primeiros dígitos, mas o formulário guardava o valor antigo até o campo receber foco, e a
+validação local o recusava. O formulário de Pessoas e o de Meus Dados passam a receber o valor
+que a máscara mostra (`cepParaFormulario`). (b) A 360 px, o diálogo Editar pessoa tinha
+conteúdo de 794 px que rolava para o lado dentro do diálogo (CEP, E-mail e Bairro cortados);
+Parentescos tinha o botão Adicionar e a coluna Ações fora do diálogo; o Convite, o e-mail longo
+4 px além da borda. Não era regressão: as grades de Pessoas vêm de 05/08/2026 e, na Etapa 6.4,
+o diálogo ficou registrado como fora do critério. Campos em uma coluna abaixo de 576 px e em duas
+abaixo de 768 px; tabela de Parentescos mais estreita; e-mail com quebra. O documento nunca
+passava da janela (o diálogo é camada fixa), por isso o E2E-M4 confere também o interior do
+diálogo. (c) Em Pessoas, a 360 px, o filtro Situação ia até 426 px e, com a lista aberta, a
+página ficava deslocada para o lado; os filtros empilham em largura total, como em Usuários.
+
+**Validação automatizada (04/11/2026, ambiente do autor):** `dotnet build` 0 avisos e 0 erros ·
+`dotnet test` = **217 aprovados** (211 + 6: `RF9_InativarPessoaContaTests`, pessoa com conta
+inativada com login recusado e convite descartado, reativar sem reativar a conta, pessoa do único
+Admin → 400, próprio cadastro → 400, conta inativada com token válido → 401 em `/api/meus-dados`,
+rota pública continua 200) · `vue-tsc -b` limpo · `npm run test` = **38 arquivos, 192 casos**
+(182 + `usarFormularioDialogo.spec` 3, novo; `PaginaRelatoriosEbd.spec` 3: regra com os padrões,
+regra com os valores digitados e limiares, regra e descrição só na aba Acompanhamento;
+`PaginaPessoasLista.spec` 1: CEP antigo e guarda do único Admin no topo do diálogo; `cep.spec`
+3; os specs das nove telas migradas para o composable passaram sem alteração) · `npm run build`
+ok · `npm run test:e2e` = **25 aprovados** (11 `chromium` + 14 `mobile`; novos: E2E-09, guardas
+do único Admin, como Superintendente, e do próprio cadastro, como Admin, pela tela; E2E-M4, 17
+diálogos a 360, 430 e 1024 px sem nada passando da janela nem rolando para o lado dentro do
+diálogo; E2E-M5, Painel do Admin, do Professor e do aluno, Pessoas, Turmas, Matérias, Aulas,
+Matrículas, Atribuições, Usuários, Relatórios nas quatro abas, Igreja, Meus Dados e Chamada a 360
+× 640, cada página parada e com a lista de cada Select aberta). Suíte completa executada antes
+(211 / 182 / 20) e depois. Nas páginas migradas para o composable: 193 linhas a mais e 411 a
+menos.
+
+**Testes manuais (perfil `https` + `npm run dev`, desktop e 360 × 640), executados pelo autor em
+04/11/2026:** inativação da pessoa ✔: pessoa com conta inativada em Pessoas, conta Inativo em
+Usuários, login com "Usuário ou senha inválidos." e o link do convite pendente recusado ·
+reativação ✔: a pessoa volta a Ativo e a conta continua Inativo · guardas ✔: o Admin não inativa
+o próprio cadastro; como Superintendente, a pessoa do único Admin mostrou primeiro o erro do CEP
+(defeito a), e depois da correção a guarda aparece no topo do diálogo, inclusive para o Admin sem
+tocar no CEP · sessão aberta ✔: conta inativada em Usuários com a sessão aberta em outra janela;
+a ação seguinte leva ao login · Acompanhamento ✔: regra com os padrões, com valores digitados e a
+360 px; rótulos novos; parágrafo do relatório a 360 px e na impressão; limiares, regra e parágrafo
+fora das outras abas · diálogos ✔: erros junto ao campo e avisos no topo nos diálogos migrados;
+Editar pessoa a 360 e 430 px, Parentescos e Convite a 360 px dentro da tela · filtros de Pessoas
+✔: Buscar e Situação empilhados a 360 px, lista de Situação aberta sem deslocar a página.
+
+**Prints (`docs/evidencias/`, 22 arquivos):** `RF9-pessoa-inativa-conta-inativa.png`,
+`RF9-conta-inativa-login-recusado.png`, `RF9-convite-descartado.png`,
+`RF9-convite-descartado-link-invalido.png`, `RF9-reativar-conta-continua-inativa-pessoas.png`,
+`RF9-reativar-conta-continua-inativa-usuarios.png`, `RF9-recusa-proprio-cadastro.png`,
+`RF9-guarda-proprio-cadastro.png`, `RF9-guarda-unico-admin-superintendente.png`,
+`RNF-14.4-sessao-encerrada.png`, `RF36-regra-acompanhamento.png`,
+`RF36-regra-acompanhamento-ajustada.png`, `RF36-regra-acompanhamento-360.png`,
+`RF36-rotulos-limiares.png`, `RF36-descricao-acompanhamento-360.png`,
+`RF36-descricao-impressao.png`, `UI-g5-dialogos-regressao.png`, `RNF-dialogo-pessoa-360.png`,
+`RNF-dialogo-pessoa-430.png`, `RNF-dialogo-parentescos-360.png`, `RNF-dialogo-convite-360.png`,
+`RNF-pessoas-filtros-360.png`.
+
+**Anotado no registro do projeto:** decisões, a consulta da duplicação por arquivo, o cálculo do
+Acompanhamento conferido com o código e o que explicar na banca; três pendências de texto na
+seção 9 do Plano. Código congelado a partir deste lote até o fim da avaliação.
