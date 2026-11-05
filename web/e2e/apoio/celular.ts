@@ -111,3 +111,97 @@ export async function alvoDeToque(
   expect(width, `${oQue}: largura menor que ${minimo}px`).toBeGreaterThanOrEqual(minimo);
   expect(height, `${oQue}: altura menor que ${minimo}px`).toBeGreaterThanOrEqual(minimo);
 }
+
+// Corretiva G5 (E2E-M5): página inteira na janela, sem diálogo aberto. Mesmo critério do
+// E2E-M4: o documento não passa da janela nem fica deslocado para o lado (scrollX; foi o
+// que aconteceu em Pessoas ao abrir a lista do filtro Situação), o <main> não rola para o
+// lado e nenhum elemento passa da borda direita. A exceção é o cartão da tabela das telas
+// administrativas (.p-datatable-table-container), que rola por dentro, e a faixa de abas
+// (.p-tablist-content). Listas abertas (overlay do Select, do DatePicker e do menu ⋮)
+// entram na conta: ficam no body, fora de qualquer exceção.
+export async function problemasDeLargura(page: Page): Promise<string[]> {
+  const largura = page.viewportSize()?.width ?? 360;
+  return page.evaluate((larguraJanela) => {
+    const encontrados: string[] = [];
+    const descrever = (el: Element) =>
+      `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ""}.${Array.from(el.classList).slice(0, 3).join(".")}`;
+    const raiz = document.documentElement;
+    if (raiz.scrollWidth > raiz.clientWidth) {
+      encontrados.push(`documento com ${raiz.scrollWidth}px para ${raiz.clientWidth}px`);
+    }
+    if (window.scrollX !== 0 || raiz.scrollLeft !== 0) {
+      encontrados.push(`página deslocada ${Math.round(window.scrollX || raiz.scrollLeft)}px para o lado`);
+    }
+    const conteudo = document.querySelector("main.conteudo");
+    if (conteudo && (conteudo.scrollWidth > conteudo.clientWidth + 1 || conteudo.scrollLeft !== 0)) {
+      encontrados.push(`main.conteudo com ${conteudo.scrollWidth}px para ${conteudo.clientWidth}px visíveis`);
+    }
+    const permitidos = ".p-datatable-table-container, .p-tablist-content, .p-toast, .p-tooltip";
+    for (const el of Array.from(document.querySelectorAll<HTMLElement>("body *"))) {
+      if (el.closest(permitidos)) continue;
+      if (el !== conteudo) {
+        const overflowX = getComputedStyle(el).overflowX;
+        if ((overflowX === "auto" || overflowX === "scroll") && el.scrollWidth > el.clientWidth + 1) {
+          encontrados.push(`${descrever(el)} rola para o lado (${el.scrollWidth}px em ${el.clientWidth}px)`);
+        }
+      }
+      const caixa = el.getBoundingClientRect();
+      if (caixa.width > 0 && caixa.height > 0 && (caixa.right > larguraJanela + 1 || caixa.left < -1)) {
+        encontrados.push(`${descrever(el)} de ${Math.round(caixa.left)} a ${Math.round(caixa.right)}px`);
+      }
+      if (encontrados.length >= 6) break;
+    }
+    return encontrados;
+  }, largura);
+}
+
+// Corretiva G5 (E2E-M4): diálogo aberto inteiro na janela. O diálogo do PrimeVue é uma
+// camada fixa: um conteúdo mais largo que ele não alarga o documento, rola para o lado
+// por dentro. Por isso, além do critério do documento (scrollWidth <= clientWidth),
+// confere a caixa do diálogo na janela, nenhum elemento do diálogo passando das bordas
+// dele e nenhum container do diálogo rolando para o lado (nem a tabela). A rolagem
+// vertical fica no conteúdo do diálogo, que não passa da altura da janela.
+export async function dialogoCabeNaTela(page: Page, tela: string) {
+  const janela = page.viewportSize() ?? { width: 360, height: 640 };
+  const dialogo = page.locator(".p-dialog").last();
+  await expect(dialogo, `${tela}: diálogo aberto`).toBeVisible();
+  // Fim da animação de abertura (o diálogo entra com escala).
+  await page.waitForTimeout(400);
+
+  const problemas = await page.evaluate(
+    ({ largura, altura }) => {
+      const encontrados: string[] = [];
+      const descrever = (el: Element) =>
+        `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ""}.${Array.from(el.classList).slice(0, 3).join(".")}`;
+      const raiz = document.documentElement;
+      if (raiz.scrollWidth > raiz.clientWidth) {
+        encontrados.push(`documento com ${raiz.scrollWidth}px para ${raiz.clientWidth}px`);
+      }
+      const dialogos = Array.from(document.querySelectorAll<HTMLElement>(".p-dialog"));
+      const dl = dialogos[dialogos.length - 1];
+      if (!dl) return ["nenhum diálogo aberto"];
+      const caixa = dl.getBoundingClientRect();
+      if (caixa.left < 0 || caixa.right > largura + 1) {
+        encontrados.push(`diálogo de ${Math.round(caixa.left)} a ${Math.round(caixa.right)}px numa janela de ${largura}px`);
+      }
+      if (caixa.top < 0 || caixa.bottom > altura + 1) {
+        encontrados.push(`diálogo de ${Math.round(caixa.top)} a ${Math.round(caixa.bottom)}px numa janela de ${altura}px de altura`);
+      }
+      for (const el of [dl, ...Array.from(dl.querySelectorAll<HTMLElement>("*"))]) {
+        const overflowX = getComputedStyle(el).overflowX;
+        if ((overflowX === "auto" || overflowX === "scroll") && el.scrollWidth > el.clientWidth + 1) {
+          encontrados.push(`${descrever(el)} rola para o lado (${el.scrollWidth}px em ${el.clientWidth}px)`);
+        }
+        const b = el.getBoundingClientRect();
+        if (el !== dl && b.width > 0 && (b.right > caixa.right + 1 || b.left < caixa.left - 1)) {
+          encontrados.push(`${descrever(el)} de ${Math.round(b.left)} a ${Math.round(b.right)}px, fora do diálogo`);
+        }
+        if (encontrados.length >= 6) break;
+      }
+      return encontrados;
+    },
+    { largura: janela.width, altura: janela.height },
+  );
+
+  expect(problemas, `${tela} a ${janela.width} px`).toEqual([]);
+}
