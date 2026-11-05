@@ -29,20 +29,23 @@ namespace KoinoniaHub.API.Aplicacao.Seguranca
             var publico = endpoint?.Metadata.GetMetadata<IAllowAnonymous>() is not null;
 
             if (endpoint is not null && !publico && contexto.User.Identity?.IsAuthenticated == true
-                && !await ContaAtivaAsync(contexto.User, db))
+                && !await ContaAtivaAsync(contexto.User, db, contexto.RequestAborted))
             {
                 contexto.Response.Cookies.Delete(
                     AuthController.NomeCookieToken,
                     AuthController.OpcoesCookie(DateTime.UtcNow.AddDays(-1)));
                 contexto.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await contexto.Response.WriteAsJsonAsync(new { mensagem = Mensagem });
+                await contexto.Response.WriteAsJsonAsync(new { mensagem = Mensagem }, contexto.RequestAborted);
                 return;
             }
 
             await _proximo(contexto);
         }
 
-        private static async Task<bool> ContaAtivaAsync(ClaimsPrincipal usuario, KoinoniaHubDbContext db)
+        // A consulta e a escrita da resposta recebem o token da requisição: se o cliente
+        // desistir, a operação é cancelada.
+        private static async Task<bool> ContaAtivaAsync(
+            ClaimsPrincipal usuario, KoinoniaHubDbContext db, CancellationToken cancelamento)
         {
             if (!int.TryParse(usuario.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var usuarioId) ||
                 !int.TryParse(usuario.FindFirst("IgrejaId")?.Value, out var igrejaId))
@@ -50,7 +53,7 @@ namespace KoinoniaHub.API.Aplicacao.Seguranca
 
             return await db.Usuarios
                 .AsNoTracking()
-                .AnyAsync(u => u.Id == usuarioId && u.IgrejaId == igrejaId && u.Ativo);
+                .AnyAsync(u => u.Id == usuarioId && u.IgrejaId == igrejaId && u.Ativo, cancelamento);
         }
     }
 }
