@@ -7,7 +7,8 @@ de aderência à monografia (A a D, 28 a 31/10/2026; seção 7) e com a análise
 backup na seção 4), em 03/11/2026 com a Corretiva G2 (um e-mail por pessoa: RNFs 7.6, 8.4 e 13.5
 na seção 4; RF14 na seção 7) e em 04/11/2026 com a Corretiva G5 (pessoa inativa sem acesso e
 sessão encerrada na hora: RNFs 9.3 e 14.4 na seção 7; diálogos e páginas conferidos a 360 px
-pelos E2E-M4 e E2E-M5).
+pelos E2E-M4 e E2E-M5) e em 05/11/2026 com a análise do SonarCloud depois das corretivas (seção
+8.4).
 
 A monografia avalia o sistema por quatro características da ISO/IEC 25010. Este documento reúne
 a evidência de três delas:
@@ -322,8 +323,8 @@ cobertura do código novo no SonarCloud. As correções de texto foram aplicadas
 | CSU15: "percentual sobre os registros efetivos"; o percentual por aula dividia pelo total de alunos ativos hoje, e uma matrícula nova rebaixava aulas já consolidadas e o gráfico | Código | Entrega C: denominador = registros da própria aula (`RelatorioEbdServico`), rota e DTO inalterados; `RF35_RelatorioTests` (+2); manual T9 e T10 |
 | `Pessoa.Email` e `Usuario.Email` independentes: criar a conta não gravava o e-mail na pessoa, Pessoas e Meus Dados aceitavam o e-mail da conta de outra pessoa e a importação só comparava com pessoas; o texto não tinha a regra | Texto (acréscimo) e código | Corretiva G2 (03/11/2026): RNFs 7.6, 8.4 e 13.5 no .docx em 03/11; `Aplicacao/Regras/EmailDaPessoa`, criação da conta grava o cadastro no mesmo `SaveChanges`, campo bloqueado em Pessoas e Meus Dados; `RF7_RF8_EmailPessoaTests` (4), `RF13_UsuarioTests` (+3), `RF4_MeusDadosTests` (+1), `RF41_ImportacaoTests` (+1); manual G2 T1 a T5 |
 | RF14: "o e-mail não é alterado após a criação"; o Administrador precisa corrigir o e-mail de acesso de uma conta | Texto e código (decisão do autor, 03/11/2026) | RF14 reescrito no .docx em 03/11 ("Permite alterar o perfil, a situação (ativo/inativo) e o e-mail de acesso de um usuário; a senha só é redefinida por convite (RF15)."); `PATCH /api/usuarios/{id}` aceita `Email` com a recusa cruzada e a global, iguala o cadastro e invalida o convite pendente; `RF13_UsuarioTests` (+3 de RF14); `PaginaUsuariosLista.spec` (+1); manual G2 T6 |
-| CSU16 FA2 / RF9: inativar a pessoa encerrava matrículas e atribuições, mas a conta de acesso continuava ativa e a pessoa inativa ainda entrava no sistema | Texto (acréscimo) e código (decisão do autor, 04/11/2026) | Corretiva G5: RNF 9.3 ("A inativação da pessoa inativa também a sua conta de acesso e descarta convite pendente; a reativação da pessoa não reativa a conta.") e CSU16 FA2, passo 2 ("e inativa a conta de acesso, se houver"), texto pendente no .docx (seção 9 do registro do projeto); `PessoaServico.AtualizarAsync` inativa a conta e descarta o convite na mesma gravação, recusa o próprio cadastro e a pessoa do último Admin ativo (400); `RF9_InativarPessoaContaTests` (4 dos 6 casos), `PaginaPessoasLista.spec` (1), E2E-09; manual G5 (`RF9-*.png`, 9). **Atendida** |
-| RF14: só as operações de turma conferiam se a conta continuava ativa; nas demais rotas uma sessão aberta seguia válida até o token expirar | Texto (acréscimo) e código (decisão do autor, 04/11/2026) | Corretiva G5: RNF 14.4 ("A inativação da conta bloqueia o acesso imediatamente, mesmo com sessão aberta."), texto pendente no .docx (seção 9 do registro do projeto); `Aplicacao/Seguranca/ContaAtivaMiddleware` confere a conta em toda requisição autenticada a endpoint não público (401 e cookie apagado), rotas públicas abertas; `RF9_InativarPessoaContaTests.ContaInativadaComTokenValido_Recebe401EmRotaAutenticada`, `ContaInativada_RotaPublicaContinuaRespondendo`; manual G5 (`RNF-14.4-sessao-encerrada.png`). **Atendida** |
+| CSU16 FA2 / RF9: inativar a pessoa encerrava matrículas e atribuições, mas a conta de acesso continuava ativa e a pessoa inativa ainda entrava no sistema | Texto (acréscimo) e código (decisão do autor, 04/11/2026) | Corretiva G5: RNF 9.3 e CSU16 FA2, passo 2, no .docx em 05/11/2026 (inativar a pessoa inativa também a conta de acesso, se houver, e descarta o convite pendente; reativar a pessoa não reativa a conta; não se inativa o próprio cadastro nem a pessoa do único administrador ativo); `PessoaServico.AtualizarAsync` inativa a conta e descarta o convite na mesma gravação, recusa o próprio cadastro e a pessoa do último Admin ativo (400); `RF9_InativarPessoaContaTests` (4 dos 6 casos), `PaginaPessoasLista.spec` (1), E2E-09; manual G5 (`RF9-*.png`, 9). **Atendida** |
+| RF14: só as operações de turma conferiam se a conta continuava ativa; nas demais rotas uma sessão aberta seguia válida até o token expirar | Texto (acréscimo) e código (decisão do autor, 04/11/2026) | Corretiva G5: RNF 14.4 no .docx em 05/11/2026 ("A inativação da conta bloqueia o acesso imediatamente, mesmo com sessão aberta: toda requisição autenticada de uma conta inativa é recusada e a sessão é encerrada."); `Aplicacao/Seguranca/ContaAtivaMiddleware` confere a conta em toda requisição autenticada a endpoint não público (401 e cookie apagado), rotas públicas abertas; `RF9_InativarPessoaContaTests.ContaInativadaComTokenValido_Recebe401EmRotaAutenticada`, `ContaInativada_RotaPublicaContinuaRespondendo`; manual G5 (`RNF-14.4-sessao-encerrada.png`). **Atendida** |
 
 Efeito na tabela da seção 2.1: CSU05 e CSU12 passaram de Parcial a Aprovado, e as lacunas de
 CSU11, CSU18, CSU22 e CSU23 encolheram (seção 2.2). Efeito nas suítes: 170 → 191 xUnit (31
@@ -366,7 +367,9 @@ linhas na primeira análise): o número oficial para o texto é o do SonarCloud.
 cada qualidade segue o apontamento mais grave, não a quantidade; na organização (Standard
 Experience) só os do tipo VULNERABILITY contam para Security e só os do tipo BUG para
 Reliability. O Quality Gate (Sonar way) avalia o código novo desde a análise de referência:
-cobertura mínima de 80 %, sem issue nova, sem hotspot aberto.
+nota A em Security, Reliability e Maintainability, cobertura mínima de 80 %, duplicação de no
+máximo 3 % e todos os hotspots revisados. Um apontamento novo de manutenção que não derruba a
+nota A não reprova o gate.
 
 ### 8.1 Primeira análise (run #1, commit `c482d3d`, 23/10/2026)
 
@@ -481,7 +484,41 @@ do Sonar (84,8 %) diferem porque o Sonar conta também linhas de template dos `.
 não lista. Lição registrada: uma página sem spec conta inteira como a cobrir, então toda página
 alterada precisa de spec na mesma entrega.
 
-### 8.4 Prints (`docs/evidencias/`, prefixo `SONAR-`)
+### 8.4 Código novo das corretivas G2 a G5 (05/11/2026)
+
+As corretivas G2 a G5 (03 a 05/11/2026) passaram por dois Quality Gates reprovados, um em cada
+projeto, ambos resolvidos. Web: reprovado na análise da G4b (commit `8c81859`, 04/11/2026) pela
+duplicação do código novo (detalhe abaixo); aprovado de novo na análise da G5 (commit `5244d89`).
+API: reprovada nessa mesma análise por um único BUG no código novo: `ContaAtivaMiddleware`
+escrevia a resposta 401 sem repassar o token de cancelamento da requisição. A correção (commit
+`a169315`) passa `contexto.RequestAborted` à escrita da resposta e à consulta da conta, com
+`dotnet test` = 217 e build com 0 avisos; na análise desse commit (05/11/2026) os dois projetos
+passaram.
+
+| Métrica | API | Web |
+| --- | --- | --- |
+| Quality Gate | **Passed** | **Passed** |
+| Linhas de código | 7.013 | 14.563 |
+| Security · Reliability · Maintainability | **A** · **A** · **A** (0 vulnerabilidades, 0 bugs) | **A** · **A** · **A** (0 vulnerabilidades, 0 bugs) |
+| Security Hotspots | 0 | 0 |
+| Cobertura total | **80,7 %** | **65,5 %** |
+| Cobertura do código novo | 90,3 % sobre 212 linhas | 89,2 % sobre 376 linhas |
+| Duplicação total | 2,4 % | 0,8 % |
+| Duplicação do código novo | 2,4 % | 0,1 % |
+| Testes importados | 217 | não importados (só o lcov) |
+
+**Duplicação do Web.** Antes do composable, o gate do Web acusava 5,36 % de linhas duplicadas no
+código novo (226 linhas em 25 blocos, todas em páginas: o mesmo bloco de erro de diálogo repetido
+em sete telas). A consulta por arquivo mostrou que os specs já estavam declarados como testes e
+fora da conta; o bloco passou a `aplicacao/composables/usarFormularioDialogo.ts`, sem mudar
+comportamento (os specs das nove telas migradas passaram sem alteração), e a duplicação do código
+novo caiu para 0,1 %, abaixo do limite de 3 %.
+
+**Cobertura.** Desde a análise de 01/11/2026 (depois do run #9), a cobertura total subiu de
+77,8 % para 80,7 % na API e de 54,9 % para 65,5 % no Web. No código novo das corretivas, a API tem 8 apontamentos de manutenção
+(CODE_SMELL), sem efeito na nota A, e o Web nenhum.
+
+### 8.5 Prints (`docs/evidencias/`, prefixo `SONAR-`)
 
 - Primeira análise (17): `SONAR-actions-verde.png`, `SONAR-api-log.png`, `SONAR-api-log-testes.png`,
   `SONAR-api-overview.png`, `-reliability.png`, `-maintainability.png`, `-hotspots.png`,
@@ -494,7 +531,7 @@ alterada precisa de spec na mesma entrega.
   `-issues-abertas.png`; `SONAR-correcao-api-quality-gate.png`.
 - Aderência (2): `SONAR-aderencia-web-quality-gate.png`, `SONAR-aderencia-api-quality-gate.png`.
 
-### 8.5 Leitura para o texto do TCC
+### 8.6 Leitura para o texto do TCC
 
 - Security, Reliability e Maintainability do SonarCloud conversam com Segurança, Confiabilidade e
   Manutenibilidade da ISO/IEC 25010 (seção 4.10), mas a nota vem do apontamento mais grave, não
