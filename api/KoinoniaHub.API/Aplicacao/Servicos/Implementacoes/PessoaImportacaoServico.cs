@@ -173,6 +173,14 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                         avisos.Add("data de nascimento ignorada (use dd/mm/aaaa)");
                 }
 
+                // CEP com 8 dígitos (com ou sem hífen ou ponto) é gravado como 00000-000;
+                // qualquer outro valor não é gravado: a pessoa entra sem o CEP, com aviso na
+                // linha (as telas recusam o mesmo valor).
+                var textoCep = Valor(idxCep);
+                var cep = Cep.FormatarOitoDigitos(textoCep);
+                if (cep is null && !string.IsNullOrWhiteSpace(textoCep))
+                    avisos.Add("CEP ignorado (use 00000-000)");
+
                 var pessoa = new Pessoa
                 {
                     IgrejaId = igrejaId,
@@ -186,7 +194,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                     Bairro = Limitar(Valor(idxBairro), 100),
                     Cidade = Limitar(Valor(idxCidade), 100),
                     Estado = Limitar(Valor(idxEstado), 2),
-                    CEP = Limitar(Cep.Normalizar(Valor(idxCep)) ?? "", 10),
+                    CEP = cep,
                     Situacao = "Ativo"
                 };
 

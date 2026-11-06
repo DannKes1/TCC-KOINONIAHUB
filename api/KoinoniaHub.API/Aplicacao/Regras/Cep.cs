@@ -9,16 +9,22 @@ namespace KoinoniaHub.API.Aplicacao.Regras
 
         public const string Mensagem = "Informe o CEP no formato 00000-000.";
 
-        // Oito dígitos viram 00000-000; vazio vira nulo; qualquer outro valor volta como veio
-        // (só a importação CSV chega aqui sem a validação do DTO).
+        // Oito dígitos viram 00000-000; vazio vira nulo; qualquer outro valor volta como veio.
+        // As telas chegam aqui já validadas pelo DTO.
         public static string? Normalizar(string? valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor)) return null;
+            return FormatarOitoDigitos(valor) ?? valor.Trim();
+        }
+
+        // Importação CSV (sem validação de DTO): oito dígitos, com ou sem hífen ou ponto, viram
+        // 00000-000; qualquer outro valor vira nulo e a linha recebe um aviso.
+        public static string? FormatarOitoDigitos(string? valor)
         {
             if (string.IsNullOrWhiteSpace(valor)) return null;
 
             var digitos = new string(valor.Where(char.IsAsciiDigit).ToArray());
-            return digitos.Length == 8
-                ? $"{digitos[..5]}-{digitos[5..]}"
-                : valor.Trim();
+            return digitos.Length == 8 ? $"{digitos[..5]}-{digitos[5..]}" : null;
         }
     }
 }

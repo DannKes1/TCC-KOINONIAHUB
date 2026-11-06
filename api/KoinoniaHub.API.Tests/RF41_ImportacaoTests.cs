@@ -137,6 +137,49 @@ namespace KoinoniaHub.API.Tests
             Assert.Equal(1, await ContarPessoasAsync(ctx, igrejaId));
         }
 
+        // Corretiva G5: CEP fora do formato não é gravado; a pessoa entra sem ele, com aviso.
+        [Fact]
+        public async Task Importar_CepForaDoFormato_GravaSemCepEComAviso()
+        {
+            using var ctx = new ContextoDeTeste();
+            var igrejaId = await SemearIgrejaAsync(ctx);
+            var servico = new PessoaImportacaoServico(ctx.Db);
+
+            var csv =
+                "Nome;CEP\n" +
+                "Ana Lima;7777777777\n";
+
+            var resposta = await servico.ImportarCsvAsync(igrejaId, Fluxo(csv));
+
+            var item = resposta.Itens.Single();
+            Assert.Equal(1, resposta.Criados);
+            Assert.Equal("Criado", item.Status);
+            Assert.Equal("CEP ignorado (use 00000-000)", item.Mensagem);
+            Assert.Null((await LerUnicaPessoaAsync(ctx, igrejaId)).CEP);
+        }
+
+        // Corretiva G5: 8 dígitos com ponto ou sem hífen são gravados como 00000-000.
+        [Fact]
+        public async Task Importar_CepComOitoDigitosComPontoOuSemHifen_GravaFormatado()
+        {
+            using var ctx = new ContextoDeTeste();
+            var igrejaId = await SemearIgrejaAsync(ctx);
+            var servico = new PessoaImportacaoServico(ctx.Db);
+
+            var csv =
+                "Nome;CEP\n" +
+                "Bia Souza;76.900-000\n" +
+                "Caio Souza;76900000\n";
+
+            var resposta = await servico.ImportarCsvAsync(igrejaId, Fluxo(csv));
+
+            Assert.Equal(2, resposta.Criados);
+            Assert.All(resposta.Itens, i => Assert.Null(i.Mensagem));
+            using var leitura = ctx.NovoContexto();
+            var ceps = await leitura.Pessoas.Where(p => p.IgrejaId == igrejaId).Select(p => p.CEP).ToListAsync();
+            Assert.Equal(new[] { "76900-000", "76900-000" }, ceps);
+        }
+
         [Fact]
         public async Task Importar_MaisDe1000Linhas_Retorna400()
         {
