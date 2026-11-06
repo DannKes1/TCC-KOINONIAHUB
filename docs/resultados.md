@@ -25,11 +25,11 @@ código no SonarCloud, evidência complementar de Segurança, Confiabilidade e M
 
 ## 1. Base da avaliação
 
-**Suítes automatizadas** (todas verdes em 04/11/2026):
+**Suítes automatizadas** (todas verdes em 05/11/2026):
 
 | Ferramenta | Camada | Casos |
 | --- | --- | --- |
-| xUnit + WebApplicationFactory + SQLite em memória | API (regras, autorização, integridade) | 217 (35 classes) |
+| xUnit + WebApplicationFactory + SQLite em memória | API (regras, autorização, integridade) | 221 (35 classes) |
 | Vitest + @vue/test-utils | Front (funções, componentes, guardas de rota) | 192 (38 arquivos) |
 | Playwright | Fluxos ponta a ponta, desktop e celular 360 × 640 | 25 (11 `chromium` + 14 `mobile`) |
 
@@ -460,7 +460,7 @@ dos links do menu, declarada por propriedade). Testes manuais M1 a M8 ✔, execu
 24/10/2026 (`RF1-cadastro-inicial-labels.png`, `RF1-cadastro-inicial-labels-360.png`,
 `RNF-30.2-400-aula-sem-data.png`). `npm audit` em 24/10/2026: 15 vulnerabilidades (1 low, 5
 moderate, 9 high) nas cadeias de vite, vitest e playwright e nos pacotes `axios` e `vue` (por
-`@vue/server-renderer`, que a SPA não usa); fica como entrega própria.
+`@vue/server-renderer`, que a SPA não usa); tratadas em 05/11/2026 (seção 8.5).
 
 ### 8.3 Código novo das entregas de aderência (runs #8 e #9, 31/10/2026)
 
@@ -518,7 +518,40 @@ novo caiu para 0,1 %, abaixo do limite de 3 %.
 77,8 % para 80,7 % na API e de 54,9 % para 65,5 % no Web. No código novo das corretivas, a API tem 8 apontamentos de manutenção
 (CODE_SMELL), sem efeito na nota A, e o Web nenhum.
 
-### 8.5 Prints (`docs/evidencias/`, prefixo `SONAR-`)
+### 8.5 Dependências do cliente (`npm audit`, 05/11/2026)
+
+O `npm audit` do front, que em 24/10/2026 apontava 15 vulnerabilidades (seção 8.2), apontava 20 em
+05/11/2026: 9 em dependências de produção e 11 só na cadeia de desenvolvimento. As de produção
+estavam no axios e nas suas transitivas follow-redirects e form-data, no vue (por
+`@vue/server-renderer`) e em postcss, nanoid, source-map-js e yaml, ferramentas de build que o vue e
+a vue-router declaram como dependência. Cada advisory foi conferido no código instalado e no bundle
+publicado (`web/dist`): nenhuma atingia a SPA no navegador. O adapter http do axios (proxy,
+redirecionamentos, HTTP/2, multipart do Node) não entra no bundle; o adapter fetch não é
+selecionado, porque o XHR vem antes; o sistema não usa a renderização no servidor do Vue; e as
+ferramentas de build não chegam ao bundle. Restavam gadgets de prototype pollution do axios, que
+exigiriam poluição prévia de `Object.prototype`, sem vetor no sistema.
+
+**Atualização dentro da mesma versão maior.** `npm update`, sem alterar o `package.json`: axios
+1.13.6 → 1.21.0, vue 3.5.29 → 3.5.45, follow-redirects 1.15.11 → 1.16.2, form-data 4.0.5 → 4.0.6,
+vue-router 5.0.3 → 5.4.0, vite 7.3.1 → 7.3.7, vitest 5.0.2 → 5.1.0 e @playwright/test 1.63.0 →
+1.65.0, com o navegador correspondente instalado. Resultado: `npm audit --omit=dev` = **0
+vulnerabilidades**, ou seja, as dependências de produção do cliente ficaram sem vulnerabilidades
+conhecidas. Suíte completa depois da atualização: 221 xUnit, 192 Vitest, `vue-tsc -b` limpo, build
+ok e 25 Playwright. Nem o build nem o servidor de desenvolvimento emitiram aviso novo.
+
+**Restantes, só de desenvolvimento.** São 5 moderadas, todas na cadeia do `@vue/test-utils` 2.5.1:
+js-beautify 2.0.3, editorconfig 3.0.2, glob 13.0.6 (GHSA-3g3m-2fjr-6pw4) e minimatch 10.2.6
+(GHSA-g3hv-75wg-m249). Não há correção publicada dentro da versão maior: a 2.5.1 é a versão mais
+recente do `@vue/test-utils`, e glob e minimatch só foram corrigidos nas versões maiores 14 e 11,
+que essa cadeia não aceita. O `npm audit fix --force` proporia rebaixar o `@vue/test-utils` para
+2.4.11. Ficam aceitas sem `overrides`: rodam só nos testes do Vitest, local e no CI, e não entram
+no bundle publicado.
+
+**Ambiente.** No computador do autor (Node 22.17.0), o npm avisa que o jsdom 30.1.3 (testes) e o
+plugin de rotas da vue-router 5.4 pedem Node mais novo (22.22.2 e 22.18). As suítes passaram mesmo
+assim. O CI usa Node 24, e a imagem de build do front, `node:22` atual.
+
+### 8.6 Prints (`docs/evidencias/`, prefixo `SONAR-`)
 
 - Primeira análise (17): `SONAR-actions-verde.png`, `SONAR-api-log.png`, `SONAR-api-log-testes.png`,
   `SONAR-api-overview.png`, `-reliability.png`, `-maintainability.png`, `-hotspots.png`,
@@ -531,7 +564,7 @@ novo caiu para 0,1 %, abaixo do limite de 3 %.
   `-issues-abertas.png`; `SONAR-correcao-api-quality-gate.png`.
 - Aderência (2): `SONAR-aderencia-web-quality-gate.png`, `SONAR-aderencia-api-quality-gate.png`.
 
-### 8.6 Leitura para o texto do TCC
+### 8.7 Leitura para o texto do TCC
 
 - Security, Reliability e Maintainability do SonarCloud conversam com Segurança, Confiabilidade e
   Manutenibilidade da ISO/IEC 25010 (seção 4.10), mas a nota vem do apontamento mais grave, não
