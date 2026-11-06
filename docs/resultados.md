@@ -197,6 +197,14 @@ Prints em `docs/evidencias/`. Os marcados "D*n*" vieram dos roteiros da Etapa 7.
   aceite do termo é o do navegador, não o do contêiner (RNF 42.8, conferido no primeiro acesso de
   uma conta na VPS). Acesso pelo celular em rede móvel com o cadeado do navegador. Prints
   `RNF-2.3-saude-hsts-vps.png`, `RNF-2.3-https-celular.png`, `RNF-42.8-ip-aceite-vps.png`.
+- **Hardening do servidor (05/11/2026).** Complementa a implantação das RNFs 1.4, 2.3, 40.4, 42.4 e
+  44.4; nenhuma RNF da monografia o exige. SSH só por chave ed25519 (senha recusada; `root` só por
+  chave), Fail2ban na jail do SSH (5 falhas, bloqueio de 1 h), atualizações de segurança automáticas
+  (`unattended-upgrades`), UFW com só 22, 80 e 443 abertas (443 também em UDP, para o HTTP/3 do Caddy; `db` e `api` sem
+  porta publicada) e cópia
+  semanal do backup para fora do servidor por `scp`. Procedimento em `deploy/README.md`, seção
+  Hardening. Prints `SEG-ssh-sem-senha.png`, `SEG-fail2ban-status.png`,
+  `SEG-unattended-upgrades.png`, `SEG-portas-expostas.png`.
 - **403 por perfil (`[Authorize(Roles)]`).** Desde a corretiva de 20/10, sai com o corpo
   `{ "mensagem": "Você não tem permissão para esta operação." }` (`RespostaAutorizacaoHandler`),
   como os demais 403 da API (guarda da turma, acesso a pessoas, Resumo do dia, igreja de outro
