@@ -402,7 +402,10 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             // RNF 37.5: herda da frequência o recorte de aulas Consolidadas.
             var frequencia = await ObterFrequenciaTurmaAsync(igrejaId, departamentoId, dataInicio, dataFim);
 
+            // RF37: o ranking lista os alunos com faltas; quem não faltou fica fora, e a lista
+            // vem vazia quando ninguém faltou no período (a tela mostra a mensagem própria).
             var itens = frequencia.Alunos
+                .Where(a => a.FaltasTotais > 0)
                 .OrderByDescending(a => a.FaltasTotais)
                 .ThenBy(a => a.PercentualPresenca)
                 .ThenBy(a => a.NomeAluno)

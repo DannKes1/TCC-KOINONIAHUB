@@ -218,14 +218,66 @@ namespace KoinoniaHub.API.Tests
             using var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
             var raiz = json.RootElement;
 
-            // RNF 37.5: B lidera com 2 faltas em 2 aulas; A tem 0.
-            var itens = raiz.GetProperty("itens").EnumerateArray().ToList();
-            Assert.Equal(cenario.MatriculaBId, itens[0].GetProperty("matriculaId").GetInt32());
-            Assert.Equal(2, itens[0].GetProperty("faltasTotais").GetInt32());
-            Assert.Equal(2, itens[0].GetProperty("totalAulas").GetInt32());
-            Assert.Equal(0, itens[1].GetProperty("faltasTotais").GetInt32());
+            // RNF 37.5: B tem 2 faltas em 2 aulas Consolidadas; A, sem falta, fica fora (RF37).
+            var item = Assert.Single(raiz.GetProperty("itens").EnumerateArray());
+            Assert.Equal(cenario.MatriculaBId, item.GetProperty("matriculaId").GetInt32());
+            Assert.Equal(2, item.GetProperty("faltasTotais").GetInt32());
+            Assert.Equal(2, item.GetProperty("totalAulas").GetInt32());
 
             Assert.Equal(aulas.EmAbertoVencida, Assert.Single(raiz.GetProperty("aulasPendentes").EnumerateArray()).GetProperty("id").GetInt32());
+        }
+
+        // Corretiva G5 (RF37): o ranking lista só quem faltou, mesmo com posições sobrando.
+        [Fact]
+        public async Task RankingFaltas_SoAlunosComFalta_MesmoComPosicoesSobrando()
+        {
+            var cenario = await CenarioAula.CriarAsync(_fabrica, "rf37b");
+            var matriculaC = await MatricularAsync(_fabrica, cenario, "Aluno C rf37b");
+            var hoje = DateTime.UtcNow;
+            await cenario.CriarAulaEmAsync(_fabrica, hoje.AddDays(-14), SituacaoAula.Consolidada, 0,
+                (cenario.MatriculaAId, true), (cenario.MatriculaBId, false), (matriculaC, false));
+            await cenario.CriarAulaEmAsync(_fabrica, hoje.AddDays(-7), SituacaoAula.Consolidada, 0,
+                (cenario.MatriculaAId, true), (cenario.MatriculaBId, false), (matriculaC, true));
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+
+            var resposta = await admin.GetAsync($"/api/relatorios/ebd/ranking-faltas?{Periodo(cenario.TurmaId)}&top=10");
+
+            Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+            using var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+            var itens = json.RootElement.GetProperty("itens").EnumerateArray()
+                .Select(i => (Matricula: i.GetProperty("matriculaId").GetInt32(), Faltas: i.GetProperty("faltasTotais").GetInt32()))
+                .ToList();
+            Assert.Equal(new[] { (cenario.MatriculaBId, 2), (matriculaC, 1) }, itens);
+        }
+
+        // Corretiva G5 (RF37): ninguém faltou no período, a lista vem vazia.
+        [Fact]
+        public async Task RankingFaltas_NinguemFaltou_ListaVazia()
+        {
+            var cenario = await CenarioAula.CriarAsync(_fabrica, "rf37c");
+            await cenario.CriarAulaEmAsync(_fabrica, DateTime.UtcNow.AddDays(-7), SituacaoAula.Consolidada, 0,
+                (cenario.MatriculaAId, true), (cenario.MatriculaBId, true));
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+
+            var resposta = await admin.GetAsync($"/api/relatorios/ebd/ranking-faltas?{Periodo(cenario.TurmaId)}&top=10");
+
+            Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+            using var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+            Assert.Equal(0, json.RootElement.GetProperty("itens").GetArrayLength());
+        }
+
+        private static async Task<int> MatricularAsync(KoinoniaHubWebApplicationFactory fabrica, CenarioAula cenario, string nome)
+        {
+            using var escopo = fabrica.Services.CreateScope();
+            var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+            var matricula = new AlunoDepartamento
+            {
+                Pessoa = new Pessoa { Nome = nome, IgrejaId = cenario.IgrejaId },
+                DepartamentoId = cenario.TurmaId
+            };
+            db.Add(matricula);
+            await db.SaveChangesAsync();
+            return matricula.Id;
         }
 
         [Fact]
