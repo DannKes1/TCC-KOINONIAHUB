@@ -185,6 +185,10 @@ const dadosGraficoAulas = computed(() => {
         pointRadius: 4,
         fill: true,
         tension: 0.3,
+        // A curva suave não passa dos pontos (nem acima de 100 % nem abaixo de 0 %), e
+        // os pontos de 100 % aparecem inteiros, sem corte na borda do eixo.
+        cubicInterpolationMode: "monotone",
+        clip: false,
       },
     ],
   };
@@ -193,6 +197,8 @@ const dadosGraficoAulas = computed(() => {
 const opcoesGraficoAulas: any = {
   responsive: true,
   maintainAspectRatio: false,
+  // Respiro acima da linha de 100 %, para os pontos não encostarem no topo do cartão.
+  layout: { padding: { top: 14 } },
   scales: {
     y: {
       min: 0,
