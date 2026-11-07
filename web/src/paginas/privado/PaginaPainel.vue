@@ -136,11 +136,11 @@ function severityVinculo(vinculo: string) {
   return "secondary";
 }
 
+// Corretiva G6 (RF3): o Painel considera todas as turmas ativas, como os relatórios. Antes
+// só contava as de tipo "EBD"; o tipo é texto livre (RF17), e uma turma "Jovens" ficava fora
+// dos números da gestão e do painel do professor.
 const turmasEbdAtivas = computed(() =>
-  departamentos.value.filter(
-    (dep) =>
-      String(dep.tipo ?? "").toLowerCase() === "ebd" && Boolean(dep.ativo),
-  ),
+  departamentos.value.filter((dep) => Boolean(dep.ativo)),
 );
 
 const totalPessoas = computed(() => pessoas.value.length);
@@ -172,7 +172,9 @@ const aulasAbertasDoProfessor = computed(() =>
     .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()),
 );
 
-const totalMinhasTurmas = computed(() => departamentos.value.length);
+// Corretiva G6: mesma base da lista "Minhas turmas" e dos cartões de aulas (turmas ativas);
+// antes contava também as turmas inativas em que o professor ainda tinha atribuição.
+const totalMinhasTurmas = computed(() => turmasEbdAtivas.value.length);
 const totalMinhasAulas = computed(() => aulasRecentes.value.length);
 const totalMinhasAulasAbertas = computed(
   () => aulasRecentes.value.filter((a) => a.situacao === "EmAberto").length,
@@ -216,10 +218,7 @@ async function carregarDadosTurmas() {
   const listaDepartamentos = await listarDepartamentos();
   departamentos.value = listaDepartamentos;
 
-  const turmasAtivas = listaDepartamentos.filter(
-    (dep) =>
-      String(dep.tipo ?? "").toLowerCase() === "ebd" && Boolean(dep.ativo),
-  );
+  const turmasAtivas = listaDepartamentos.filter((dep) => Boolean(dep.ativo));
 
   const resultadosAulas = await Promise.all(
     turmasAtivas.map(async (dep) => {
