@@ -2426,3 +2426,66 @@ Editar pessoa a 360 e 430 px, Parentescos e Convite a 360 px dentro da tela · f
 **Anotado no registro do projeto:** decisões, a consulta da duplicação por arquivo, o cálculo do
 Acompanhamento conferido com o código e o que explicar na banca; três pendências de texto na
 seção 9 do Plano. Código congelado a partir deste lote até o fim da avaliação.
+
+## Corretiva G6 — perfil alterado encerra a sessão, pessoa inativa sem acesso nem função e Painel com todas as turmas ativas (06 e 07/11/2026)
+
+**Escopo.** Última corretiva, a partir da revisão final da monografia de 06/11/2026. (1) RF14, RNF
+14.5: o perfil vai dentro do token; o `ContaAtivaMiddleware`, na mesma consulta que confere a conta
+ativa, compara o perfil do token com o da conta e responde 401 com o cookie da sessão apagado
+quando são diferentes ("Seu perfil de acesso foi alterado. Entre novamente."); a pessoa entra de
+novo e recebe o perfil atual. Salvar a conta sem mudar o perfil não derruba a sessão. (2) RF9, RNF
+9.4: pessoa inativa não recebe acesso nem função; 400 com "Esta pessoa está inativa. Reative o
+cadastro em Pessoas antes." ao criar ou reativar a conta, criar ou reativar uma atribuição e
+matricular (a matrícula era aceita pela API, embora a lista de disponíveis escondesse a pessoa).
+A mensagem aparece no topo dos diálogos, sem mudança nas telas. (3) RF3: o Painel da gestão e o do
+professor consideram todas as turmas ativas, sem o filtro pelo tipo "EBD"; a revisão independente
+do diff apontou que o cartão "Minhas turmas" do professor contava também as turmas inativas, e ele
+passou à mesma base da lista. (4) RF22: reativar uma atribuição encerrada quando outra igual já
+está ativa é recusado com a mensagem da criação (antes ficavam duas atribuições ativas iguais).
+Rotas e DTOs inalterados; nenhuma migration. RNFs 14.5 e 9.4 aplicadas no .docx em 07/11/2026.
+
+**Validação automatizada (07/11/2026, ambiente do autor):** `dotnet build` 0 erros · `dotnet test`
+= **230 aprovados** (221 + 9: `RF14_PerfilAlteradoTests` 3, Admin rebaixado com 401 e cookie
+apagado em `/api/usuarios` e em `/api/meus-dados` e com o perfil novo ao entrar de novo, nenhum
+perfil alterado com o token antigo, sessão mantida ao salvar sem mudar o perfil;
+`RF9_PessoaInativaSemAcessoTests` 5, uma por recusa, com o banco conferido;
+`RF22_ReativarAtribuicaoTests` 1, recusa com a outra ativa e reativação depois de encerrá-la). Com
+as regras desligadas, 7 dos 8 testes de perfil e de pessoa inativa falham (o oitavo protege contra
+o falso positivo), e o de duplicidade também · `vue-tsc -b` limpo · `npm run test` = 38 arquivos,
+192 casos · `npm run build` ok · `npm run test:e2e` = **25 aprovados** (11 `chromium` + 14
+`mobile`). Suíte completa executada antes (221 / 192 / 25) e depois.
+
+**Ajustes do mesmo dia (07/11/2026).** (a) SonarCloud: a regra `typescript:S9383` passou a ser
+aplicada e apontou 27 promessas não aguardadas (`docs/resultados.md`, seção 8.6); as 27, todas em
+funções síncronas, receberam `void`, sem mudar comportamento. (b) Perfil "Usuário" com acento no
+seletor de Perfil (Novo usuário, Editar usuário e filtro), na coluna Perfil da lista e no
+"Perfil:" da barra do topo; o valor enviado à API continua "Usuario" (`perfis.ts`; `perfis.spec`,
+2 casos). Suíte depois dos ajustes: 230 xUnit, 194 Vitest (39 arquivos), `vue-tsc -b` limpo,
+build ok e 25 Playwright.
+
+**Testes manuais (perfil `https` + `npm run dev`, desktop e 360 × 640), executados pelo autor em
+07/11/2026:** perfil alterado ✔: Admin de teste rebaixado a Professor com a sessão aberta em outra
+janela; a ação seguinte responde 401 com "Seu perfil de acesso foi alterado. Entre novamente."
+(aba Rede) e leva ao login; ao entrar de novo, Meu Painel de Professor e "Este recurso é restrito
+a administradores." em `/usuarios`; salvar a conta sem mudar o perfil (Professor sobre Professor)
+manteve a sessão aberta na outra janela, que continuou no Painel depois de recarregada (sem print)
+· pessoa inativa ✔: criar conta, reativar conta, criar
+atribuição e reativar atribuição com a mensagem no topo do diálogo, também a 360 px; matrícula
+pedida pela API (Console do navegador) com 400 e a mesma mensagem; reativar o cadastro em Pessoas
+e depois a conta funciona, como mostraram os testes seguintes, que criaram atribuição para a pessoa
+reativada e entraram com a conta dela (sem print) · Painel ✔: a turma "G6
+Jovens", de tipo Jovens, no Resumo por turma da gestão e no Meu Painel do professor; depois de
+desativada, o cartão "Minhas turmas" e a lista mostram só as turmas ativas · duplicidade ✔:
+reativar uma atribuição de Auxiliar com outra igual ativa mostra "Esta pessoa já possui uma
+atribuição ativa com esta função neste departamento." Os prints do diálogo Novo usuário são
+anteriores ao ajuste (b) e mostram "Usuario" no seletor.
+
+**Prints (`docs/evidencias/`, 13 arquivos):** `RNF-14.5-401-perfil-alterado.png`,
+`RNF-14.5-novo-perfil-professor.png`, `RNF-9.4-criar-conta.png`, `RNF-9.4-reativar-conta.png`,
+`RNF-9.4-criar-atribuicao.png`, `RNF-9.4-reativar-atribuicao.png`, `RNF-9.4-matricula-api.png`,
+`RNF-9.4-mensagem-360.png`, `RF3-painel-turma-tipo-jovens.png`,
+`RF3-painel-gestao-turmas-ativas.png`, `RF3-painel-professor-tipo-jovens.png`,
+`RF3-painel-professor-turma-desativada.png`, `RF22-reativar-atribuicao-duplicada.png`.
+
+**Anotado no registro do projeto:** decisões e o que explicar na banca; RNFs 14.5 e 9.4 marcadas
+como aplicadas na seção 9 do Plano.

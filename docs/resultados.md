@@ -8,8 +8,9 @@ backup na seção 4), em 03/11/2026 com a Corretiva G2 (um e-mail por pessoa: RN
 na seção 4; RF14 na seção 7) e em 04/11/2026 com a Corretiva G5 (pessoa inativa sem acesso e
 sessão encerrada na hora: RNFs 9.3 e 14.4 na seção 7; diálogos e páginas conferidos a 360 px
 pelos E2E-M4 e E2E-M5) em 05/11/2026 com a análise do SonarCloud depois das corretivas (seção
-8.4) e em 07/11/2026 com os textos da conferência final aplicados no .docx (seção 7) e com a
-análise do SonarCloud depois da Corretiva G6 (seção 8.6).
+8.4) e em 07/11/2026 com os textos da conferência final aplicados no .docx e a Corretiva G6
+(perfil alterado encerra a sessão e pessoa inativa sem acesso nem função: RNFs 14.5 e 9.4 na seção 7)
+e com a análise do SonarCloud depois dela (seção 8.6).
 
 A monografia avalia o sistema por quatro características da ISO/IEC 25010. Este documento reúne
 a evidência de três delas:
@@ -41,7 +42,8 @@ executados pelo autor em 22/10/2026, todos ✔. Os roteiros das entregas de ader
 29 e 30/10/2026, 38 prints) estão nos blocos "Aderência à monografia — Entrega A" a "C" do
 mesmo arquivo, todos ✔; são citados abaixo como "manual aderência Tn". Os da Corretiva G2 (T1 a T8,
 03/11/2026, 12 prints) estão no bloco "Corretiva G2" e são citados como "manual G2 Tn"; os da
-Corretiva G5 (04/11/2026, 22 prints), no bloco "Corretiva G5", citados como "manual G5".
+Corretiva G5 (04/11/2026, 22 prints), no bloco "Corretiva G5", citados como "manual G5"; os da
+Corretiva G6 (07/11/2026, 13 prints), no bloco "Corretiva G6", citados como "manual G6".
 
 **Como ler o resultado de cada caso de uso:**
 
@@ -338,6 +340,10 @@ cobertura do código novo no SonarCloud. As correções de texto foram aplicadas
 | RNF 40.5, CSU22 passo 5, CSU23 precondição e CSU20 passo 5: o texto exigia o aceite do termo em toda ativação; desde a Entrega G a redefinição de acesso de conta com aceite da versão vigente não pede nem grava novo aceite | Texto (conferência final de 05/11/2026) | .docx em 07/11/2026: RNF 40.5 com o caso da redefinição de acesso, CSU22 Fluxo Alternativo 3 "Conta com aceite vigente", precondição do CSU23 e passo 5 do CSU20; `RF42_TermoTests.PrimeiroAcesso_ContaComAceiteVigente_ValidacaoInformaEAtivaSemAceiteSemDuplicar`, `PrimeiroAcesso_ContaComAceiteVigente_VersaoEnviadaNaoDuplica`; `PaginaPrimeiroAcesso.spec` (conta com aceite vigente) |
 | 4.10: a manutenibilidade era declarada "sem medição formal"; o código é acompanhado pela análise estática no SonarCloud (seção 8) | Texto (acréscimo) | .docx em 07/11/2026 ("acompanhada por análise estática do código no SonarCloud, sem avaliação na escala da norma"); a frase correspondente da 5.1 fica para o TCC II |
 | Regras do sistema sem RNF: busca e filtro pela situação da matrícula na lista de alunos; formato do e-mail e do CEP na validação; CSV e impressão do Resumo do dia | Texto (acréscimo) | .docx em 07/11/2026: RNF 28.4 e CSU12 passo 2 (`PaginaMatriculasTurma.spec`, matrículas ativas por padrão, busca e situação); RNFs 4.3, 7.3 e 8.3 com o formato do e-mail e do CEP (`RF4_MeusDadosTests`, CEP com ou sem hífen; `cep.spec`); RNF 38.5 (botões de exportação comuns aos relatórios, `BotoesExportacao.spec`) |
+| RF36: a descrição não dizia como o painel calcula a frequência e as faltas seguidas nem quais alunos lista | Texto (acréscimo) | .docx em 07/11/2026, lote 3 (percentual sobre as aulas Consolidadas com registro de chamada; faltas seguidas contadas da aula Consolidada mais recente até a última presença; só matrícula ativa; lista só atenção ou crítica), o mesmo que a tela explica desde a G5; `RF35_RelatorioTests.Acompanhamento_SoConsolidadas_EListaPendentes`; `PaginaRelatoriosEbd.spec` (regra com os padrões e com os valores digitados) |
+| RF14: o perfil vai dentro do token, e a troca de perfil só valia no próximo login; um Administrador rebaixado mantinha as rotas de Administrador até o token vencer | Texto (acréscimo) e código (decisão do autor, 06/11/2026) | Corretiva G6: RNF 14.5 no .docx em 07/11/2026 ("A alteração do perfil de uma conta encerra as sessões abertas dessa conta; o novo perfil vale a partir do próximo acesso."); o `ContaAtivaMiddleware` compara o perfil do token com o da conta (401 e cookie apagado); `RF14_PerfilAlteradoTests` (3); manual G6 (`RNF-14.5-*.png`, 2). **Atendida** |
+| RF9 / RNF 9.3: com a pessoa inativa, a conta podia ser criada ou reativada, uma atribuição criada ou reativada e a matrícula feita pela API | Texto (acréscimo) e código (decisão do autor, 06 e 07/11/2026) | Corretiva G6: RNF 9.4 no .docx em 07/11/2026 ("Enquanto a pessoa estiver inativa, ela não recebe conta de acesso nem função…"); 400 com "Esta pessoa está inativa. Reative o cadastro em Pessoas antes." nas cinco operações (`Aplicacao/Regras/PessoaInativa`); `RF9_PessoaInativaSemAcessoTests` (5); manual G6 (`RNF-9.4-*.png`, 6). **Atendida** |
+| RF3: o Painel só considerava as turmas de tipo "EBD" (texto livre, RF17); uma turma de outro tipo ficava fora dos números da gestão e do painel do professor | Código (decisão do autor, 06/11/2026) | Corretiva G6: o Painel da gestão e o do professor consideram todas as turmas ativas, e o cartão "Minhas turmas" usa a mesma base da lista; texto do RF3 inalterado; manual G6 (`RF3-painel-*.png`, 4) |
 
 Efeito na tabela da seção 2.1: CSU05 e CSU12 passaram de Parcial a Aprovado, e as lacunas de
 CSU11, CSU18, CSU22 e CSU23 encolheram (seção 2.2). Efeito nas suítes: 170 → 191 xUnit (31
@@ -351,9 +357,11 @@ mudou nas três entregas. A Corretiva G2 acrescentou as duas últimas linhas, co
 `possuiConta` (Pessoas e Meus Dados) e `Email` (PATCH de usuário): 196 → 208 xUnit, 153 → 155 Vitest,
 20 Playwright inalterados. A Corretiva G5 acrescentou as RNFs 9.3 e 14.4, sem mudar rota nem DTO:
 211 → 217 xUnit (35 classes), 182 → 192 Vitest (38 arquivos), 20 → 25 Playwright (E2E-09, E2E-M4
-e E2E-M5). As quatro últimas linhas são textos da conferência final de 05/11/2026,
-aplicados no .docx em 07/11/2026, sem mudança de código; a proposta para o fim da descrição do RF36
-(como o painel calcula a frequência e as faltas seguidas) não entrou e fica para o TCC II.
+e E2E-M5). As linhas da 4.8, da RNF 40.5, da 4.10, das regras sem RNF e do RF36 são textos da
+conferência final de 05/11/2026, aplicados no .docx em 07/11/2026 (o RF36 no lote 3), sem mudança
+de código. A Corretiva G6 (06 e 07/11/2026) acrescentou as RNFs 14.5 e 9.4, aplicadas no .docx
+em 07/11/2026, e o Painel com todas as turmas ativas, sem mudar rota nem DTO: 221 → 230 xUnit
+(38 classes), com 192 Vitest e 25 Playwright inalterados.
 
 ## 8. Análise estática (SonarCloud)
 
