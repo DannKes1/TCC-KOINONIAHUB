@@ -81,20 +81,20 @@ const historicoPresencas = ref<HistoricoPresencaPessoaVM[]>([]);
 const minhasTurmas = ref<MinhaTurmaVM[]>([]);
 
 function abrirPessoas() {
-  router.push("/pessoas");
+  void router.push("/pessoas");
 }
 
 function abrirTurmas() {
-  router.push("/departamentos");
+  void router.push("/departamentos");
 }
 
 function abrirRelatorios() {
-  router.push("/relatorios/ebd");
+  void router.push("/relatorios/ebd");
 }
 
 // Página da Turma (RF20); sem aba na URL, abre Aulas.
 function abrirAulasDaTurma(departamentoId: number) {
-  router.push(`/departamentos/${departamentoId}`);
+  void router.push(`/departamentos/${departamentoId}`);
 }
 
 function abrirTurma(turma: { departamentoId: number }) {
@@ -109,11 +109,11 @@ function ehVinculoAluno(turma: MinhaTurmaVM) {
 }
 
 function abrirMinhaFrequencia(turma: MinhaTurmaVM) {
-  router.push(`/departamentos/${turma.departamentoId}/minha-frequencia`);
+  void router.push(`/departamentos/${turma.departamentoId}/minha-frequencia`);
 }
 
 function abrirChamada(aulaId: number) {
-  router.push(`/aulas/${aulaId}/chamada`);
+  void router.push(`/aulas/${aulaId}/chamada`);
 }
 
 function formatarData(valor?: string | null) {

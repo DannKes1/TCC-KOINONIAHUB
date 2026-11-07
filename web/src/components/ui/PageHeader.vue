@@ -25,7 +25,7 @@ const somenteAcoes = computed(
 
 function voltar() {
   if (props.voltarPara) {
-    router.push(props.voltarPara);
+    void router.push(props.voltarPara);
   }
 }
 </script>

@@ -66,7 +66,7 @@ const abaAtual = computed(() => {
 
 function irParaAba(valor: string | number) {
   const destino = `/departamentos/${departamentoId.value}/${String(valor)}`;
-  if (route.path !== destino) router.push(destino);
+  if (route.path !== destino) void router.push(destino);
 }
 
 // Gestão volta para a lista de turmas; professor/auxiliar, para Minhas Turmas.

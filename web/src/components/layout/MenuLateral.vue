@@ -25,8 +25,8 @@ function estaAtivo(caminho: string) {
 }
 
 function sair() {
-  autenticacao.sair();
-  router.push("/login");
+  void autenticacao.sair();
+  void router.push("/login");
 }
 </script>
 

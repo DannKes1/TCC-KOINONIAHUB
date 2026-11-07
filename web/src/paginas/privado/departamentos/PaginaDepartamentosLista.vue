@@ -141,19 +141,19 @@ function abrirMenu(event: Event, dep: DepartamentoVM) {
 }
 
 function abrirTurma(dep: DepartamentoVM) {
-  router.push(`/departamentos/${dep.id}`);
+  void router.push(`/departamentos/${dep.id}`);
 }
 function abrirMatriculas(dep: DepartamentoVM) {
-  router.push(`/departamentos/${dep.id}/matriculas`);
+  void router.push(`/departamentos/${dep.id}/matriculas`);
 }
 function abrirMaterias(dep: DepartamentoVM) {
-  router.push(`/departamentos/${dep.id}/materias`);
+  void router.push(`/departamentos/${dep.id}/materias`);
 }
 function abrirAulas(dep: DepartamentoVM) {
-  router.push(`/departamentos/${dep.id}/aulas`);
+  void router.push(`/departamentos/${dep.id}/aulas`);
 }
 function abrirAtribuicoes(dep: DepartamentoVM) {
-  router.push(`/departamentos/${dep.id}/atribuicoes`);
+  void router.push(`/departamentos/${dep.id}/atribuicoes`);
 }
 
 function limparFormulario() {

@@ -360,16 +360,16 @@ function buscar() {
 
 function carregarAbaSeVazia() {
   if (abaAtiva.value === "resumo") {
-    if (!resumo.value) buscarResumo();
+    if (!resumo.value) void buscarResumo();
     return;
   }
   if (!filtroValido.value) return;
   if (abaAtiva.value === "frequencia" && !frequencia.value) {
-    buscarFrequencia();
+    void buscarFrequencia();
   } else if (abaAtiva.value === "acompanhamento" && !acompanhamento.value) {
-    buscarAcompanhamento();
+    void buscarAcompanhamento();
   } else if (abaAtiva.value === "ranking" && !ranking.value) {
-    buscarRanking();
+    void buscarRanking();
   }
 }
 

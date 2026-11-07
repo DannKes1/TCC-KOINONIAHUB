@@ -336,7 +336,7 @@ function limparFiltros() {
   busca.value = "";
   filtroFuncao.value = null;
   filtroAtivo.value = FILTRO_ATIVO_PADRAO;
-  carregarAtribuicoes();
+  void carregarAtribuicoes();
 }
 
 onMounted(carregarTela);

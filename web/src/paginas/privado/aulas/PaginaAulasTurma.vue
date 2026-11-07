@@ -159,11 +159,11 @@ limparAoFechar(dialogAberto);
 limparAoAlterar(form);
 
 function abrirChamada(aula: AulaVM) {
-  router.push(`/aulas/${aula.id}/chamada`);
+  void router.push(`/aulas/${aula.id}/chamada`);
 }
 
 function abrirPresencas(aula: AulaVM) {
-  router.push(`/aulas/${aula.id}/presencas`);
+  void router.push(`/aulas/${aula.id}/presencas`);
 }
 
 function rotuloChamada(aula: AulaVM) {

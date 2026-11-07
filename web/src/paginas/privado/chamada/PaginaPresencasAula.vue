@@ -97,7 +97,7 @@ function severityPresenca(presente: boolean) {
 }
 
 function abrirChamada() {
-  router.push(`/aulas/${aulaId}/chamada`);
+  void router.push(`/aulas/${aulaId}/chamada`);
 }
 
 const totalRegistros = computed(() => presencas.value.length);

@@ -80,7 +80,7 @@ function voltar() {
     router.back();
     return;
   }
-  router.push("/");
+  void router.push("/");
 }
 </script>
 

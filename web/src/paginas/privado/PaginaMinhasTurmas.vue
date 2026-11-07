@@ -47,12 +47,12 @@ async function carregar() {
 }
 
 function verFrequencia(t: MinhaTurmaVM) {
-  router.push(`/departamentos/${t.departamentoId}/minha-frequencia`);
+  void router.push(`/departamentos/${t.departamentoId}/minha-frequencia`);
 }
 
 // Página da Turma (RF20); sem aba na URL, abre Aulas.
 function abrirTurma(t: MinhaTurmaVM) {
-  router.push(`/departamentos/${t.departamentoId}`);
+  void router.push(`/departamentos/${t.departamentoId}`);
 }
 
 onMounted(carregar);

@@ -139,7 +139,7 @@ async function definirSenha() {
 }
 
 function irParaLogin() {
-  router.push("/login");
+  void router.push("/login");
 }
 </script>
 
