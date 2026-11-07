@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { usarAutenticacaoStore } from "../../aplicacao/armazenamentos/autenticacaoStore";
+import { rotuloPerfil } from "../../aplicacao/dominio/perfis";
 import logoIPB2 from "../../assets/LOGOIPB2.png";
 
 const autenticacao = usarAutenticacaoStore();
@@ -39,7 +40,7 @@ const emit = defineEmits<{ (e: "abrir-menu"): void }>();
         {{ autenticacao.emailUsuario || "Usuário" }}
       </div>
       <div class="header-usuario-perfil">
-        Perfil: {{ autenticacao.perfil || "-" }}
+        Perfil: {{ rotuloPerfil(autenticacao.perfil) || "-" }}
       </div>
     </div>
   </header>

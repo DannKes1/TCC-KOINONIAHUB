@@ -22,6 +22,7 @@ import {
   gerarConviteUsuario,
 } from "../../../aplicacao/servicos/usuariosServico";
 import { resumirTermoUsuario } from "../../../aplicacao/dominio/termoUsuario";
+import { rotuloPerfil } from "../../../aplicacao/dominio/perfis";
 
 import type { PessoaVM, UsuarioVM } from "../../../aplicacao/modelos/dtos";
 
@@ -72,7 +73,7 @@ const opcoesPerfil = [
   { label: "Pastor", value: "Pastor" },
   { label: "Superintendente", value: "Superintendente" },
   { label: "Professor", value: "Professor" },
-  { label: "Usuario", value: "Usuario" },
+  { label: rotuloPerfil("Usuario"), value: "Usuario" },
 ];
 
 const opcoesStatus = [
@@ -498,7 +499,7 @@ onMounted(carregarDados);
 
         <Column header="Perfil" style="width: 140px">
           <template #body="{ data }">
-            <Tag :value="data.perfil" :severity="severityPerfil(data.perfil)" />
+            <Tag :value="rotuloPerfil(data.perfil)" :severity="severityPerfil(data.perfil)" />
           </template>
         </Column>
 
