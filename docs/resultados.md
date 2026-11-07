@@ -7,8 +7,9 @@ de aderência à monografia (A a D, 28 a 31/10/2026; seção 7) e com a análise
 backup na seção 4), em 03/11/2026 com a Corretiva G2 (um e-mail por pessoa: RNFs 7.6, 8.4 e 13.5
 na seção 4; RF14 na seção 7) e em 04/11/2026 com a Corretiva G5 (pessoa inativa sem acesso e
 sessão encerrada na hora: RNFs 9.3 e 14.4 na seção 7; diálogos e páginas conferidos a 360 px
-pelos E2E-M4 e E2E-M5) e em 05/11/2026 com a análise do SonarCloud depois das corretivas (seção
-8.4).
+pelos E2E-M4 e E2E-M5) em 05/11/2026 com a análise do SonarCloud depois das corretivas (seção
+8.4) e em 07/11/2026 com os textos da conferência final aplicados no .docx (seção 7) e com a
+análise do SonarCloud depois da Corretiva G6 (seção 8.6).
 
 A monografia avalia o sistema por quatro características da ISO/IEC 25010. Este documento reúne
 a evidência de três delas:
@@ -25,12 +26,12 @@ código no SonarCloud, evidência complementar de Segurança, Confiabilidade e M
 
 ## 1. Base da avaliação
 
-**Suítes automatizadas** (todas verdes em 05/11/2026):
+**Suítes automatizadas** (todas verdes em 07/11/2026):
 
 | Ferramenta | Camada | Casos |
 | --- | --- | --- |
-| xUnit + WebApplicationFactory + SQLite em memória | API (regras, autorização, integridade) | 221 (35 classes) |
-| Vitest + @vue/test-utils | Front (funções, componentes, guardas de rota) | 192 (38 arquivos) |
+| xUnit + WebApplicationFactory + SQLite em memória | API (regras, autorização, integridade) | 230 (38 classes) |
+| Vitest + @vue/test-utils | Front (funções, componentes, guardas de rota) | 194 (39 arquivos) |
 | Playwright | Fluxos ponta a ponta, desktop e celular 360 × 640 | 25 (11 `chromium` + 14 `mobile`) |
 
 **Testes manuais**: registrados por etapa em `docs/testes.md`, com o passo, o resultado esperado,
@@ -333,6 +334,10 @@ cobertura do código novo no SonarCloud. As correções de texto foram aplicadas
 | RF14: "o e-mail não é alterado após a criação"; o Administrador precisa corrigir o e-mail de acesso de uma conta | Texto e código (decisão do autor, 03/11/2026) | RF14 reescrito no .docx em 03/11 ("Permite alterar o perfil, a situação (ativo/inativo) e o e-mail de acesso de um usuário; a senha só é redefinida por convite (RF15)."); `PATCH /api/usuarios/{id}` aceita `Email` com a recusa cruzada e a global, iguala o cadastro e invalida o convite pendente; `RF13_UsuarioTests` (+3 de RF14); `PaginaUsuariosLista.spec` (+1); manual G2 T6 |
 | CSU16 FA2 / RF9: inativar a pessoa encerrava matrículas e atribuições, mas a conta de acesso continuava ativa e a pessoa inativa ainda entrava no sistema | Texto (acréscimo) e código (decisão do autor, 04/11/2026) | Corretiva G5: RNF 9.3 e CSU16 FA2, passo 2, no .docx em 05/11/2026 (inativar a pessoa inativa também a conta de acesso, se houver, e descarta o convite pendente; reativar a pessoa não reativa a conta; não se inativa o próprio cadastro nem a pessoa do único administrador ativo); `PessoaServico.AtualizarAsync` inativa a conta e descarta o convite na mesma gravação, recusa o próprio cadastro e a pessoa do último Admin ativo (400); `RF9_InativarPessoaContaTests` (4 dos 6 casos), `PaginaPessoasLista.spec` (1), E2E-09; manual G5 (`RF9-*.png`, 9). **Atendida** |
 | RF14: só as operações de turma conferiam se a conta continuava ativa; nas demais rotas uma sessão aberta seguia válida até o token expirar | Texto (acréscimo) e código (decisão do autor, 04/11/2026) | Corretiva G5: RNF 14.4 no .docx em 05/11/2026 ("A inativação da conta bloqueia o acesso imediatamente, mesmo com sessão aberta: toda requisição autenticada de uma conta inativa é recusada e a sessão é encerrada."); `Aplicacao/Seguranca/ContaAtivaMiddleware` confere a conta em toda requisição autenticada a endpoint não público (401 e cookie apagado), rotas públicas abertas; `RF9_InativarPessoaContaTests.ContaInativadaComTokenValido_Recebe401EmRotaAutenticada`, `ContaInativada_RotaPublicaContinuaRespondendo`; manual G5 (`RNF-14.4-sessao-encerrada.png`). **Atendida** |
+| 4.8: o `SameSite=None` era justificado por cliente e API em origens distintas; na implantação os dois estão no mesmo domínio, atrás do proxy reverso | Texto (conferência final de 05/11/2026) | .docx em 07/11/2026 (o `None` permite publicar em origens distintas; na implantação adotada, mesmo domínio atrás de um proxy reverso, com as duas medidas contra CSRF valendo; Lax ou Strict em versão futura); `RF2_OrigemTests` (8), `RF2_ProxyReversoTests` (2) |
+| RNF 40.5, CSU22 passo 5, CSU23 precondição e CSU20 passo 5: o texto exigia o aceite do termo em toda ativação; desde a Entrega G a redefinição de acesso de conta com aceite da versão vigente não pede nem grava novo aceite | Texto (conferência final de 05/11/2026) | .docx em 07/11/2026: RNF 40.5 com o caso da redefinição de acesso, CSU22 Fluxo Alternativo 3 "Conta com aceite vigente", precondição do CSU23 e passo 5 do CSU20; `RF42_TermoTests.PrimeiroAcesso_ContaComAceiteVigente_ValidacaoInformaEAtivaSemAceiteSemDuplicar`, `PrimeiroAcesso_ContaComAceiteVigente_VersaoEnviadaNaoDuplica`; `PaginaPrimeiroAcesso.spec` (conta com aceite vigente) |
+| 4.10: a manutenibilidade era declarada "sem medição formal"; o código é acompanhado pela análise estática no SonarCloud (seção 8) | Texto (acréscimo) | .docx em 07/11/2026 ("acompanhada por análise estática do código no SonarCloud, sem avaliação na escala da norma"); a frase correspondente da 5.1 fica para o TCC II |
+| Regras do sistema sem RNF: busca e filtro pela situação da matrícula na lista de alunos; formato do e-mail e do CEP na validação; CSV e impressão do Resumo do dia | Texto (acréscimo) | .docx em 07/11/2026: RNF 28.4 e CSU12 passo 2 (`PaginaMatriculasTurma.spec`, matrículas ativas por padrão, busca e situação); RNFs 4.3, 7.3 e 8.3 com o formato do e-mail e do CEP (`RF4_MeusDadosTests`, CEP com ou sem hífen; `cep.spec`); RNF 38.5 (botões de exportação comuns aos relatórios, `BotoesExportacao.spec`) |
 
 Efeito na tabela da seção 2.1: CSU05 e CSU12 passaram de Parcial a Aprovado, e as lacunas de
 CSU11, CSU18, CSU22 e CSU23 encolheram (seção 2.2). Efeito nas suítes: 170 → 191 xUnit (31
@@ -346,15 +351,17 @@ mudou nas três entregas. A Corretiva G2 acrescentou as duas últimas linhas, co
 `possuiConta` (Pessoas e Meus Dados) e `Email` (PATCH de usuário): 196 → 208 xUnit, 153 → 155 Vitest,
 20 Playwright inalterados. A Corretiva G5 acrescentou as RNFs 9.3 e 14.4, sem mudar rota nem DTO:
 211 → 217 xUnit (35 classes), 182 → 192 Vitest (38 arquivos), 20 → 25 Playwright (E2E-09, E2E-M4
-e E2E-M5).
+e E2E-M5). As quatro últimas linhas são textos da conferência final de 05/11/2026,
+aplicados no .docx em 07/11/2026, sem mudança de código; a proposta para o fim da descrição do RF36
+(como o painel calcula a frequência e as faltas seguidas) não entrou e fica para o TCC II.
 
 ## 8. Análise estática (SonarCloud)
 
 Os testes provam o comportamento executando o sistema; a análise estática lê o código sem
 executá-lo e aponta padrões de defeito, de vulnerabilidade e de manutenção difícil. Uma não
 substitui a outra: a monografia avalia Segurança e Confiabilidade por testes técnicos (5.1) e
-declara a Manutenibilidade sem medição formal (4.10); os números desta seção entram no texto como
-evidência complementar.
+acompanha a Manutenibilidade pela análise estática, sem avaliação na escala da norma (4.10, texto de
+07/11/2026); os números desta seção entram no texto como evidência complementar.
 
 **Como a análise roda.** Desde 23/10/2026, o workflow `.github/workflows/sonarcloud.yml` repete
 num `ubuntu-24.04`, a cada push e pull request para a main, o build, os testes com cobertura e o
@@ -559,7 +566,42 @@ no bundle publicado.
 plugin de rotas da vue-router 5.4 pedem Node mais novo (22.22.2 e 22.18). As suítes passaram mesmo
 assim. O CI usa Node 24, e a imagem de build do front, `node:22` atual.
 
-### 8.6 Prints (`docs/evidencias/`, prefixo `SONAR-`)
+### 8.6 Análise de 07/11/2026 (Corretiva G6 e regra S9383)
+
+Na análise do commit `3a1a599` (07/11/2026, Corretiva G6), o Quality Gate do Web reprovou por
+Reliability C no código novo, com um único BUG: a regra `typescript:S9383` ("Promises should not
+be left unhandled") no `router.push("/")` de `PaginaTermo.vue`, linha 83. A regra passou a ser
+aplicada nessa análise: o histórico do projeto tem 0 bugs até 06/11/2026 e 27 em 07/11/2026,
+todos da S9383, em linhas escritas de agosto a novembro. A causa não foi a atualização da
+vue-router (seção 8.5): o `router.push` já devolvia `Promise` na 5.0.3, e as análises de 06/11,
+já com a 5.4.0, não tinham nenhum bug. Só a linha 83, de 03/11/2026, estava no período do código
+novo; as outras 26 estavam em código antigo, que não entra no gate.
+
+As 27 foram corrigidas no mesmo dia (commit `916b2ce`): 21 `router.push` e 6 chamadas de carga
+(sair do sistema, recarregar as atribuições e as quatro buscas dos relatórios), todas em funções
+síncronas, receberam `void`, o mesmo padrão que o código já usava para promessas não aguardadas.
+Nenhum comportamento mudou. Na análise seguinte (commit `bbcb85a`, 07/11/2026), os dois Quality
+Gates passaram e nenhum apontamento da S9383 ficou aberto.
+
+| Métrica | API | Web |
+| --- | --- | --- |
+| Quality Gate | **Passed** | **Passed** |
+| Linhas de código | 7.064 | 14.567 |
+| Security · Reliability · Maintainability | **A** · **A** · **A** (0 vulnerabilidades, 0 bugs) | **A** · **A** · **A** (0 vulnerabilidades, 0 bugs) |
+| Security Hotspots | 0 | 0 |
+| Cobertura total | **82,4 %** | 65,5 % |
+| Cobertura do código novo | **91,6 %** sobre 249 linhas | **85,7 %** sobre 408 linhas |
+| Duplicação total | 2,4 % | 0,8 % |
+| Duplicação do código novo | **1,9 %** sobre 2.516 linhas | **0,13 %** sobre 4,5 mil linhas |
+| Apontamentos novos | — | 0 |
+| Testes importados | 230 | não importados (só o lcov) |
+
+Suítes nessa data: 230 xUnit, 194 Vitest (39 arquivos), `vue-tsc -b` limpo, build ok e 25
+Playwright. A cobertura total da API subiu de 80,7 % (seção 8.4) para 82,4 % com os testes da
+G6. O código novo é contado desde a versão de referência de 23/10/2026. Prints: `SONAR-api-07-11.png`
+(visão geral da API) e `SONAR-web-07-11.png` (código novo do Web).
+
+### 8.7 Prints (`docs/evidencias/`, prefixo `SONAR-`)
 
 - Primeira análise (17): `SONAR-actions-verde.png`, `SONAR-api-log.png`, `SONAR-api-log-testes.png`,
   `SONAR-api-overview.png`, `-reliability.png`, `-maintainability.png`, `-hotspots.png`,
@@ -571,8 +613,9 @@ assim. O CI usa Node 24, e a imagem de build do front, `node:22` atual.
   `SONAR-correcao-web-overview.png`, `-summary.png`, `-reliability.png`, `-maintainability.png`,
   `-issues-abertas.png`; `SONAR-correcao-api-quality-gate.png`.
 - Aderência (2): `SONAR-aderencia-web-quality-gate.png`, `SONAR-aderencia-api-quality-gate.png`.
+- Análise de 07/11/2026 (2): `SONAR-api-07-11.png`, `SONAR-web-07-11.png`.
 
-### 8.7 Leitura para o texto do TCC
+### 8.8 Leitura para o texto do TCC
 
 - Security, Reliability e Maintainability do SonarCloud conversam com Segurança, Confiabilidade e
   Manutenibilidade da ISO/IEC 25010 (seção 4.10), mas a nota vem do apontamento mais grave, não
@@ -585,3 +628,6 @@ assim. O CI usa Node 24, e a imagem de build do front, `node:22` atual.
   futuros.
 - O CI num Linux com fuso UTC e cultura invariante prova, a cada push, que a regra de datas
   ("instante em UTC, dia no fuso da igreja") e o CSV não dependem do ambiente do autor.
+- O perfil de regras do SonarCloud muda com o tempo: em 07/11/2026 uma regra passou a apontar 27
+  linhas sem que o código tivesse mudado. O gate só reprovou pela linha que estava no código
+  novo, e as 27 foram corrigidas no mesmo dia (seção 8.6).
