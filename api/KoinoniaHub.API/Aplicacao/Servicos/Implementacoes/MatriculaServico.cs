@@ -1,5 +1,6 @@
 ﻿using KoinoniaHub.API.Aplicacao.DTOs.Requisicoes;
 using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
+using KoinoniaHub.API.Aplicacao.Regras;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
 using KoinoniaHub.API.Dominio.Entidades;
 using KoinoniaHub.API.Dominio.Interfaces.Repositorios;
@@ -35,6 +36,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (pessoa is null)
                 throw new InvalidOperationException("Pessoa não encontrada para esta igreja.");
 
+            // Corretiva G6 (RNF 9.4 proposta): a lista de disponíveis já escondia a pessoa
+            // inativa; a API passa a recusar também a matrícula pedida diretamente.
+            PessoaInativa.Recusar(pessoa);
 
             var existenteAtiva = await _repositorio.ObterAtivaAsync(igrejaId, departamentoId, dto.PessoaId);
             if (existenteAtiva is not null)

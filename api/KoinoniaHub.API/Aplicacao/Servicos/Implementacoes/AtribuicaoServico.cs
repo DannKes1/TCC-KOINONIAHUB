@@ -1,5 +1,6 @@
 ﻿using KoinoniaHub.API.Aplicacao.DTOs.Requisicoes;
 using KoinoniaHub.API.Aplicacao.DTOs.Respostas;
+using KoinoniaHub.API.Aplicacao.Regras;
 using KoinoniaHub.API.Aplicacao.Servicos.Interfaces;
 using KoinoniaHub.API.Dominio.Entidades;
 using KoinoniaHub.API.Dominio.Interfaces.Repositorios;
@@ -10,6 +11,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 {
     public class AtribuicaoServico : IAtribuicaoServico
     {
+        private const string MensagemDuplicada =
+            "Esta pessoa já possui uma atribuição ativa com esta função neste departamento.";
+
         private readonly IAtribuicaoRepositorio _repositorio;
         private readonly KoinoniaHubDbContext _db;
 
@@ -37,7 +41,10 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (pessoa is null)
                 throw new InvalidOperationException("Pessoa não encontrada para esta igreja.");
 
-            // Impedir duplicidade ativa 
+            // Corretiva G6 (RNF 9.4 proposta): pessoa inativa não recebe função.
+            PessoaInativa.Recusar(pessoa);
+
+            // Impedir duplicidade ativa
             var existeAtiva = await _db.Atribuicoes.AnyAsync(a =>
                 a.Ativo &&
                 a.DepartamentoId == dto.DepartamentoId &&
@@ -46,7 +53,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 a.Departamento.IgrejaId == igrejaId);
 
             if (existeAtiva)
-                throw new InvalidOperationException("Esta pessoa já possui uma atribuição ativa com esta função neste departamento.");
+                throw new InvalidOperationException(MensagemDuplicada);
 
             var atribuicao = new Atribuicao
             {
@@ -93,8 +100,17 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             var funcao = dto.Funcao.Trim();
 
-           
-            if (atrib.Ativo && dto.Ativo)
+            // Corretiva G6 (RNF 9.4 proposta): reativar a atribuição devolveria a função a uma
+            // pessoa inativa.
+            if (!atrib.Ativo && dto.Ativo)
+            {
+                var pessoa = await _db.Pessoas.AsNoTracking().FirstOrDefaultAsync(p => p.Id == atrib.PessoaId);
+                PessoaInativa.Recusar(pessoa);
+            }
+
+            // A duplicidade vale também ao reativar uma atribuição encerrada: com outra igual já
+            // ativa, a recusa é a mesma da criação (antes ficavam duas atribuições ativas iguais).
+            if (dto.Ativo)
             {
                 var duplicada = await _db.Atribuicoes.AnyAsync(a =>
                     a.Id != atribuicaoId &&
@@ -103,6 +119,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                     a.PessoaId == atrib.PessoaId &&
                     a.Funcao.ToLower() == funcao.ToLower() &&
                     a.Departamento.IgrejaId == igrejaId);
+
+                if (duplicada && !atrib.Ativo)
+                    throw new InvalidOperationException(MensagemDuplicada);
 
                 if (duplicada)
                     throw new InvalidOperationException("Já existe uma atribuição ativa com esta função para esta pessoa neste departamento.");

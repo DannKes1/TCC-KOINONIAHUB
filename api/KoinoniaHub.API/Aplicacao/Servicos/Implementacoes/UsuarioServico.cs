@@ -41,6 +41,9 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
             if (pessoa is null)
                 throw new InvalidOperationException("Pessoa não encontrada para esta igreja.");
 
+            // Corretiva G6 (RNF 9.4 proposta): pessoa inativa não recebe acesso.
+            PessoaInativa.Recusar(pessoa);
+
             //  Não permitir 2 usuários vinculados à mesma Pessoa (regra prática)
             var jaTemUsuarioParaPessoa = await _db.Usuarios
                 .AnyAsync(u => u.IgrejaId == igrejaId && u.PessoaId == dto.PessoaId);
@@ -184,6 +187,12 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
 
             if (dto.Ativo.HasValue && !dto.Ativo.Value && usuarioId == usuarioLogadoId)
                 throw new InvalidOperationException("Você não pode desativar o seu próprio usuário.");
+
+            // Corretiva G6 (RNF 9.4 proposta): reativar a conta de uma pessoa inativa devolveria
+            // o acesso; primeiro se reativa o cadastro em Pessoas (a reativação da pessoa não
+            // reativa a conta, RNF 9.3).
+            if (dto.Ativo == true && !usuario.Ativo)
+                PessoaInativa.Recusar(usuario.Pessoa);
 
             var perdeAdmin = usuario.Ativo && usuario.Perfil == Perfis.Admin &&
                 ((dto.Ativo.HasValue && !dto.Ativo.Value) ||
