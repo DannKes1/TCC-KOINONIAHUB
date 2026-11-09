@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using KoinoniaHub.API.Tests.Infraestrutura;
 
@@ -60,6 +61,43 @@ namespace KoinoniaHub.API.Tests
             var resposta = await professor.GetAsync($"/api/departamentos/{cenario.TurmaSemAtribuicaoId}/pessoas-disponiveis");
 
             Assert.Equal(HttpStatusCode.Forbidden, resposta.StatusCode);
+        }
+
+        // CSU12 FA2, primeira frase: pessoa inativa não é oferecida entre as disponíveis para
+        // matrícula, nem na lista reduzida do Professor nem na completa do Admin (a recusa da
+        // matrícula pela API, RNF 9.4, está em RF9_PessoaInativaSemAcessoTests). O Aluno Fora
+        // não tem matrícula na turma A; inativado pela própria API (PUT /api/pessoas), só a
+        // situação do cadastro o tira da lista, e as outras pessoas ativas continuam nela.
+        [Fact]
+        public async Task PessoasDisponiveis_PessoaInativa_NaoApareceEntreAsDisponiveis()
+        {
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf28d");
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+            var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
+            var rota = $"/api/departamentos/{cenario.TurmaComAtribuicaoId}/pessoas-disponiveis";
+
+            Assert.Contains(cenario.AlunoForaId, await IdsDisponiveisAsync(professor, rota));
+            Assert.Contains(cenario.AlunoForaId, await IdsDisponiveisAsync(admin, rota));
+
+            var inativar = await admin.PutAsJsonAsync($"/api/pessoas/{cenario.AlunoForaId}", new { Nome = "Aluno Fora rf28d", Situacao = "Inativo" });
+            Assert.Equal(HttpStatusCode.NoContent, inativar.StatusCode);
+
+            var paraOProfessor = await IdsDisponiveisAsync(professor, rota);
+            var paraOAdmin = await IdsDisponiveisAsync(admin, rota);
+
+            Assert.DoesNotContain(cenario.AlunoForaId, paraOProfessor);
+            Assert.DoesNotContain(cenario.AlunoForaId, paraOAdmin);
+            Assert.Contains(cenario.UsuarioComumPessoaId, paraOProfessor);
+            Assert.Contains(cenario.UsuarioComumPessoaId, paraOAdmin);
+        }
+
+        private static async Task<List<int>> IdsDisponiveisAsync(HttpClient cliente, string rota)
+        {
+            var resposta = await cliente.GetAsync(rota);
+            Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+
+            using var json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+            return json.RootElement.EnumerateArray().Select(item => item.GetProperty("id").GetInt32()).ToList();
         }
     }
 }
