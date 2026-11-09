@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { usarAutenticacaoStore } from "../../aplicacao/armazenamentos/autenticacaoStore";
 import { registrarAdminApi } from "../../aplicacao/servicos/authServico";
@@ -11,8 +11,7 @@ import type {
 
 import FieldError from "../../components/ui/FieldError.vue";
 import TermoUsoSigilo from "../../components/termo/TermoUsoSigilo.vue";
-import { firstFieldError } from "../../aplicacao/servicos/apiError";
-import { useAsync } from "../../aplicacao/composables/useAsync";
+import { usarFormularioDialogo } from "../../aplicacao/composables/usarFormularioDialogo";
 
 import logoIPB2 from "../../assets/LOGOIPB2.png";
 
@@ -23,7 +22,18 @@ import Button from "primevue/button";
 const router = useRouter();
 const autenticacao = usarAutenticacaoStore();
 
-const { carregando, erro, fieldErrors, run, clearErrors } = useAsync();
+// CSU01 FA1: validação no mesmo padrão de Meus Dados e Igreja (Corretiva G5). A mensagem
+// local fica junto a cada campo, com a chave do campo no DTO da API (`Igreja.Nome`,
+// `NomeAdmin`...), e os erros somem ao alterar qualquer campo. A linha geral fica acima do
+// botão, no fim de um formulário mais alto que a janela; por isso ela continua visível
+// mesmo quando o erro da API já está junto a um campo, para quem clicou em Concluir saber
+// que precisa voltar aos campos.
+const {
+  salvando, erro, executar, errosLocais, limpar, erroDoCampo, semErrosLocais,
+} = usarFormularioDialogo();
+
+const avisoLocal = ref("");
+const avisoDoFormulario = computed(() => avisoLocal.value || erro.value);
 
 const nomeIgreja = ref<string>("");
 const cidade = ref<string>("");
@@ -49,7 +59,17 @@ const igrejaDoFormulario = computed<TermoIgrejaVM>(() => ({
 }));
 
 const podeConcluir = computed(
-  () => Boolean(termo.value) && aceiteTermo.value && !carregando.value,
+  () => Boolean(termo.value) && aceiteTermo.value && !salvando.value,
+);
+
+function limparErrosDoFormulario() {
+  limpar();
+  avisoLocal.value = "";
+}
+
+watch(
+  [nomeIgreja, cidade, estado, emailIgreja, nomeAdmin, emailAdmin, senhaAdmin],
+  limparErrosDoFormulario,
 );
 
 onMounted(async () => {
@@ -64,28 +84,34 @@ onMounted(async () => {
   }
 });
 
-function validarRapido(): string {
-  if (!nomeIgreja.value.trim()) return "Informe o nome da igreja.";
-  if (!nomeAdmin.value.trim()) return "Informe o nome do administrador.";
-  if (!emailAdmin.value.trim()) return "Informe o e-mail do administrador.";
-  if (!senhaAdmin.value) return "Informe a senha do administrador.";
-  if (senhaAdmin.value.length < 6)
-    return "A senha deve ter pelo menos 6 caracteres.";
-  if (!termo.value || !aceiteTermo.value)
-    return "É necessário aceitar o Termo de Uso e Sigilo para concluir.";
-  return "";
+function validarLocal(): boolean {
+  limpar();
+
+  if (!nomeIgreja.value.trim()) errosLocais["Igreja.Nome"] = "Informe o nome da igreja.";
+  if (!nomeAdmin.value.trim()) errosLocais.NomeAdmin = "Informe o nome do administrador.";
+  if (!emailAdmin.value.trim()) errosLocais.EmailAdmin = "Informe o e-mail do administrador.";
+  if (!senhaAdmin.value) errosLocais.SenhaAdmin = "Informe a senha do administrador.";
+  else if (senhaAdmin.value.length < 6)
+    errosLocais.SenhaAdmin = "A senha deve ter pelo menos 6 caracteres.";
+
+  return semErrosLocais();
 }
 
 async function concluirCadastro(): Promise<void> {
-  clearErrors();
+  limparErrosDoFormulario();
 
-  const msg = validarRapido();
-  if (msg) {
-    erro.value = msg;
+  if (!validarLocal()) {
+    avisoLocal.value = "Corrija os campos destacados.";
     return;
   }
 
-  await run(async () => {
+  // Sem o aceite o botão fica desabilitado (CSU01 FA2); a guarda cobre o termo que não carregou.
+  if (!termo.value || !aceiteTermo.value) {
+    avisoLocal.value = "É necessário aceitar o Termo de Uso e Sigilo para concluir.";
+    return;
+  }
+
+  await executar(async () => {
     const resposta = await registrarAdminApi({
       Igreja: {
         Nome: nomeIgreja.value.trim(),
@@ -153,12 +179,8 @@ async function concluirCadastro(): Promise<void> {
                   data-testid="cadastro-nome-igreja"
                 />
                 <FieldError
-                  :texto="
-                    firstFieldError(fieldErrors, 'Igreja.Nome') ||
-                    firstFieldError(fieldErrors, 'igreja.Nome') ||
-                    firstFieldError(fieldErrors, 'Nome') ||
-                    firstFieldError(fieldErrors, 'nome')
-                  "
+                  data-testid="cadastro-nome-igreja-erro"
+                  :texto="erroDoCampo('Igreja.Nome')"
                 />
               </div>
 
@@ -173,12 +195,8 @@ async function concluirCadastro(): Promise<void> {
                   data-testid="cadastro-cidade"
                 />
                 <FieldError
-                  :texto="
-                    firstFieldError(fieldErrors, 'Igreja.Cidade') ||
-                    firstFieldError(fieldErrors, 'igreja.Cidade') ||
-                    firstFieldError(fieldErrors, 'Cidade') ||
-                    firstFieldError(fieldErrors, 'cidade')
-                  "
+                  data-testid="cadastro-cidade-erro"
+                  :texto="erroDoCampo('Igreja.Cidade')"
                 />
               </div>
 
@@ -193,12 +211,8 @@ async function concluirCadastro(): Promise<void> {
                   data-testid="cadastro-estado"
                 />
                 <FieldError
-                  :texto="
-                    firstFieldError(fieldErrors, 'Igreja.Estado') ||
-                    firstFieldError(fieldErrors, 'igreja.Estado') ||
-                    firstFieldError(fieldErrors, 'Estado') ||
-                    firstFieldError(fieldErrors, 'estado')
-                  "
+                  data-testid="cadastro-estado-erro"
+                  :texto="erroDoCampo('Igreja.Estado')"
                 />
               </div>
 
@@ -213,12 +227,8 @@ async function concluirCadastro(): Promise<void> {
                   data-testid="cadastro-email-igreja"
                 />
                 <FieldError
-                  :texto="
-                    firstFieldError(fieldErrors, 'Igreja.Email') ||
-                    firstFieldError(fieldErrors, 'igreja.Email') ||
-                    firstFieldError(fieldErrors, 'Email') ||
-                    firstFieldError(fieldErrors, 'email')
-                  "
+                  data-testid="cadastro-email-igreja-erro"
+                  :texto="erroDoCampo('Igreja.Email')"
                 />
               </div>
             </div>
@@ -239,10 +249,8 @@ async function concluirCadastro(): Promise<void> {
                   data-testid="cadastro-nome-admin"
                 />
                 <FieldError
-                  :texto="
-                    firstFieldError(fieldErrors, 'NomeAdmin') ||
-                    firstFieldError(fieldErrors, 'nomeAdmin')
-                  "
+                  data-testid="cadastro-nome-admin-erro"
+                  :texto="erroDoCampo('NomeAdmin')"
                 />
               </div>
 
@@ -257,10 +265,8 @@ async function concluirCadastro(): Promise<void> {
                   data-testid="cadastro-email-admin"
                 />
                 <FieldError
-                  :texto="
-                    firstFieldError(fieldErrors, 'EmailAdmin') ||
-                    firstFieldError(fieldErrors, 'emailAdmin')
-                  "
+                  data-testid="cadastro-email-admin-erro"
+                  :texto="erroDoCampo('EmailAdmin')"
                 />
               </div>
 
@@ -278,10 +284,8 @@ async function concluirCadastro(): Promise<void> {
                   style="width: 100%"
                 />
                 <FieldError
-                  :texto="
-                    firstFieldError(fieldErrors, 'SenhaAdmin') ||
-                    firstFieldError(fieldErrors, 'senhaAdmin')
-                  "
+                  data-testid="cadastro-senha-admin-erro"
+                  :texto="erroDoCampo('SenhaAdmin')"
                 />
               </div>
             </div>
@@ -299,14 +303,16 @@ async function concluirCadastro(): Promise<void> {
             />
           </section>
 
-          <small v-if="erro" class="login-erro">{{ erro }}</small>
+          <small v-if="avisoDoFormulario" class="login-erro" data-testid="cadastro-erro">
+            {{ avisoDoFormulario }}
+          </small>
 
           <Button
             label="Concluir Cadastro"
             icon="pi pi-check"
             class="login-botao"
             data-testid="cadastro-concluir"
-            :loading="carregando"
+            :loading="salvando"
             :disabled="!podeConcluir"
             @click="concluirCadastro"
           />
