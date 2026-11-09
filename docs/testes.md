@@ -2281,8 +2281,8 @@ sem nome: erro junto ao campo, sem toast; nome repetido: aviso no topo do diálo
 some ao digitar · T3 ✔ Nova Matéria sem nome: erro junto ao campo; Nova aula vazia: erros em
 Data, Matéria e Professor · T4 ✔ Nova Atribuição sem pessoa: erro junto ao campo; pessoa já
 atribuída: aviso no topo do diálogo; Matricular sem pessoa: erro junto ao campo · T5 ✔
-Parentescos: Parente e Relacionamento obrigatórios junto aos campos; vínculo repetido: aviso no
-topo do diálogo, nada no topo da página · T6 ✔ Importar CSV com erro da API: aviso no topo do
+Parentescos: Parente e Relacionamento obrigatórios junto aos campos; vínculo repetido: a pessoa já
+vinculada não aparece na busca do seletor Parente ("No results found") · T6 ✔ Importar CSV com erro da API: aviso no topo do
 diálogo, acima das instruções; importação só com linhas ignoradas: só o relatório, sem toast ·
 T7 ✔ Igreja sem nome: erro junto ao campo; Meus Dados com UF "ROO": erro junto ao campo e
 "Corrija os campos destacados." no topo do formulário · T8 ✔ Novo usuário vazio: erros em
@@ -2489,3 +2489,44 @@ anteriores ao ajuste (b) e mostram "Usuario" no seletor.
 
 **Anotado no registro do projeto:** decisões e o que explicar na banca; RNFs 14.5 e 9.4 marcadas
 como aplicadas na seção 9 do Plano.
+
+## Conferência de 08/11/2026: pessoa inativa fora das disponíveis, matrículas encerradas ao inativar e Cadastro Inicial com o erro junto ao campo
+
+**Escopo.** Conferência do `docs/resultados.md` para o TCC 2. (1) CSU12 FA2: teste da pessoa inativa
+fora das pessoas disponíveis para matrícula (`RF28_DisponiveisTests`). (2) CSU16 FA2, passo 2: teste
+das matrículas encerradas com a data de saída ao inativar a pessoa, com as presenças preservadas
+(`RF9_InativarPessoaContaTests`). Os dois sem mudança de código de produção: o filtro e o
+encerramento já existiam. (3) CSU01 FA1: no Cadastro Inicial, a validação da tela mostra a mensagem
+junto a cada campo (antes, uma mensagem única abaixo do formulário), no padrão das demais telas
+(`usarFormularioDialogo`), com "Corrija os campos destacados." acima do botão; com erro da API por
+campo, a linha acima do botão mantém a mensagem geral da API, porque o formulário é mais alto que a
+janela. API, rotas, DTOs e texto da monografia inalterados. (4) `docs/resultados.md`: 20 Aprovados e
+4 Parciais; RNFs 9.3, 9.4, 14.4 e 14.5 na seção 3 (32 linhas; 28 cobertas e 4 parciais); contagens
+pelas listas das suítes; citações conferidas contra os testes, os prints e a monografia.
+
+**Validação automatizada (08/11/2026, ambiente do autor):** `dotnet build` 0 erros · `dotnet test` =
+**235 aprovados** (233 + 2: `RF28_DisponiveisTests.PessoasDisponiveis_PessoaInativa_NaoApareceEntreAsDisponiveis`
+e `RF9_InativarPessoaContaTests.InativarPessoa_EncerraAsMatriculasComDataDeSaidaEPreservaAsPresencas`;
+com o filtro de situação ou o encerramento das matrículas retirado do serviço, o caso correspondente
+falha) · `vue-tsc -b` limpo · `npm run test` = 39 arquivos, **196 casos** (194 + 2 em
+`PaginaCadastroInicial.spec`; com a página anterior, os dois falham) · `npm run build` ok ·
+`npm run test:e2e` = **25 aprovados** (11 `chromium` + 14 `mobile`; o E2E-01 passa pela tela
+alterada).
+
+**Testes manuais (perfil `https` + `npm run dev`, desktop e 360 × 640), executados pelo autor em
+08/11/2026:** T1 ✔ Cadastro Inicial com Nome da igreja, Nome e E-mail do administrador vazios e senha
+`abc`: "Informe o nome da igreja.", "Informe o nome do administrador.", "Informe o e-mail do
+administrador." e "A senha deve ter pelo menos 6 caracteres." junto aos campos, "Corrija os campos
+destacados." acima do botão e nenhuma chamada a `registrar-admin`; as mensagens somem ao digitar ·
+T2 ✔ o mesmo a 360 × 640, sem rolagem lateral · T3 ✔ e-mail da igreja `contato@`: 400 da API,
+"Informe um e-mail válido." junto ao campo e "Alguns campos enviados são inválidos. Verifique os
+dados e tente novamente." acima do botão; somem ao corrigir · T4 ✔ pessoa de teste entre as
+disponíveis em Matricular; inativada em Pessoas, não aparece mais na busca da lista.
+
+**Prints (`docs/evidencias/`, 4 arquivos):** `RF1-cadastro-erros-junto-aos-campos.png`,
+`RF1-cadastro-erros-360.png`, `RF1-cadastro-email-invalido-api.png`,
+`RF28-disponiveis-sem-pessoa-inativa.png`.
+
+**Registro corrigido no mesmo dia:** o T5 da Corretiva G4 dizia "vínculo repetido: aviso no topo do
+diálogo"; o print `UI-g4-parentesco-erro.png` mostra o que foi feito, e o texto passou a descrever
+isso: a pessoa já vinculada não aparece na busca do seletor Parente ("No results found").
