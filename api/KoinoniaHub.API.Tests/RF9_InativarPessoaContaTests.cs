@@ -136,6 +136,49 @@ namespace KoinoniaHub.API.Tests
 
         // ---------- apoio ----------
 
+        // CSU16 FA2, passo 2: inativar a pessoa encerra as matrículas ativas com a data de saída
+        // (a mesma da inativação) e preserva o histórico de presenças. O Aluno Dentro do cenário
+        // tem matrícula ativa em duas turmas, com uma presença em cada.
+        [Fact]
+        public async Task InativarPessoa_EncerraAsMatriculasComDataDeSaidaEPreservaAsPresencas()
+        {
+            var cenario = await CenarioAcessoPessoa.CriarAsync(_fabrica, "rf9g");
+            var admin = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailAdmin);
+
+            using (var escopo = _fabrica.Services.CreateScope())
+            {
+                var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+                var antes = await db.AlunosDepartamentos.AsNoTracking()
+                    .Where(m => m.PessoaId == cenario.AlunoDentroId).ToListAsync();
+                Assert.Equal(2, antes.Count);
+                Assert.All(antes, m => { Assert.True(m.Ativo); Assert.Null(m.DataSaida); });
+            }
+
+            var resposta = await admin.PutAsJsonAsync($"/api/pessoas/{cenario.AlunoDentroId}", new { Nome = "Aluno Dentro rf9g", Situacao = "Inativo" });
+            Assert.Equal(HttpStatusCode.NoContent, resposta.StatusCode);
+
+            using (var escopo = _fabrica.Services.CreateScope())
+            {
+                var db = escopo.ServiceProvider.GetRequiredService<KoinoniaHubDbContext>();
+                var pessoa = await db.Pessoas.AsNoTracking().SingleAsync(p => p.Id == cenario.AlunoDentroId);
+                Assert.Equal("Inativo", pessoa.Situacao);
+                Assert.NotNull(pessoa.DataInativacao);
+
+                var depois = await db.AlunosDepartamentos.AsNoTracking()
+                    .Where(m => m.PessoaId == cenario.AlunoDentroId).ToListAsync();
+                Assert.Equal(2, depois.Count);
+                Assert.All(depois, m =>
+                {
+                    Assert.False(m.Ativo);
+                    Assert.Equal(pessoa.DataInativacao, m.DataSaida);
+                });
+
+                var presencas = await db.Presencas.AsNoTracking()
+                    .CountAsync(p => p.AlunoDepartamento.PessoaId == cenario.AlunoDentroId);
+                Assert.Equal(2, presencas);
+            }
+        }
+
         private async Task<HttpResponseMessage> LoginAsync(string email)
         {
             return await _fabrica.CreateClient().PostAsJsonAsync("/api/auth/login", new { Email = email, Senha = CenarioAcessoPessoa.Senha });
