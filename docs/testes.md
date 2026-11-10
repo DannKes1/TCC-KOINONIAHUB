@@ -2563,3 +2563,38 @@ fixo se comportar como absoluto, preso ao documento e não à tela.
 **Prints (`docs/evidencias/`, 2 arquivos):** `RF3-menu-celular-antes-da-correcao.jpeg` (iPhone,
 09/11/2026, 18:22, antes da alteração) e `RF3-menu-celular-apos-tentativa.jpeg` (iPhone,
 09/11/2026, 22:21, depois da publicação).
+
+## Menu em gaveta no celular: segunda tentativa, sem correção (10/11/2026)
+
+**Mudança.** O layout das telas internas passou de `min-height: 100vh` para `min-height: 100%`
+(`web/src/components/layout/LayoutPrincipal.vue`, commit `54d56de`), publicado em 10/11/2026 às
+00:11. Hipótese testada: no iPhone, `100vh` é maior que a área visível com as barras do Safari
+abertas, e o corpo da página rolava por isso. Antes da mudança, a busca por `transform`, `filter`,
+`perspective`, `will-change`, `contain` e `backdrop-filter` nos ancestrais do cabeçalho e do menu
+(`html`, `body`, `#app`, `.layout`) não encontrou nenhuma dessas propriedades, o que descartou a
+outra hipótese da primeira tentativa. Só CSS; nenhuma tela, rota ou API mudou.
+
+**Validação automatizada (10/11/2026):** `vue-tsc -b` limpo · `npm run test` = 39 arquivos,
+**196 casos** · `npm run build` ok · `npm run test:e2e` = **25 aprovados** (11 `chromium` + 14
+`mobile`; o E2E-M1 abre o menu e o E2E-M5 confere as páginas a 360 px).
+
+**Teste no iPhone, depois da publicação (10/11/2026, 00:29 a 00:30):** com as barras do Safari
+visíveis, a máscara e o menu vão até o fim da área visível, encostados na barra inferior; nesse
+estado, o botão Sair fica parcialmente atrás da barra inferior (print das barras visíveis) · com as
+barras recolhidas pela rolagem, a faixa embaixo da máscara aparece, no Painel e na lista de
+alunos, e o Sair aparece inteiro (print da segunda tentativa, no Painel).
+
+**Conclusão.** A hipótese do `100vh` não explica o defeito: o Painel também é página longa (tem as
+tabelas de aulas e de turmas) e rola como a lista de alunos. A máscara parece manter a altura da
+área visível com as barras abertas e não acompanhar o recolhimento delas.
+
+**Situação: defeito conhecido de apresentação, sem efeito funcional.** O menu continua utilizável.
+As duas alterações (máscara com `top: 0; bottom: 0` e layout com `min-height: 100%`) ficam no
+código; os testes automatizados, inclusive os de ponta a ponta, confirmam que nada piorou. Sem
+novas tentativas antes da banca. Candidatos para depois, um de cada vez e com teste no iPhone: (1)
+dimensionar a máscara pela área grande da tela (`100lvh`); (2) desligar o bloqueio de rolagem do
+Drawer ao abrir (`blockScroll`).
+
+**Prints (`docs/evidencias/`, 2 arquivos):** `RF3-menu-celular-barras-visiveis.jpeg` (iPhone,
+10/11/2026, 00:29, barras visíveis) e `RF3-menu-celular-segunda-tentativa.jpeg` (iPhone,
+10/11/2026, 00:30, barras recolhidas, Painel).
