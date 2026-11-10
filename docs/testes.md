@@ -2533,11 +2533,11 @@ isso: a pessoa já vinculada não aparece na busca do seletor Parente ("No resul
 
 ## Menu em gaveta no celular: tentativa de correção e defeito conhecido (09/11/2026)
 
-**Defeito.** No Safari do iPhone, com a página rolada, o menu em gaveta e a máscara cinza param
-antes do fim da tela, e a página aparece numa faixa embaixo, por cima da borda do menu. Antes de
-abrir o menu, a página inteira já rolou cerca de 70 px no Safari (o cabeçalho verde sai
-parcialmente da tela), e a faixa que sobra embaixo da máscara tem a mesma altura. No Chrome a
-360 px o corpo da página não rola e o defeito não aparece.
+**Defeito.** No Chrome do iPhone (no iOS, o mesmo motor WebKit do Safari), com a página rolada,
+o menu em gaveta e a máscara cinza param antes do fim da tela, e a página aparece numa faixa embaixo, por cima da borda do menu. Antes de
+abrir o menu, a página inteira já rolou cerca de 70 px no Chrome do iPhone (o cabeçalho verde sai
+parcialmente da tela), e a faixa que sobra embaixo da máscara tem a mesma altura. No Chrome do
+computador a 360 px o corpo da página não rola e o defeito não aparece.
 
 **Tentativa de correção.** A máscara do Drawer (PrimeVue 4) tinha `height: 100%`; passou a ficar
 presa no topo e no fim da área visível (`top: 0; bottom: 0; height: auto`, em `web/src/style.css`,
@@ -2550,25 +2550,25 @@ menu a 360 px). No Chromium a 360 × 640, a máscara e o menu vão do topo ao fi
 acompanham a janela aumentada para 720 px com o menu aberto (conferência com o Playwright). Nada
 piorou.
 
-**Teste no iPhone, depois da publicação (09/11/2026, 22:21):** o defeito persiste, igual ao de
+**Teste no Chrome do iPhone, depois da publicação (09/11/2026, 22:21):** o defeito persiste, igual ao de
 antes da alteração.
 
 **Situação: defeito conhecido de apresentação, sem efeito funcional.** O menu continua utilizável:
 todos os itens e o Sair aparecem e funcionam, e a faixa embaixo é só visual. Hipóteses para a
 correção futura: (1) a altura de `100vh` no layout deixa o corpo da página rolar no iOS, cuja
-altura de `100vh` inclui a área da barra de endereço; os cerca de 70 px que a página rola batem
+altura de `100vh` inclui a área da barra de endereço do Chrome; os cerca de 70 px que a página rola batem
 com a faixa que sobra embaixo da máscara; (2) um `transform` em algum ancestral faz o elemento
 fixo se comportar como absoluto, preso ao documento e não à tela.
 
-**Prints (`docs/evidencias/`, 2 arquivos):** `RF3-menu-celular-antes-da-correcao.jpeg` (iPhone,
-09/11/2026, 18:22, antes da alteração) e `RF3-menu-celular-apos-tentativa.jpeg` (iPhone,
-09/11/2026, 22:21, depois da publicação).
+**Prints (`docs/evidencias/`, 2 arquivos):** `RF3-menu-celular-antes-da-correcao.jpeg` (Chrome do
+iPhone, 09/11/2026, 18:22, antes da alteração) e `RF3-menu-celular-apos-tentativa.jpeg` (Chrome do
+iPhone, 09/11/2026, 22:21, depois da publicação).
 
 ## Menu em gaveta no celular: segunda tentativa, sem correção (10/11/2026)
 
 **Mudança.** O layout das telas internas passou de `min-height: 100vh` para `min-height: 100%`
 (`web/src/components/layout/LayoutPrincipal.vue`, commit `54d56de`), publicado em 10/11/2026 às
-00:11. Hipótese testada: no iPhone, `100vh` é maior que a área visível com as barras do Safari
+00:11. Hipótese testada: no iPhone, `100vh` é maior que a área visível com as barras do Chrome
 abertas, e o corpo da página rolava por isso. Antes da mudança, a busca por `transform`, `filter`,
 `perspective`, `will-change`, `contain` e `backdrop-filter` nos ancestrais do cabeçalho e do menu
 (`html`, `body`, `#app`, `.layout`) não encontrou nenhuma dessas propriedades, o que descartou a
@@ -2578,8 +2578,8 @@ outra hipótese da primeira tentativa. Só CSS; nenhuma tela, rota ou API mudou.
 **196 casos** · `npm run build` ok · `npm run test:e2e` = **25 aprovados** (11 `chromium` + 14
 `mobile`; o E2E-M1 abre o menu e o E2E-M5 confere as páginas a 360 px).
 
-**Teste no iPhone, depois da publicação (10/11/2026, 00:29 a 00:30):** com as barras do Safari
-visíveis, a máscara e o menu vão até o fim da área visível, encostados na barra inferior; nesse
+**Teste no Chrome do iPhone (no iOS, o mesmo motor WebKit do Safari), depois da publicação
+(10/11/2026, 00:29 a 00:30):** com as barras do Chrome visíveis, a máscara e o menu vão até o fim da área visível, encostados na barra inferior do Chrome; nesse
 estado, o botão Sair fica parcialmente atrás da barra inferior (print das barras visíveis) · com as
 barras recolhidas pela rolagem, a faixa embaixo da máscara aparece, no Painel e na lista de
 alunos, e o Sair aparece inteiro (print da segunda tentativa, no Painel).
@@ -2591,10 +2591,40 @@ tabelas de aulas e de turmas) e rola como a lista de alunos. A máscara parece m
 **Situação: defeito conhecido de apresentação, sem efeito funcional.** O menu continua utilizável.
 As duas alterações (máscara com `top: 0; bottom: 0` e layout com `min-height: 100%`) ficam no
 código; os testes automatizados, inclusive os de ponta a ponta, confirmam que nada piorou. Sem
-novas tentativas antes da banca. Candidatos para depois, um de cada vez e com teste no iPhone: (1)
+novas tentativas antes da banca. Candidatos para depois, um de cada vez e com teste no Chrome do
+iPhone: (1)
 dimensionar a máscara pela área grande da tela (`100lvh`); (2) desligar o bloqueio de rolagem do
 Drawer ao abrir (`blockScroll`).
 
-**Prints (`docs/evidencias/`, 2 arquivos):** `RF3-menu-celular-barras-visiveis.jpeg` (iPhone,
-10/11/2026, 00:29, barras visíveis) e `RF3-menu-celular-segunda-tentativa.jpeg` (iPhone,
-10/11/2026, 00:30, barras recolhidas, Painel).
+**Prints (`docs/evidencias/`, 2 arquivos):** `RF3-menu-celular-barras-visiveis.jpeg` (Chrome do
+iPhone, 10/11/2026, 00:29, barras visíveis) e `RF3-menu-celular-segunda-tentativa.jpeg` (Chrome do
+iPhone, 10/11/2026, 00:30, barras recolhidas, Painel).
+
+## Menu em gaveta no celular: defeito restrito ao Chrome do iOS (10/11/2026)
+
+**Navegador dos testes anteriores.** Os testes das duas tentativas (blocos de 09/11 e de 10/11,
+acima) e o vídeo abaixo foram feitos no Chrome do iPhone (no iOS, o mesmo motor WebKit do Safari);
+as barras citadas nesses blocos são as do Chrome.
+
+**Vídeo no Chrome do iPhone (10/11/2026, 00:55), com o código no ar (commit `54d56de`) e o menu
+aberto.** Três sintomas, um por quadro: (1) faixa: com as barras recolhidas, a máscara e o menu
+param antes do fim da tela; (2) fundo rola: arrastar faz a página de fundo rolar, porque o
+bloqueio de rolagem do Drawer não segura no iOS; (3) esticado: ao rolar dentro do menu, a lista
+estica e volta como elástico. Com as barras visíveis, a lista do menu rola até o Sair: o Sair é
+alcançável.
+
+**Teste no Safari do iPhone, com o mesmo código (10/11/2026, 01:13 a 01:16):** S1 ✔ com a barra
+recolhida, o menu vai até o fim da área da página, sem a faixa e com o Sair inteiro · S3 ✔ o Sair
+leva à tela de login.
+
+**Situação: defeito conhecido de apresentação restrito ao Chrome do iOS, sem efeito funcional.** O
+menu continua utilizável nos dois navegadores, e no Safari o defeito não aparece. Sem novas
+tentativas antes da banca: uma correção para o Chrome arrisca quebrar o Safari, que funciona com o
+código atual. Candidatos para depois da banca, um de cada vez e sempre testando no Chrome e no
+Safari do iPhone: `overscroll-behavior: contain` no conteúdo do menu, `touch-action: none` na
+máscara e o bloqueio de rolagem do Drawer ao abrir (`blockScroll`).
+
+**Prints (`docs/evidencias/`, 4 arquivos):** `RF3-menu-celular-video-faixa.jpeg`,
+`RF3-menu-celular-video-fundo-rola.jpeg` e `RF3-menu-celular-video-esticado.jpeg` (quadros do vídeo
+no Chrome do iPhone, 10/11/2026, 00:55) e `RF3-menu-safari-barras-recolhidas.jpeg` (Safari do
+iPhone, 10/11/2026, 01:13 a 01:16).
