@@ -2530,3 +2530,36 @@ disponíveis em Matricular; inativada em Pessoas, não aparece mais na busca da 
 **Registro corrigido no mesmo dia:** o T5 da Corretiva G4 dizia "vínculo repetido: aviso no topo do
 diálogo"; o print `UI-g4-parentesco-erro.png` mostra o que foi feito, e o texto passou a descrever
 isso: a pessoa já vinculada não aparece na busca do seletor Parente ("No results found").
+
+## Menu em gaveta no celular: tentativa de correção e defeito conhecido (09/11/2026)
+
+**Defeito.** No Safari do iPhone, com a página rolada, o menu em gaveta e a máscara cinza param
+antes do fim da tela, e a página aparece numa faixa embaixo, por cima da borda do menu. Antes de
+abrir o menu, a página inteira já rolou cerca de 70 px no Safari (o cabeçalho verde sai
+parcialmente da tela), e a faixa que sobra embaixo da máscara tem a mesma altura. No Chrome a
+360 px o corpo da página não rola e o defeito não aparece.
+
+**Tentativa de correção.** A máscara do Drawer (PrimeVue 4) tinha `height: 100%`; passou a ficar
+presa no topo e no fim da área visível (`top: 0; bottom: 0; height: auto`, em `web/src/style.css`,
+commit `bf8e99b`), publicada no servidor em 09/11/2026 às 22:05. Só CSS; nenhuma tela, rota ou API
+mudou.
+
+**Validação automatizada (09/11/2026):** `vue-tsc -b` limpo · `npm run test` = 39 arquivos,
+**196 casos** · `npm run test:e2e` = **25 aprovados** (11 `chromium` + 14 `mobile`; o E2E-M1 abre o
+menu a 360 px). No Chromium a 360 × 640, a máscara e o menu vão do topo ao fim da janela (640 px) e
+acompanham a janela aumentada para 720 px com o menu aberto (conferência com o Playwright). Nada
+piorou.
+
+**Teste no iPhone, depois da publicação (09/11/2026, 22:21):** o defeito persiste, igual ao de
+antes da alteração.
+
+**Situação: defeito conhecido de apresentação, sem efeito funcional.** O menu continua utilizável:
+todos os itens e o Sair aparecem e funcionam, e a faixa embaixo é só visual. Hipóteses para a
+correção futura: (1) a altura de `100vh` no layout deixa o corpo da página rolar no iOS, cuja
+altura de `100vh` inclui a área da barra de endereço; os cerca de 70 px que a página rola batem
+com a faixa que sobra embaixo da máscara; (2) um `transform` em algum ancestral faz o elemento
+fixo se comportar como absoluto, preso ao documento e não à tela.
+
+**Prints (`docs/evidencias/`, 2 arquivos):** `RF3-menu-celular-antes-da-correcao.jpeg` (iPhone,
+09/11/2026, 18:22, antes da alteração) e `RF3-menu-celular-apos-tentativa.jpeg` (iPhone,
+09/11/2026, 22:21, depois da publicação).
