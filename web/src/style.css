@@ -671,3 +671,20 @@ body {
     top: 12px;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Menu em gaveta no celular (Drawer do PrimeVue).                     */
+/* No Safari do iPhone, com a barra de endereço recolhida, um elemento */
+/* fixo com height: 100% fica com a altura da tela de quando a barra   */
+/* aparecia: a máscara e o menu paravam antes do fim e a página        */
+/* aparecia embaixo. Ancorada em cima e embaixo, a máscara acompanha a */
+/* área visível, e o menu (height: 100% da máscara) vai junto. Duas    */
+/* classes: o CSS do PrimeVue entra na página depois deste arquivo.   */
+/* ------------------------------------------------------------------ */
+
+.p-drawer-mask.p-overlay-mask {
+  top: 0;
+  bottom: 0;
+  height: auto;
+}
+
