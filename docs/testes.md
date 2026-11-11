@@ -2628,3 +2628,26 @@ máscara e o bloqueio de rolagem do Drawer ao abrir (`blockScroll`).
 `RF3-menu-celular-video-fundo-rola.jpeg` e `RF3-menu-celular-video-esticado.jpeg` (quadros do vídeo
 no Chrome do iPhone, 10/11/2026, 00:55) e `RF3-menu-safari-barras-recolhidas.jpeg` (Safari do
 iPhone, 10/11/2026, 01:13 a 01:16).
+
+## Alinhamento dos botões da coluna Ações da lista de aulas (10/11/2026)
+
+**Escopo.** Ajuste cosmético na aba Aulas da Página da Turma. No desktop, o botão "Fazer chamada"
+(134 px) era mais largo que "Ver chamada" (121 px), e o ⋮ das linhas mudava de posição em 13 px.
+Os dois botões passaram a ter a mesma largura mínima (140 px), e o ⋮ fica na mesma posição em todas
+as linhas (`web/src/paginas/privado/aulas/PaginaAulasTurma.vue`, só CSS, commit `055d149`),
+publicado no servidor em 10/11/2026 por volta das 21h20. Abaixo de 768 px, nos cartões, o botão já
+ocupava o espaço que sobra (246 px a 360 px) e nada mudou. Nenhum texto, comportamento, rota ou
+API mudou.
+
+**Validação automatizada (10/11/2026):** `vue-tsc -b` limpo · `npm run test` = 39 arquivos,
+**196 casos** · `npm run build` ok · `npm run test:e2e` = **25 aprovados** (11 `chromium` + 14
+`mobile`). Medição no navegador, com uma aula de cada situação na mesma turma: no desktop, os dois
+botões com 140 px e o ⋮ na mesma posição nas duas linhas; a 360 px, botões de 246 px, ⋮ na mesma
+posição e largura do documento igual à da janela.
+
+**Testes manuais, executados pelo autor em 10/11/2026:** T1 ✔ desktop: "Fazer chamada" e "Ver
+chamada" com a mesma largura e o ⋮ alinhado em todas as linhas · T2 ✔ 360 × 640: cartões com o
+botão na largura disponível, o ⋮ alinhado e sem rolagem lateral.
+
+**Prints (`docs/evidencias/`, 2 arquivos):** `RF31-acoes-alinhadas-desktop.png`,
+`RF31-acoes-alinhadas-360.png`.
