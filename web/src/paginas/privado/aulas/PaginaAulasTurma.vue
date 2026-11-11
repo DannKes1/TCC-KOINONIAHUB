@@ -714,3 +714,13 @@ onMounted(carregarTudo);
     </Dialog>
   </div>
 </template>
+
+<style scoped>
+/* Coluna Ações: "Fazer chamada" e "Ver chamada" com a mesma largura mínima, para o ⋮
+   ficar na mesma posição em todas as linhas da tabela (desktop). Nos cartões (abaixo de
+   768 px) o botão já ocupa o espaço que sobra, mais largo que este mínimo. */
+[data-testid="aula-chamada"] {
+  min-width: 140px;
+  justify-content: center;
+}
+</style>
