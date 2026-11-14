@@ -23,7 +23,8 @@ import type { MenuItem } from "primevue/menuitem";
 
 // RF34 / CSU10 — consulta dos registros já salvos de uma aula. Corretiva da 6.4-B:
 // mesmo padrão da Chamada nos dois layouts — cabeçalho com a situação, "Ver
-// chamada" e ⋮ (Recarregar); indicadores com o CardIndicador do projeto; um cartão
+// chamada" e ⋮ (Recarregar); indicadores com o CardIndicador do projeto (Registros,
+// Presentes, Ausentes e, desde o ajuste A3, Visitantes); um cartão
 // por aluno, em grade no desktop e em uma coluna no celular.
 const route = useRoute();
 const router = useRouter();
@@ -110,6 +111,10 @@ const totalAusentes = computed(
   () => presencas.value.filter((item) => !item.presente).length,
 );
 
+// Ajuste A3: o total de visitantes que a chamada gravou na aula (RF32). Já vem em
+// GET /api/aulas/{id}; visitantes não têm matrícula, então não entram em Registros.
+const totalVisitantes = computed(() => aula.value?.quantidadeVisitantes ?? 0);
+
 async function carregarTela() {
   await run(async () => {
     const [aulaCarregada, presencasCarregadas] = await Promise.all([
@@ -173,6 +178,12 @@ onMounted(carregarTela);
         :valor="totalAusentes"
         icone="pi pi-times-circle"
         :tom="totalAusentes > 0 ? 'perigo' : 'padrao'"
+      />
+      <CardIndicador
+        rotulo="Visitantes"
+        :valor="totalVisitantes"
+        icone="pi pi-user-plus"
+        data-testid="presencas-visitantes"
       />
     </div>
 

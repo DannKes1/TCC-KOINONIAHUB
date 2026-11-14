@@ -19,10 +19,30 @@ test("E2E-06 reabertura: Admin reabre aula consolidada, presenças preservadas, 
   await page.goto(`/departamentos/${turma.id}/aulas`);
   const linhaAula = page.locator("tr", { hasText: turma.tema });
   await expect(linhaAula.getByTestId("tag-situacao")).toHaveText("Consolidada");
-  await expect(linhaAula.getByTestId("aula-chamada")).toHaveText(/Ver chamada/);
+  // Ajuste A4: na aula Consolidada o botão principal é "Ver presenças", em uma
+  // linha só e com o ⋮ na mesma altura.
+  const botaoPrincipal = linhaAula.getByTestId("aula-chamada");
+  await expect(botaoPrincipal).toHaveText(/^\s*Ver presenças\s*$/);
+  const caixaBotao = (await botaoPrincipal.boundingBox())!;
+  const caixaMenu = (await linhaAula.getByTestId("menu-acoes").boundingBox())!;
+  expect(caixaBotao.height, "botão principal em uma linha").toBeLessThanOrEqual(44);
+  // Botão e ⋮ centrados na mesma linha. Antes do ajuste A4, a diferença de centros
+  // medida era 0 px a 1366, 1280 e 360 px; 1 px de folga para arredondamento.
+  const diferencaCentros = Math.abs(
+    caixaBotao.y + caixaBotao.height / 2 - (caixaMenu.y + caixaMenu.height / 2),
+  );
+  expect(diferencaCentros, "⋮ na mesma linha do botão").toBeLessThanOrEqual(1);
+
+  // O botão abre as presenças registradas (CSU09 FA4); o ⋮ não repete o item.
+  await botaoPrincipal.click();
+  await page.waitForURL((url) => url.pathname === `/aulas/${turma.aulaId}/presencas`);
+  await expect(page.getByTestId("presencas-indicadores")).toBeVisible();
+  await page.goBack();
+  await expect(linhaAula.getByTestId("tag-situacao")).toHaveText("Consolidada");
 
   // ⋮ → Reabrir aula → confirmação que promete preservar os registros.
   await linhaAula.getByTestId("menu-acoes").click();
+  await expect(page.getByRole("menuitem", { name: "Ver presenças registradas" })).toHaveCount(0);
   await page.getByRole("menuitem", { name: "Reabrir aula" }).click();
   const confirmacao = page.locator(".p-confirmdialog");
   await expect(confirmacao).toContainText("os registros de presença serão preservados");

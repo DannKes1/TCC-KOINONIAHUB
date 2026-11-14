@@ -13,13 +13,18 @@ import {
   atualizarAula,
   criarAula,
   excluirAula,
+  listarAulasPorDepartamento,
 } from "../../../aplicacao/servicos/aulasServico";
 
 // Etapa 6.5 (RF45 / CSU09 FA1–FA3): no ⋮ da aba Aulas, "Editar aula" só em aula
 // Em aberto e "Excluir aula" só em aula Em aberto sem registro de presença; o
 // diálogo de nova aula serve à edição e a exclusão passa pela confirmação comum.
+// Ajuste A4: na aula Consolidada o botão principal é "Ver presenças" e abre
+// as presenças (CSU09 FA4); o item de mesmo nome sai do ⋮. Os casos do A4 alternam entre
+// cartões (padrão) e a tabela do desktop.
+const compacta = ref(true);
 vi.mock("../../../aplicacao/composables/usarTelaCompacta", () => ({
-  usarTelaCompacta: () => ref(true),
+  usarTelaCompacta: () => compacta,
 }));
 
 const requireConfirmacao = vi.fn<(opcoes: OpcoesConfirmacao) => void>();
@@ -107,7 +112,7 @@ async function montar() {
     },
   });
   await flushPromises();
-  return { wrapper, recarregarResumo };
+  return { wrapper, recarregarResumo, router };
 }
 
 // Rótulos que o ⋮ de um cartão oferece (o MenuAcoes já filtra `visible`).
@@ -167,6 +172,54 @@ describe("PaginaAulasTurma — Editar e Excluir aula Em aberto (RF45, 6.5)", () 
     wrapperAtual?.unmount();
     wrapperAtual = null;
     document.body.innerHTML = "";
+    compacta.value = true;
+  });
+
+  it("Aula Consolidada: o botão principal é 'Ver presenças', abre as presenças e o ⋮ não repete o item (CSU09 FA4)", async () => {
+    const { wrapper, router } = await montar();
+    wrapperAtual = wrapper;
+
+    const botoes = wrapper.findAll('[data-testid="aula-chamada"]');
+    expect(botoes[2]!.text()).toBe("Ver presenças");
+    expect(rotulosDoMenu(wrapper, 2)).not.toContain("Ver presenças registradas");
+
+    await botoes[2]!.trigger("click");
+    await flushPromises();
+    expect(router.currentRoute.value.path).toBe("/aulas/4/presencas");
+  });
+
+  it("Em aberto e Não realizada não mudam: 'Fazer chamada' e 'Ver chamada' abrem a chamada, e o ⋮ mantém 'Ver presenças registradas'", async () => {
+    vi.mocked(listarAulasPorDepartamento).mockResolvedValueOnce([
+      aula(18, { tema: "Aberta" }),
+      aula(9, { tema: "Sem aula", situacao: "NaoRealizada" }),
+    ] as never);
+    const { wrapper, router } = await montar();
+    wrapperAtual = wrapper;
+
+    const botoes = wrapper.findAll('[data-testid="aula-chamada"]');
+    expect(botoes.map((b) => b.text())).toEqual(["Fazer chamada", "Ver chamada"]);
+    expect(rotulosDoMenu(wrapper, 0)).toContain("Ver presenças registradas");
+    expect(rotulosDoMenu(wrapper, 1)).toContain("Ver presenças registradas");
+
+    await botoes[1]!.trigger("click");
+    await flushPromises();
+    expect(router.currentRoute.value.path).toBe("/aulas/9/chamada");
+  });
+
+  it("Desktop: na linha da aula Consolidada, 'Ver presenças' abre as presenças", async () => {
+    compacta.value = false;
+    const { wrapper, router } = await montar();
+    wrapperAtual = wrapper;
+
+    expect(wrapper.find(".p-datatable").exists()).toBe(true);
+    const botao = wrapper
+      .findAll('.p-datatable [data-testid="aula-chamada"]')
+      .filter((b) => b.text() === "Ver presenças");
+    expect(botao).toHaveLength(1);
+
+    await botao[0]!.trigger("click");
+    await flushPromises();
+    expect(router.currentRoute.value.path).toBe("/aulas/4/presencas");
   });
 
   it("Editar só em aula Em aberto; Excluir e Não realizada só em Em aberto sem presenças (CSU09 FA3, CSU11 FA2)", async () => {

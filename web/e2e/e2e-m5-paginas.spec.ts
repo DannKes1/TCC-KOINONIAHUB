@@ -80,6 +80,23 @@ test.describe("E2E-M5 celular — páginas dentro da tela", () => {
         await conferirPagina(page, tela);
       }
 
+      // Ajuste A4: a 360 px, o cartão da aula consolidada do Admin tem o botão "Ver
+      // presenças" em uma linha e o ⋮ (Reabrir aula) ao lado, na mesma altura.
+      await page.goto(`/departamentos/${turmaReabertura.id}/aulas`);
+      const cartao = page.getByTestId("aula-cartao").filter({ hasText: turmaReabertura.tema });
+      const botao = cartao.getByTestId("aula-chamada");
+      await expect(botao).toHaveText(/^\s*Ver presenças\s*$/);
+      const caixaBotao = (await botao.boundingBox())!;
+      const caixaMenu = (await cartao.getByTestId("menu-acoes").boundingBox())!;
+      expect(caixaBotao.height, "botão em uma linha a 360 px").toBeLessThanOrEqual(44);
+      // Botão e ⋮ centrados na mesma linha. Antes do ajuste A4, a diferença de centros
+      // medida era 0 px a 1366, 1280 e 360 px; 1 px de folga para arredondamento.
+      const diferencaCentros = Math.abs(
+        caixaBotao.y + caixaBotao.height / 2 - (caixaMenu.y + caixaMenu.height / 2),
+      );
+      expect(diferencaCentros, "⋮ na mesma linha do botão a 360 px").toBeLessThanOrEqual(1);
+      await conferirPagina(page, "Aulas com aula consolidada");
+
       await page.goto(`/relatorios/ebd?departamentoId=${turma.id}`);
       for (const aba of ["Frequência da turma", "Acompanhamento", "Ranking de faltas", "Resumo do dia"]) {
         await page.getByRole("tab", { name: aba }).click();

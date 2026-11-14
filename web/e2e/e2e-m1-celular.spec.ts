@@ -74,6 +74,8 @@ test.describe("E2E-M1 celular", () => {
       // Cabeçalho da turma: nome, contadores, equipe; abas Alunos/Matérias/Aulas
       // (Atribuições só para a gestão).
       await expect(page.locator("h2.page-header-titulo")).toHaveText(turma.nome);
+      // Ajuste A2: o link de voltar tem área de toque de 44 px no celular.
+      await alvoDeToque(await page.locator(".page-header-voltar").boundingBox(), "link de voltar da turma", 44);
       await expect(page.getByTestId("turma-total-alunos")).toHaveText(String(alunos.length));
       await expect(page.getByTestId("turma-equipe")).toContainText(professor.nome);
       await expect(page.getByTestId("turma-aba-matriculas")).toBeVisible();
@@ -149,6 +151,7 @@ test.describe("E2E-M1 celular", () => {
       await fazerChamada.click();
       await page.waitForURL((url) => url.pathname === `/aulas/${aulaId}/chamada`);
       await expect(page.locator(".page-header-voltar")).toContainText(turma.nome);
+      await alvoDeToque(await page.locator(".page-header-voltar").boundingBox(), "link de voltar da chamada", 44);
       const lista = page.getByTestId("chamada-lista");
       await expect(lista.getByTestId("chamada-linha")).toHaveCount(alunos.length);
       await expect(page.getByTestId("chamada-contador")).toHaveText(`Presentes: 0 de ${alunos.length}`);
@@ -264,12 +267,26 @@ test.describe("E2E-M1 celular", () => {
       await page.goto(`/aulas/${aulaId}/presencas`);
       await expect(page.locator("h2.page-header-titulo")).toContainText("Presenças");
       await expect(page.locator(".page-header-voltar")).toContainText(turma.nome);
+      await alvoDeToque(await page.locator(".page-header-voltar").boundingBox(), "link de voltar das presenças", 44);
+      // Ajuste A3: o quarto indicador, Visitantes, cabe na grade a 360 px.
+      await expect(page.getByTestId("presencas-visitantes")).toContainText("Visitantes");
       const cartoes = page.getByTestId("presenca-cartao");
       await expect(cartoes).toHaveCount(alunos.length);
       await expect(cartoes.filter({ hasText: "Presente" })).toHaveCount(2);
       await expect(cartoes.filter({ hasText: "chegou após o início" })).toHaveCount(1);
       await semRolagemHorizontal(page, "Presenças da Aula");
       await evidenciaCelular(page, testInfo, "presencas-aula");
+
+      // Ajuste A4: de volta à aba Aulas, a aula consolidada mostra "Ver presenças"
+      // como botão principal, sem passar da tela a 360 px.
+      await page.goto(`/departamentos/${turma.id}/aulas`);
+      const consolidada = page
+        .getByTestId("aula-cartao")
+        .filter({ has: page.getByTestId("aula-chamada").filter({ hasText: "Ver presenças" }) });
+      await expect(consolidada.first()).toBeVisible();
+      await alvoDeToque(await consolidada.first().getByTestId("aula-chamada").boundingBox(), "botão Ver presenças");
+      await semRolagemHorizontal(page, "Aulas da turma com aula consolidada");
+      await evidenciaCelular(page, testInfo, "aulas-turma-consolidada");
 
       // Meus Dados.
       await page.goto("/meus-dados");
@@ -303,6 +320,7 @@ test.describe("E2E-M1 celular", () => {
       );
       await expect(page.getByTestId("minha-frequencia-periodo")).toBeVisible();
       await expect(page.locator(".page-header-voltar")).toContainText("Minhas Turmas");
+      await alvoDeToque(await page.locator(".page-header-voltar").boundingBox(), "link de voltar de Minha Frequência", 44);
       await semRolagemHorizontal(page, "Minha Frequência");
       await evidenciaCelular(page, testInfo, "minha-frequencia");
     });

@@ -66,8 +66,9 @@ const confirm = useConfirm();
 const autenticacao = usarAutenticacaoStore();
 
 // Etapa 6.4: abaixo de 768 px a lista vira cartões com a ação principal nomeada
-// (Fazer/Ver chamada) e as demais no ⋮; no desktop, a tabela de sempre com a
-// mesma dupla botão + ⋮ na coluna de ações.
+// (Fazer chamada, Ver chamada ou, na aula Consolidada, Ver presenças) e
+// as demais no ⋮; no desktop, a tabela de sempre com a mesma dupla botão + ⋮ na
+// coluna de ações.
 const compacta = usarTelaCompacta();
 
 // Dentro da Página da Turma (RF20), avisa o cabeçalho para atualizar os contadores.
@@ -166,20 +167,33 @@ function abrirPresencas(aula: AulaVM) {
   void router.push(`/aulas/${aula.id}/presencas`);
 }
 
+// Ação principal da aula (ajuste A4): Em aberto faz a chamada; Consolidada abre as
+// presenças registradas (CSU09 FA4) com o rótulo curto "Ver presenças", que cabe na
+// coluna de sempre; Não realizada continua em "Ver chamada".
 function rotuloChamada(aula: AulaVM) {
-  return aula.situacao === "EmAberto" ? "Fazer chamada" : "Ver chamada";
+  if (aula.situacao === "EmAberto") return "Fazer chamada";
+  if (aula.situacao === "Consolidada") return "Ver presenças";
+  return "Ver chamada";
+}
+
+function abrirAcaoPrincipal(aula: AulaVM) {
+  if (aula.situacao === "Consolidada") abrirPresencas(aula);
+  else abrirChamada(aula);
 }
 
 // Ações secundárias do ⋮ (as mesmas nos dois layouts). `visible` segue a situação
 // da aula e o perfil (RF33: consolidar/não realizada só Em aberto; reabrir só Admin;
 // RF45: editar só Em aberto, excluir só Em aberto e sem registro de presença — CSU09 FA3;
 // RNF 33.7 / CSU11 FA2: Não realizada só Em aberto e sem registro de presença).
+// Na aula Consolidada, "Ver presenças" já é o botão principal (ajuste A4):
+// o item some do ⋮ para não repetir.
 function itensAcoes(aula: AulaVM): MenuItem[] {
   const emAberto = aula.situacao === "EmAberto";
   return [
     {
       label: "Ver presenças registradas",
       icon: "pi pi-list-check",
+      visible: aula.situacao !== "Consolidada",
       command: () => abrirPresencas(aula),
     },
     {
@@ -521,7 +535,7 @@ onMounted(carregarTudo);
               :outlined="aula.situacao !== 'EmAberto'"
               :disabled="carregando"
               data-testid="aula-chamada"
-              @click="abrirChamada(aula)"
+              @click="abrirAcaoPrincipal(aula)"
             />
             <MenuAcoes
               :itens="itensAcoes(aula)"
@@ -588,7 +602,7 @@ onMounted(carregarTudo);
                 :outlined="data.situacao !== 'EmAberto'"
                 :disabled="carregando"
                 data-testid="aula-chamada"
-                @click="abrirChamada(data)"
+                @click="abrirAcaoPrincipal(data)"
               />
               <MenuAcoes
                 :itens="itensAcoes(data)"
@@ -716,11 +730,13 @@ onMounted(carregarTudo);
 </template>
 
 <style scoped>
-/* Coluna Ações: "Fazer chamada" e "Ver chamada" com a mesma largura mínima, para o ⋮
-   ficar na mesma posição em todas as linhas da tabela (desktop). Nos cartões (abaixo de
-   768 px) o botão já ocupa o espaço que sobra, mais largo que este mínimo. */
+/* Coluna Ações: "Fazer chamada", "Ver chamada" e "Ver presenças" com a mesma largura
+   mínima e em uma linha só, para o ⋮ ficar na mesma posição em todas as linhas da
+   tabela (desktop; ajustes de 10/11 e A4). Nos cartões (abaixo de 768 px) o botão já
+   ocupa o espaço que sobra, mais largo que este mínimo. */
 [data-testid="aula-chamada"] {
   min-width: 140px;
   justify-content: center;
+  white-space: nowrap;
 }
 </style>
