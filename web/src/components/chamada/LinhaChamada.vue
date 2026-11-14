@@ -10,7 +10,10 @@ import type { LinhaChamada } from "../../aplicacao/dominio/chamada";
 // Linha da chamada (RF32 / CSU10), igual nos dois layouts: tocar em qualquer ponto
 // da linha alterna presente/ausente; a observação só aparece quando o professor
 // pede ("+ observação") — e é nesse momento que a tela orienta a não registrar
-// informações de saúde ou outros dados sensíveis (RNF 32.5).
+// informações de saúde ou outros dados sensíveis (RNF 32.5). Ajuste C1: a etiqueta
+// "Sem registro" fica na segunda linha, ao lado de "+ observação" (linha de altura
+// mínima), e não na linha do nome: com a observação fechada, o cartão tem a mesma
+// altura com e sem a etiqueta, e marcar ou desmarcar o aluno não muda a altura.
 const props = defineProps<{
   linha: LinhaChamada;
   somenteLeitura?: boolean;
@@ -72,12 +75,6 @@ function removerObservacao() {
       <div class="linha-chamada-texto">
         <span class="linha-chamada-nome" data-testid="chamada-nome">
           {{ linha.nomeAluno }}
-          <Tag
-            v-if="semRegistro"
-            value="Sem registro"
-            severity="warn"
-            class="linha-chamada-tag"
-          />
         </span>
 
         <!-- Só o botão interrompe o toque; o resto da faixa continua alternando a
@@ -101,6 +98,13 @@ function removerObservacao() {
           >
             Obs.: {{ linha.observacao }}
           </span>
+          <Tag
+            v-if="semRegistro"
+            value="Sem registro"
+            severity="warn"
+            class="linha-chamada-tag"
+            data-testid="chamada-sem-registro"
+          />
         </span>
       </div>
 
@@ -219,6 +223,7 @@ function removerObservacao() {
   display: inline-flex;
   align-items: center;
   align-self: flex-start;
+  gap: 8px;
   min-height: 24px;
 }
 

@@ -81,6 +81,25 @@ test("E2E-04 chamada até relatório: consolidar com aluno sem registro nomeia q
   await expect(page.getByTestId("chamada-contador")).toHaveText("Presentes: 0 de 3");
   await expect(page.getByTestId("chamada-mensagem")).toContainText("3 alunos sem registro");
 
+  // Ajuste C1: com a observação fechada, o cartão do aluno tem a mesma altura com e sem a
+  // etiqueta "Sem registro", e marcar ou desmarcar não muda a altura. No desktop a medida
+  // é a 1366 px; no celular, a 360 px do projeto.
+  const janelaDoProjeto = page.viewportSize();
+  if (!celular) await page.setViewportSize({ width: 1366, height: 768 });
+  const linhaA = linhas.filter({ hasText: alunoA!.nome });
+  const alturaDaLinhaA = async () => (await linhaA.boundingBox())!.height;
+  await expect(linhaA.getByTestId("chamada-sem-registro")).toBeVisible();
+  const comEtiqueta = await alturaDaLinhaA();
+  await linhaA.getByTestId("chamada-nome").click();
+  await expect(linhaA.getByTestId("chamada-sem-registro")).toHaveCount(0);
+  const marcado = await alturaDaLinhaA();
+  await linhaA.getByTestId("chamada-nome").click();
+  await expect(linhaA.getByTestId("chamada-sem-registro")).toBeVisible();
+  const desmarcado = await alturaDaLinhaA();
+  expect(Math.abs(marcado - comEtiqueta), "altura do cartão ao marcar").toBeLessThanOrEqual(0.5);
+  expect(Math.abs(desmarcado - comEtiqueta), "altura do cartão ao desmarcar").toBeLessThanOrEqual(0.5);
+  if (!celular && janelaDoProjeto) await page.setViewportSize(janelaDoProjeto);
+
   // Chamada incompleta: só o aluno A presente.
   await linhas.filter({ hasText: alunoA!.nome }).getByTestId("chamada-nome").click();
   await expect(page.getByTestId("chamada-contador")).toHaveText("Presentes: 1 de 3");

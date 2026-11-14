@@ -103,6 +103,12 @@ describe("LinhaChamada", () => {
     const w = montar({}, { semRegistro: true });
     expect(w.find('[data-testid="chamada-linha"]').classes()).toContain("linha-chamada-sem-registro");
     expect(w.text()).toContain("Sem registro");
+    // Ajuste C1: a etiqueta fica na linha de "+ observação", não na do nome.
+    expect(w.find('[data-testid="chamada-nome"]').text()).not.toContain("Sem registro");
+    const etiqueta = w.find('.linha-chamada-obs [data-testid="chamada-sem-registro"]');
+    expect(etiqueta.exists()).toBe(true);
+    expect(etiqueta.text()).toBe("Sem registro");
+    expect(w.find('.linha-chamada-obs [data-testid="chamada-abrir-observacao"]').exists()).toBe(true);
     w.unmount();
   });
 });
