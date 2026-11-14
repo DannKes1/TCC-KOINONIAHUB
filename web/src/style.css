@@ -5,6 +5,7 @@
   --ipb-verde-claro: #2e6b42;
   --ipb-verde-escuro: #1a3b25;
   --ipb-verde-bg: #edf5f0;
+  --ipb-verde-foco: #3d8a55;
   --ipb-cinza: #4d4d4d;
   --ipb-cinza-claro: #7a7a7a;
   --ipb-cinza-borda: #e2e2e2;
@@ -304,23 +305,65 @@ body {
   background: var(--ipb-branco) !important;
 }
 
+/* Contorno discreto em todos os diálogos e confirmações (ajuste A1): sai a borda
+   clara de 1 px do tema e fica só a sombra. Duas classes: o tema do PrimeVue é
+   injetado depois deste arquivo e venceria um seletor de uma classe só. */
+.p-dialog.p-component {
+  border: none;
+  box-shadow: 0 12px 40px rgba(26, 59, 37, 0.18);
+}
+
 .p-dialog .p-dialog-header {
   background: var(--ipb-verde-bg) !important;
   color: var(--ipb-verde-escuro) !important;
   /* O tema arredonda o contêiner do diálogo, mas o fundo verde do cabeçalho
      é pintado por cima do raio e deixa os cantos superiores retos. O raio
      replicado aqui devolve as pontas arredondadas em todos os popups
-     (Dialog e ConfirmDialog). */
+     (Dialog e ConfirmDialog). Respiro (A1): o título alinha com o corpo (28 px
+     à esquerda); à direita fica o botão de fechar, que já tem área própria. */
   border-top-left-radius: var(--p-dialog-border-radius, 12px);
   border-top-right-radius: var(--p-dialog-border-radius, 12px);
+  padding: 20px 20px 20px 28px;
 }
 
 .p-dialog .p-dialog-content {
-  /* No tema, o conteúdo nasce com padding-top zero: o respiro vinha do
-     padding inferior do cabeçalho, invisível quando ele era transparente.
-     Com o cabeçalho verde, a fronteira aparece e os campos ficam colados
-     nela — o respiro abaixo replica o mesmo espaçamento das laterais. */
-  padding-top: var(--p-overlay-modal-padding, 1.25rem);
+  /* No tema, o conteúdo nasce com padding-top zero e laterais de 20 px; com o
+     cabeçalho verde os campos ficavam colados na faixa e nas bordas. Respiro
+     (A1): 24 px em cima e embaixo e 28 px nas laterais. */
+  padding: 24px 28px;
+}
+
+.p-dialog .p-dialog-footer {
+  /* O tema não tem espaço acima dos botões: quando o corpo rola, os campos
+     encostam neles. */
+  padding: 12px 28px 24px;
+  gap: 10px;
+}
+
+/* Foco pelo teclado nos botões dos diálogos (A1): um anel verde médio de 2 px,
+   só em :focus-visible (o clique do mouse não acende; o Tab acende). */
+.p-dialog .p-dialog-header .p-button:focus-visible,
+.p-dialog .p-dialog-footer .p-button:focus-visible {
+  outline: 2px solid var(--ipb-verde-foco);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* No celular as laterais continuam em 20 px, para não apertar os formulários
+   ajustados a 360 px; o ganho vem do espaço acima dos botões. Este bloco vem
+   depois das regras acima para vencer o empate de especificidade. */
+@media (max-width: 768px) {
+  .p-dialog .p-dialog-header {
+    padding: 20px;
+  }
+
+  .p-dialog .p-dialog-content {
+    padding: 20px;
+  }
+
+  .p-dialog .p-dialog-footer {
+    padding: 12px 20px 20px;
+  }
 }
 
 .p-dropdown,
@@ -474,16 +517,13 @@ body {
 /* ------------------------------------------------------------------ */
 
 .kh-confirm.p-dialog {
-  border-radius: var(--radius-md);
-  border: 1px solid var(--ipb-cinza-borda);
-  box-shadow: 0 12px 40px rgba(26, 59, 37, 0.18);
   font-family: var(--font-body);
   max-height: calc(100vh - 24px);
   max-width: calc(100vw - 24px);
 }
 
 .kh-confirm .p-dialog-header {
-  padding: 18px 22px 10px;
+  padding: 14px 16px 14px 24px;
   border-bottom: none;
 }
 
@@ -495,7 +535,7 @@ body {
 }
 
 .kh-confirm .p-dialog-content {
-  padding: 4px 22px 16px;
+  padding: 20px 24px 16px;
   color: var(--ipb-cinza);
   overflow: auto;
 }
@@ -564,7 +604,7 @@ body {
 }
 
 .kh-confirm .p-dialog-footer {
-  padding: 8px 22px 18px;
+  padding: 8px 24px 20px;
   border-top: none;
   display: flex;
   justify-content: flex-end;
@@ -641,8 +681,8 @@ body {
   .kh-confirm .p-dialog-header,
   .kh-confirm .p-dialog-content,
   .kh-confirm .p-dialog-footer {
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: 20px;
+    padding-right: 20px;
   }
 
   .kh-confirm-icone {

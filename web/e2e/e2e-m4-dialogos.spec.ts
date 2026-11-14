@@ -3,7 +3,7 @@ import type { Locator, Page } from "@playwright/test";
 
 import { apiURL } from "./apoio/ambiente";
 import { criarPessoa, criarUsuario, login, novoClienteApi } from "./apoio/api";
-import { dialogoCabeNaTela } from "./apoio/celular";
+import { dialogoCabeNaTela, focoVisivelNoDialogo } from "./apoio/celular";
 import { ARQUIVO_ESTADO_ADMIN, emailE2E, lerSemente } from "./apoio/semente";
 
 // E2E-M4 — Diálogos dentro da tela (Corretiva G5; RNFs "a interface deve ser
@@ -116,6 +116,7 @@ async function carregado(page: Page) {
 async function abrirEConferir(page: Page, botao: Locator, nome: string) {
   await botao.click();
   await dialogoCabeNaTela(page, nome);
+  await focoVisivelNoDialogo(page, nome);
   await page.keyboard.press("Escape");
   const fechou = await expect(page.locator(".p-dialog"))
     .toHaveCount(0, { timeout: 1500 })

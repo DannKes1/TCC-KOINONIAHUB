@@ -42,7 +42,7 @@ function voltar() {
         class="page-header-voltar"
         @click.prevent="voltar"
       >
-        <i class="pi pi-arrow-left" style="font-size: 11px"></i>
+        <i class="pi pi-arrow-left" aria-hidden="true"></i>
         {{ voltarLabel || "Voltar" }}
       </a>
       <h2 class="page-header-titulo">{{ titulo }}</h2>
@@ -64,19 +64,33 @@ function voltar() {
   flex-wrap: wrap;
 }
 
+/* Link de voltar (ajuste A2): maior, em verde e com peso, para ser visto; no
+   celular, área de toque de 44 px (bloco do fim do arquivo). */
 .page-header-voltar {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--ipb-cinza-claro, #7a7a7a);
+  gap: 8px;
+  min-height: 32px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ipb-verde, #234f32);
   text-decoration: none;
-  margin-bottom: 4px;
+  border-radius: var(--radius-sm, 6px);
+  margin-bottom: 2px;
   transition: color 0.15s ease;
 }
 
+.page-header-voltar .pi {
+  font-size: 13px;
+}
+
 .page-header-voltar:hover {
-  color: var(--ipb-verde, #234f32);
+  color: var(--ipb-verde-claro, #2e6b42);
+}
+
+.page-header-voltar:focus-visible {
+  outline: 2px solid var(--ipb-verde, #234f32);
+  outline-offset: 2px;
 }
 
 .page-header-titulo {
@@ -105,6 +119,12 @@ function voltar() {
 }
 
 @media (max-width: 768px) {
+  .page-header-voltar {
+    min-height: 44px;
+    min-width: 44px;
+    margin-bottom: 0;
+  }
+
   .page-header-titulo {
     font-size: 20px;
   }

@@ -157,6 +157,34 @@ export async function problemasDeLargura(page: Page): Promise<string[]> {
 
 // Corretiva G5 (E2E-M4): diálogo aberto inteiro na janela. O diálogo do PrimeVue é uma
 // camada fixa: um conteúdo mais largo que ele não alarga o documento, rola para o lado
+// Ajuste A1: o foco pelo teclado continua visível nos diálogos. Ao abrir, o PrimeVue
+// põe o foco no botão de fechar; Shift+Tab leva ao último elemento do diálogo (a
+// armadilha de foco dá a volta) e Tab traz de volta ao botão de fechar, agora pelo
+// teclado. O anel tem de aparecer: :focus-visible com contorno de 2 px ou mais.
+export async function focoVisivelNoDialogo(page: Page, tela: string) {
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Tab");
+  const foco = await page.evaluate(() => {
+    const el = document.activeElement as HTMLElement | null;
+    const dialogos = Array.from(document.querySelectorAll(".p-dialog"));
+    const dl = dialogos[dialogos.length - 1];
+    if (!el || !dl || !dl.contains(el)) return { dentro: false, botao: false, visivel: false, estilo: "", largura: 0 };
+    const cs = getComputedStyle(el);
+    return {
+      dentro: true,
+      botao: el.matches(".p-dialog-header .p-button, .p-dialog-footer .p-button"),
+      visivel: el.matches(":focus-visible"),
+      estilo: cs.outlineStyle,
+      largura: Number.parseFloat(cs.outlineWidth),
+    };
+  });
+  expect(foco.dentro, `${tela}: foco dentro do diálogo`).toBe(true);
+  expect(foco.botao, `${tela}: foco num botão do cabeçalho ou do rodapé`).toBe(true);
+  expect(foco.visivel, `${tela}: foco visível pelo teclado`).toBe(true);
+  expect(foco.estilo, `${tela}: contorno do foco`).not.toBe("none");
+  expect(foco.largura, `${tela}: largura do contorno do foco`).toBeGreaterThanOrEqual(2);
+}
+
 // por dentro. Por isso, além do critério do documento (scrollWidth <= clientWidth),
 // confere a caixa do diálogo na janela, nenhum elemento do diálogo passando das bordas
 // dele e nenhum container do diálogo rolando para o lado (nem a tabela). A rolagem
