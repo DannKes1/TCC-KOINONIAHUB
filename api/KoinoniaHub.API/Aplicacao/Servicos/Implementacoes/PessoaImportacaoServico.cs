@@ -156,12 +156,12 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 {
                     item.Status = "Ignorado";
                     item.ParaConferencia = true; // RNF 41.3
-                    item.Mensagem = "Já existe uma pessoa com este nome; linha ignorada para conferência. Se for outra pessoa, cadastre manualmente.";
+                    item.Mensagem = "Já existe uma pessoa com este nome. Linha ignorada para conferência. Se for outra pessoa, cadastre manualmente.";
                     continue;
                 }
 
                 if (!string.IsNullOrWhiteSpace(email) && nomesConhecidos.Contains(nome.ToLowerInvariant()))
-                    avisos.Add("atenção: já existia pessoa com o mesmo nome");
+                    avisos.Add("Atenção: já existia pessoa com o mesmo nome.");
 
                 // ---- Campos opcionais (problemas viram avisos, não erros) ----
                 DateTime? dataNascimento = null;
@@ -170,7 +170,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 {
                     dataNascimento = ConverterData(textoNascimento);
                     if (dataNascimento is null)
-                        avisos.Add("data de nascimento ignorada (use dd/mm/aaaa)");
+                        avisos.Add("Data de nascimento ignorada (use dd/mm/aaaa).");
                 }
 
                 // CEP com 8 dígitos (com ou sem hífen ou ponto) é gravado como 00000-000;
@@ -179,7 +179,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 var textoCep = Valor(idxCep);
                 var cep = Cep.FormatarOitoDigitos(textoCep);
                 if (cep is null && !string.IsNullOrWhiteSpace(textoCep))
-                    avisos.Add("CEP ignorado (use 00000-000)");
+                    avisos.Add("CEP ignorado (use 00000-000).");
 
                 var pessoa = new Pessoa
                 {
@@ -205,7 +205,7 @@ namespace KoinoniaHub.API.Aplicacao.Servicos.Implementacoes
                 nomesConhecidos.Add(nome.ToLowerInvariant());
 
                 item.Status = "Criado";
-                item.Mensagem = avisos.Count > 0 ? string.Join("; ", avisos) : null;
+                item.Mensagem = avisos.Count > 0 ? string.Join(" ", avisos) : null;
             }
 
             if (novasPessoas.Count > 0)

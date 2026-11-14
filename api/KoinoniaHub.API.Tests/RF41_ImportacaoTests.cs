@@ -132,7 +132,7 @@ namespace KoinoniaHub.API.Tests
             Assert.Equal("Ignorado", item.Status);
             Assert.True(item.ParaConferencia); // RNF 41.3: sinalizada, além de ignorada
             Assert.Equal(
-                "Já existe uma pessoa com este nome; linha ignorada para conferência. Se for outra pessoa, cadastre manualmente.",
+                "Já existe uma pessoa com este nome. Linha ignorada para conferência. Se for outra pessoa, cadastre manualmente.",
                 item.Mensagem);
             Assert.Equal(1, await ContarPessoasAsync(ctx, igrejaId));
         }
@@ -154,8 +154,33 @@ namespace KoinoniaHub.API.Tests
             var item = resposta.Itens.Single();
             Assert.Equal(1, resposta.Criados);
             Assert.Equal("Criado", item.Status);
-            Assert.Equal("CEP ignorado (use 00000-000)", item.Mensagem);
+            Assert.Equal("CEP ignorado (use 00000-000).", item.Mensagem);
             Assert.Null((await LerUnicaPessoaAsync(ctx, igrejaId)).CEP);
+        }
+
+        // Ajuste A5: uma linha criada com mais de um aviso mostra cada aviso como frase, com
+        // maiúscula e ponto final, separados por espaço (antes, minúsculas unidas por ";").
+        [Fact]
+        public async Task Importar_LinhaComVariosAvisos_MostraCadaAvisoComoFrase()
+        {
+            using var ctx = new ContextoDeTeste();
+            var igrejaId = await SemearIgrejaAsync(ctx);
+            ctx.Db.Pessoas.Add(new Pessoa { Nome = "Carlos Souza", IgrejaId = igrejaId });
+            await ctx.Db.SaveChangesAsync();
+            var servico = new PessoaImportacaoServico(ctx.Db);
+
+            var csv =
+                "Nome;Email;DataNascimento;CEP\n" +
+                "Carlos Souza;carlos.novo@teste.com;sem data;123\n";
+
+            var resposta = await servico.ImportarCsvAsync(igrejaId, Fluxo(csv));
+
+            var item = resposta.Itens.Single();
+            Assert.Equal("Criado", item.Status);
+            Assert.Equal(
+                "Atenção: já existia pessoa com o mesmo nome. Data de nascimento ignorada (use dd/mm/aaaa). CEP ignorado (use 00000-000).",
+                item.Mensagem);
+            Assert.Equal(2, await ContarPessoasAsync(ctx, igrejaId));
         }
 
         // Corretiva G5: 8 dígitos com ponto ou sem hífen são gravados como 00000-000.
