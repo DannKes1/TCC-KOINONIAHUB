@@ -16,6 +16,7 @@ import Column from "primevue/column";
 import Tag from "primevue/tag";
 import TagSituacaoAula from "../../components/ui/TagSituacaoAula.vue";
 import CartaoItem from "../../components/ui/CartaoItem.vue";
+import TurmasComoAluno from "../../components/painel/TurmasComoAluno.vue";
 import { usarTelaCompacta } from "../../aplicacao/composables/usarTelaCompacta";
 import { usarMostrarMais } from "../../aplicacao/composables/usarMostrarMais";
 
@@ -78,6 +79,9 @@ const aulasRecentes = ref<AulaComTurmaVM[]>([]);
 const resumoTurmas = ref<ResumoTurmaVM[]>([]);
 
 const historicoPresencas = ref<HistoricoPresencaPessoaVM[]>([]);
+// Turmas da própria conta (matrícula e atribuição ativas). No Painel do usuário, a lista
+// "Minhas turmas"; nos Painéis administrativo e do Professor, só a base dos blocos dos
+// ajustes C2 e C2b.
 const minhasTurmas = ref<MinhaTurmaVM[]>([]);
 
 function abrirPessoas() {
@@ -172,6 +176,25 @@ const aulasAbertasDoProfessor = computed(() =>
     .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()),
 );
 
+// Ajuste C2: turmas em que a própria conta é aluno(a), no fim dos Painéis administrativo
+// e do Professor. O Painel continua o do perfil (RF3); o bloco só leva à própria
+// frequência (RF6).
+const turmasComoAluno = computed(() => minhasTurmas.value.filter(ehVinculoAluno));
+
+// Ajuste C2b: no Painel administrativo, as aulas Em aberto das turmas em que a conta tem
+// atribuição (vínculo diferente de Aluno), com a mesma ação do Painel do Professor. Usa as
+// aulas que o painel já carregou (turmas ativas), sem chamada nova à API.
+const aulasAbertasDasMinhasTurmas = computed(() => {
+  const turmasQueOpero = new Set(
+    minhasTurmas.value
+      .filter((t) => !ehVinculoAluno(t))
+      .map((t) => t.departamentoId),
+  );
+  return aulasAbertasDoProfessor.value.filter((a) =>
+    turmasQueOpero.has(a.departamentoId),
+  );
+});
+
 // Corretiva G6: mesma base da lista "Minhas turmas" e dos cartões de aulas (turmas ativas);
 // antes contava também as turmas inativas em que o professor ainda tinha atribuição.
 const totalMinhasTurmas = computed(() => turmasEbdAtivas.value.length);
@@ -259,17 +282,36 @@ async function carregarDadosTurmas() {
   resumoTurmas.value = listaResumoTurmas;
 }
 
+// Ajustes C2 e C2b: as turmas da própria conta carregam à parte, em paralelo com o resto
+// do painel. Se a carga falhar, os dois blocos não aparecem e o resto do painel continua,
+// sem mensagem de erro na página (o aviso global do clienteHttp para erro do servidor, 403
+// ou falta de conexão continua). Uma resposta antiga, de antes de um Recarregar, é
+// descartada.
+let sequenciaMinhasTurmas = 0;
+
+async function carregarTurmasDaConta() {
+  const minha = ++sequenciaMinhasTurmas;
+  const turmas = await listarMinhasTurmas().catch((): MinhaTurmaVM[] => []);
+  if (minha === sequenciaMinhasTurmas) minhasTurmas.value = turmas;
+}
+
 async function carregarPainelAdministrativo() {
-  await run(async () => {
-    pessoas.value = await listarPessoas();
-    await carregarDadosTurmas();
-  }, "Não foi possível carregar o painel.");
+  await Promise.all([
+    run(async () => {
+      pessoas.value = await listarPessoas();
+      await carregarDadosTurmas();
+    }, "Não foi possível carregar o painel."),
+    carregarTurmasDaConta(),
+  ]);
 }
 
 async function carregarPainelProfessor() {
-  await run(async () => {
-    await carregarDadosTurmas();
-  }, "Não foi possível carregar o painel.");
+  await Promise.all([
+    run(async () => {
+      await carregarDadosTurmas();
+    }, "Não foi possível carregar o painel."),
+    carregarTurmasDaConta(),
+  ]);
 }
 
 async function carregarPainelUsuario() {
@@ -366,19 +408,53 @@ onMounted(carregarPainel);
       </div>
 
       <LoadingOverlay :loading="carregando" texto="Carregando painel...">
-        <div class="painel-grade-tabelas" data-testid="painel-gestao-tabelas">
-          <div class="card-tabela">
-            <div class="card-tabela-titulo">Últimas aulas</div>
+        <!-- Ajuste C2b: o bloco da própria conta fica sob o overlay junto com as tabelas,
+             para não ficar clicável com os dados da carga anterior durante o Recarregar. -->
+        <div class="page-container">
+          <div
+            v-if="aulasAbertasDasMinhasTurmas.length > 0"
+            class="card-tabela"
+            data-testid="painel-gestao-minhas-aulas-abertas"
+          >
+            <div class="card-tabela-titulo">Aulas em aberto das minhas turmas</div>
+
+            <div v-if="compacta" class="lista-cartoes">
+              <CartaoItem
+                v-for="aula in aulasAbertasDasMinhasTurmas"
+                :key="aula.id"
+                :titulo="formatarData(aula.data)"
+                :destaque="aula.pendenteFechamento"
+                data-testid="painel-gestao-minha-aula-aberta"
+              >
+                <template #chips>
+                  <TagSituacaoAula
+                    :situacao="aula.situacao"
+                    :pendenteFechamento="aula.pendenteFechamento"
+                  />
+                </template>
+                <template #meta>
+                  {{ aula.nomeDepartamento }} · {{ aula.nomeMateria }}
+                </template>
+                <template #acoes>
+                  <Button
+                    label="Fazer chamada"
+                    icon="pi pi-clipboard"
+                    class="acao-principal"
+                    data-testid="painel-gestao-fazer-chamada"
+                    @click="abrirChamada(aula.id)"
+                  />
+                </template>
+              </CartaoItem>
+            </div>
 
             <DataTable
-              :value="ultimasAulasOrdenadas"
-              :rows="8"
+              v-else
+              :value="aulasAbertasDasMinhasTurmas"
+              :rows="10"
+              :paginator="aulasAbertasDasMinhasTurmas.length > 10"
               dataKey="id"
               responsiveLayout="scroll"
             >
-              <template #empty>
-                <div style="padding: 14px; opacity: 0.7">Nenhuma aula encontrada nas turmas ativas.</div>
-              </template>
               <Column header="Data" style="width: 120px">
                 <template #body="{ data }">
                   {{ formatarData(data.data) }}
@@ -386,46 +462,83 @@ onMounted(carregarPainel);
               </Column>
               <Column field="nomeDepartamento" header="Turma" />
               <Column field="nomeMateria" header="Matéria" />
-              <Column field="nomeProfessor" header="Professor" />
-              <Column header="Situação" style="width: 200px">
+              <Column header="Ação" style="width: 170px">
                 <template #body="{ data }">
-                  <TagSituacaoAula
-                    :situacao="data.situacao"
-                    :pendenteFechamento="data.pendenteFechamento"
+                  <Button
+                    label="Fazer chamada"
+                    icon="pi pi-clipboard"
+                    size="small"
+                    data-testid="painel-gestao-fazer-chamada"
+                    @click="abrirChamada(data.id)"
                   />
                 </template>
               </Column>
             </DataTable>
           </div>
 
-          <div class="card-tabela">
-            <div class="card-tabela-titulo">Resumo por turma</div>
+          <div class="painel-grade-tabelas" data-testid="painel-gestao-tabelas">
+            <div class="card-tabela">
+              <div class="card-tabela-titulo">Últimas aulas</div>
 
-            <DataTable
-              :value="resumoTurmasOrdenado"
-              :rows="10"
-              dataKey="departamentoId"
-              responsiveLayout="scroll"
-            >
-              <template #empty>
-                <div style="padding: 14px; opacity: 0.7">Nenhuma turma EBD ativa encontrada.</div>
-              </template>
-              <Column field="nomeDepartamento" header="Turma" />
-              <Column field="totalAulas" header="Aulas" style="width: 90px" />
-              <Column
-                field="aulasAbertas"
-                header="Abertas"
-                style="width: 100px"
-              />
-              <Column header="Última aula" style="width: 130px">
-                <template #body="{ data }">
-                  {{ formatarData(data.ultimaAulaData) }}
+              <DataTable
+                :value="ultimasAulasOrdenadas"
+                :rows="8"
+                dataKey="id"
+                responsiveLayout="scroll"
+              >
+                <template #empty>
+                  <div style="padding: 14px; opacity: 0.7">Nenhuma aula encontrada nas turmas ativas.</div>
                 </template>
-              </Column>
-            </DataTable>
+                <Column header="Data" style="width: 120px">
+                  <template #body="{ data }">
+                    {{ formatarData(data.data) }}
+                  </template>
+                </Column>
+                <Column field="nomeDepartamento" header="Turma" />
+                <Column field="nomeMateria" header="Matéria" />
+                <Column field="nomeProfessor" header="Professor" />
+                <Column header="Situação" style="width: 200px">
+                  <template #body="{ data }">
+                    <TagSituacaoAula
+                      :situacao="data.situacao"
+                      :pendenteFechamento="data.pendenteFechamento"
+                    />
+                  </template>
+                </Column>
+              </DataTable>
+            </div>
+
+            <div class="card-tabela">
+              <div class="card-tabela-titulo">Resumo por turma</div>
+
+              <DataTable
+                :value="resumoTurmasOrdenado"
+                :rows="10"
+                dataKey="departamentoId"
+                responsiveLayout="scroll"
+              >
+                <template #empty>
+                  <div style="padding: 14px; opacity: 0.7">Nenhuma turma EBD ativa encontrada.</div>
+                </template>
+                <Column field="nomeDepartamento" header="Turma" />
+                <Column field="totalAulas" header="Aulas" style="width: 90px" />
+                <Column
+                  field="aulasAbertas"
+                  header="Abertas"
+                  style="width: 100px"
+                />
+                <Column header="Última aula" style="width: 130px">
+                  <template #body="{ data }">
+                    {{ formatarData(data.ultimaAulaData) }}
+                  </template>
+                </Column>
+              </DataTable>
+            </div>
           </div>
         </div>
       </LoadingOverlay>
+
+      <TurmasComoAluno v-if="turmasComoAluno.length > 0" :turmas="turmasComoAluno" />
     </template>
 
     <template v-else-if="isProfessor">
@@ -609,6 +722,8 @@ onMounted(carregarPainel);
           </div>
         </div>
       </LoadingOverlay>
+
+      <TurmasComoAluno v-if="turmasComoAluno.length > 0" :turmas="turmasComoAluno" />
     </template>
 
     <template v-else>
