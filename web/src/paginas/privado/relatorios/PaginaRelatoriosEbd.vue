@@ -103,6 +103,14 @@ function rotuloClassificacao(c: string): string {
   return c === "Critico" ? "Crítico" : "Atenção";
 }
 
+// Motivos do Acompanhamento numa frase só: separados por vírgula e, a partir do
+// segundo, com inicial minúscula ("3 faltas consecutivas, frequência crítica (40%)").
+function textoMotivos(motivos: string[] | null | undefined): string {
+  return (motivos ?? [])
+    .map((m, i) => (i === 0 ? m : m.charAt(0).toLocaleLowerCase("pt-BR") + m.slice(1)))
+    .join(", ");
+}
+
 function formatarPercentual(v: number | null | undefined): string {
   const n = Number(v ?? 0);
   return `${n.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
@@ -844,7 +852,7 @@ onMounted(async () => {
                   </Column>
                   <Column field="motivos" header="Motivos">
                     <template #body="{ data }">
-                      {{ (data.motivos || []).join(", ") }}
+                      {{ textoMotivos(data.motivos) }}
                     </template>
                   </Column>
                 </DataTable>

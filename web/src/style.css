@@ -5,7 +5,6 @@
   --ipb-verde-claro: #2e6b42;
   --ipb-verde-escuro: #1a3b25;
   --ipb-verde-bg: #edf5f0;
-  --ipb-verde-foco: #3d8a55;
   --ipb-cinza: #4d4d4d;
   --ipb-cinza-claro: #7a7a7a;
   --ipb-cinza-borda: #e2e2e2;
@@ -340,13 +339,26 @@ body {
   gap: 10px;
 }
 
-/* Foco pelo teclado nos botões dos diálogos (A1): um anel verde médio de 2 px,
-   só em :focus-visible (o clique do mouse não acende; o Tab acende). */
-.p-dialog .p-dialog-header .p-button:focus-visible,
-.p-dialog .p-dialog-footer .p-button:focus-visible {
-  outline: 2px solid var(--ipb-verde-foco);
-  outline-offset: 2px;
+/* Foco pelo teclado nos botões dos diálogos e das confirmações, inclusive o X: sem
+   contorno nem anel; o botão em foco muda só o fundo. O preenchido escuro (verde,
+   vermelho de Excluir) fica um tom mais claro, como no hover; o preenchido claro
+   (secundário, como Cancelar) fica um tom mais escuro; o contornado, o de texto e o X
+   ganham um fundo leve da cor do próprio texto. */
+.p-dialog .p-button:focus-visible {
+  outline: none;
   box-shadow: none;
+}
+
+.p-dialog .p-button:not(.p-button-secondary, .p-button-outlined, .p-button-text, .p-button-link):focus-visible {
+  filter: brightness(1.25);
+}
+
+.p-dialog .p-button-secondary:not(.p-button-outlined, .p-button-text, .p-button-link):focus-visible {
+  filter: brightness(0.9);
+}
+
+.p-dialog .p-button:is(.p-button-outlined, .p-button-text, .p-button-link):focus-visible {
+  background: color-mix(in srgb, currentColor 12%, transparent);
 }
 
 /* No celular as laterais continuam em 20 px, para não apertar os formulários

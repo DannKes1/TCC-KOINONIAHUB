@@ -157,8 +157,9 @@ describe("PaginaRelatoriosEbd — limiares do Acompanhamento (RF36)", () => {
   });
 
   // Ajuste A5: na tabela "Alunos em atenção", os motivos de cada aluno aparecem separados
-  // por vírgula (antes, por ponto e vírgula); o mesmo texto sai na impressão.
-  it("os motivos de um aluno em atenção aparecem separados por vírgula", async () => {
+  // por vírgula (antes, por ponto e vírgula) e, a partir do segundo, com inicial minúscula;
+  // o mesmo texto sai na impressão.
+  it("os motivos de um aluno em atenção aparecem numa frase, separados por vírgula e com minúscula a partir do segundo", async () => {
     vi.mocked(obterPainelAcompanhamento).mockResolvedValueOnce({
       departamentoId: 7, nomeDepartamento: "Jovens", dataInicio: "", dataFim: "",
       totalAulas: 5, totalAlunos: 1, limiarAtencao: 75, limiarCritico: 50,
@@ -178,7 +179,7 @@ describe("PaginaRelatoriosEbd — limiares do Acompanhamento (RF36)", () => {
     await wrapper.get('[role="tab"][aria-label="Acompanhamento"], [role="tab"]:nth-of-type(2)').trigger("click");
     await flushPromises();
 
-    expect(wrapper.text()).toContain("3 faltas consecutivas, Frequência crítica (40%)");
+    expect(wrapper.text()).toContain("3 faltas consecutivas, frequência crítica (40%)");
     expect(wrapper.text()).not.toContain("3 faltas consecutivas;");
   });
 

@@ -155,36 +155,63 @@ export async function problemasDeLargura(page: Page): Promise<string[]> {
   }, largura);
 }
 
-// Corretiva G5 (E2E-M4): diálogo aberto inteiro na janela. O diálogo do PrimeVue é uma
-// camada fixa: um conteúdo mais largo que ele não alarga o documento, rola para o lado
-// Ajuste A1: o foco pelo teclado continua visível nos diálogos. Ao abrir, o PrimeVue
-// põe o foco no botão de fechar; Shift+Tab leva ao último elemento do diálogo (a
-// armadilha de foco dá a volta) e Tab traz de volta ao botão de fechar, agora pelo
-// teclado. O anel tem de aparecer: :focus-visible com contorno de 2 px ou mais.
-export async function focoVisivelNoDialogo(page: Page, tela: string) {
+// Ajuste A1, revisto em 14/11/2026: nos diálogos e nas confirmações, o botão em foco
+// pelo teclado não tem contorno nem anel; muda só o fundo (um tom mais escuro no botão
+// preenchido; um fundo leve no contornado, no de texto e no X). Shift+Tab leva ao último
+// elemento do diálogo (a armadilha de foco dá a volta; em geral, o último botão do rodapé)
+// e Tab traz de volta ao botão de fechar, agora pelo teclado. Nas duas posições, o botão
+// em foco casa :focus-visible, não tem contorno nem sombra e o fundo difere do mesmo botão
+// sem foco. O botão de fechar é obrigatório; o último elemento só é conferido se for botão.
+export async function focoSemContornoNoDialogo(page: Page, tela: string) {
   await page.keyboard.press("Shift+Tab");
+  await conferirBotaoEmFoco(page, `${tela}, último elemento`, false);
   await page.keyboard.press("Tab");
-  const foco = await page.evaluate(() => {
+  await conferirBotaoEmFoco(page, `${tela}, botão de fechar`, true);
+}
+
+async function conferirBotaoEmFoco(page: Page, tela: string, exigeBotao: boolean) {
+  await page.waitForTimeout(250); // transição de fundo do tema (0,2 s)
+  const comFoco = await page.evaluate(() => {
     const el = document.activeElement as HTMLElement | null;
     const dialogos = Array.from(document.querySelectorAll(".p-dialog"));
     const dl = dialogos[dialogos.length - 1];
-    if (!el || !dl || !dl.contains(el)) return { dentro: false, botao: false, visivel: false, estilo: "", largura: 0 };
+    if (!el || !dl?.contains(el)) return null;
     const cs = getComputedStyle(el);
+    el.dataset.e2eFoco = "";
     return {
-      dentro: true,
       botao: el.matches(".p-dialog-header .p-button, .p-dialog-footer .p-button"),
       visivel: el.matches(":focus-visible"),
-      estilo: cs.outlineStyle,
-      largura: Number.parseFloat(cs.outlineWidth),
+      contorno: cs.outlineStyle !== "none" && Number.parseFloat(cs.outlineWidth) > 0,
+      sombra: cs.boxShadow,
+      fundo: `${cs.backgroundColor} ${cs.filter}`,
     };
   });
-  expect(foco.dentro, `${tela}: foco dentro do diálogo`).toBe(true);
-  expect(foco.botao, `${tela}: foco num botão do cabeçalho ou do rodapé`).toBe(true);
-  expect(foco.visivel, `${tela}: foco visível pelo teclado`).toBe(true);
-  expect(foco.estilo, `${tela}: contorno do foco`).not.toBe("none");
-  expect(foco.largura, `${tela}: largura do contorno do foco`).toBeGreaterThanOrEqual(2);
+  expect(comFoco, `${tela}: foco dentro do diálogo`).not.toBeNull();
+  if (!comFoco!.botao) {
+    expect(exigeBotao, `${tela}: foco num botão do cabeçalho ou do rodapé`).toBe(false);
+    await page.evaluate(() => document.querySelector<HTMLElement>("[data-e2e-foco]")?.removeAttribute("data-e2e-foco"));
+    return;
+  }
+  expect(comFoco!.visivel, `${tela}: foco pelo teclado`).toBe(true);
+  expect(comFoco!.contorno, `${tela}: sem contorno no foco`).toBe(false);
+  expect(comFoco!.sombra, `${tela}: sem anel no foco`).toBe("none");
+
+  // O mesmo botão sem foco: tira o foco, lê o fundo e devolve o foco a ele.
+  await page.evaluate(() => document.querySelector<HTMLElement>("[data-e2e-foco]")!.blur());
+  await page.waitForTimeout(250);
+  const semFoco = await page.evaluate(() => {
+    const el = document.querySelector<HTMLElement>("[data-e2e-foco]")!;
+    const cs = getComputedStyle(el);
+    const fundo = `${cs.backgroundColor} ${cs.filter}`;
+    el.focus();
+    el.removeAttribute("data-e2e-foco");
+    return fundo;
+  });
+  expect(comFoco!.fundo, `${tela}: o fundo muda no foco`).not.toBe(semFoco);
 }
 
+// Corretiva G5 (E2E-M4): diálogo aberto inteiro na janela. O diálogo do PrimeVue é uma
+// camada fixa: um conteúdo mais largo que ele não alarga o documento, rola para o lado
 // por dentro. Por isso, além do critério do documento (scrollWidth <= clientWidth),
 // confere a caixa do diálogo na janela, nenhum elemento do diálogo passando das bordas
 // dele e nenhum container do diálogo rolando para o lado (nem a tabela). A rolagem
