@@ -2737,3 +2737,58 @@ botão na largura disponível, o ⋮ alinhado e sem rolagem lateral.
 - `RF31-acao-consolidada-360.png`
 - `RF41-importacao-avisos-frases.png`
 - `RF36-motivos-virgula.png`
+
+## Ajustes antes da banca, Lote B: Turmas EBD fora do menu do Professor e histórico da aba Alunos recortado na turma (14/11/2026)
+
+**Escopo.** Dois ajustes sem mudar rota, DTO, banco nem monografia.
+
+- **(B1) Turmas EBD fora do menu do Professor (CSU17).** O item "Turmas EBD" e o título "EBD"
+  saíram do menu lateral do Professor (`MenuLateral.vue`). Ele abre as turmas dele por Minhas
+  Turmas ou pelo Painel. Os perfis administrativos mantêm a seção e o item; para o perfil Usuario
+  nada muda. A rota `/departamentos` continua aberta por endereço, e a API devolve ao Professor
+  só as turmas em que ele tem atribuição ativa.
+- **(B2) Histórico de presenças recortado na turma (CSU14).** Aberto pela aba Alunos, o histórico
+  mostra só as aulas daquela turma, com os totais dela e o aviso "Mostrando somente as presenças
+  nesta turma." (`DialogHistoricoPresencas.vue`, prop `departamentoId`, que
+  `PaginaMatriculasTurma.vue` preenche com a turma da rota). Aberto pela tela Pessoas, mostra as
+  aulas de todas as turmas, sem aviso. A coluna Turma continua. O filtro usa o `departamentoId`
+  que cada registro da API já traz.
+
+**Validação automatizada (14/11/2026):**
+
+- `dotnet build`: 0 erros.
+- `dotnet test`: **238 aprovados** (237 + 1, em classe nova):
+  `RF19_ListarTurmasTests.ListarTurmas_Professor_RecebeSoAsTurmasComAtribuicaoAtiva`. O
+  `GET /api/departamentos` devolve ao Professor só a turma com atribuição ativa e à gestão as
+  duas; com o filtro da API retirado, o caso falha.
+- `vue-tsc -b`: limpo.
+- `npm run test`: 40 arquivos, **205 casos** (202 + 3):
+  - `MenuLateral.spec` 1: os perfis administrativos mantêm a seção EBD e Turmas EBD; o caso do
+    Professor passou a exigir o menu sem os dois;
+  - `DialogHistoricoPresencas.spec` 2: com a turma, só os registros dela, os totais dela e o
+    aviso; sem a turma, todas as turmas e sem aviso;
+  - no `PaginaMatriculasTurma.spec`, o caso do histórico ganhou um registro de outra turma, que
+    não aparece.
+
+  Com o diálogo e a aba Alunos anteriores, os casos do recorte falham.
+- `npm run build`: ok.
+- `npm run test:e2e`: **25 aprovados** (11 `chromium` + 14 `mobile`). O E2E-05 confere o menu
+  do Professor sem Turmas EBD.
+
+**Testes manuais (perfil `https` + `npm run dev`, desktop e 360 × 640), executados pelo autor em
+14/11/2026:**
+
+- **T1 ✔** Menu do Professor só com Painel, Minhas Turmas, Meus Dados e Relatórios EBD, sem o
+  título "EBD".
+- **T2 ✔** Minhas Turmas › Abrir turma abre a turma, e o link de voltar leva a Minhas Turmas.
+- **T3 ✔** `/departamentos` digitado na barra abre a lista só com as turmas do Professor.
+- **T4 ✔** Aba Alunos › ⋮ › Histórico de presenças, como Professor: aviso do recorte, só as aulas
+  da turma e os totais dela.
+- **T5 ✔** O mesmo a 360 × 640, em cartões.
+- **T6 ✔** Admin com a seção "EBD" e Turmas EBD no menu.
+- **T7 ✔** Pessoas › Histórico de presenças do mesmo aluno: aulas das duas turmas, sem aviso.
+- **T8 ✔** Admin pela aba Alunos da turma: o mesmo recorte do T4.
+
+**Prints (`docs/evidencias/`, 4 arquivos):** `CSU17-menu-professor-sem-turmas-ebd.png`,
+`CSU14-historico-recorte-turma.png`, `CSU14-historico-recorte-turma-360.png`,
+`CSU14-historico-pessoas-todas-turmas.png`.
