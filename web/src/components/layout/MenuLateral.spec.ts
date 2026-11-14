@@ -70,16 +70,27 @@ describe("MenuLateral por perfil", () => {
     }
   });
 
-  it("Professor não vê Pessoas, Usuários nem Igreja", async () => {
-    const itens = itensDoMenu(await montarComPerfil("Professor"));
+  it("Os perfis administrativos continuam com a seção EBD e Turmas EBD", async () => {
+    for (const perfil of ["Admin", "Pastor", "Superintendente"]) {
+      const wrapper = await montarComPerfil(perfil);
 
-    expect(itens).toEqual([
+      expect(wrapper.findAll(".sidebar-secao").map((s) => s.text())).toContain("EBD");
+      expect(itensDoMenu(wrapper)).toContain("Turmas EBD");
+    }
+  });
+
+  // Ajuste B1: o Professor não vê Turmas EBD nem o título de seção EBD; abre as turmas
+  // dele por Minhas Turmas ou pelo Painel (CSU17, FA1).
+  it("Professor não vê Pessoas, Usuários, Igreja nem Turmas EBD", async () => {
+    const wrapper = await montarComPerfil("Professor");
+
+    expect(itensDoMenu(wrapper)).toEqual([
       "Painel",
       "Minhas Turmas",
       "Meus Dados",
       "Relatórios EBD",
-      "Turmas EBD",
     ]);
+    expect(wrapper.findAll(".sidebar-secao").map((s) => s.text())).not.toContain("EBD");
   });
 
   it("Usuario vê só Painel, Minhas Turmas e Meus Dados", async () => {

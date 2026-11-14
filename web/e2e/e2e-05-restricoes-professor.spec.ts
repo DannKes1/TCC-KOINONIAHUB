@@ -7,19 +7,20 @@ import { ARQUIVO_ESTADO_PROFESSOR, lerSemente } from "./apoio/semente";
 
 // E2E-05 — Restrições do Professor (registro do projeto, 7.3; CSU16, CSU15, CSU18; RNFs 21.4, 35.4,
 // 36.4, 37.4). Desktop. O menu é só conveniência: as negativas também são conferidas
-// direto na API (403), como a banca pode pedir.
+// direto na API (403), como a banca pode pedir. Desde o ajuste B1, o menu do Professor
+// não tem Turmas EBD: ele abre as turmas por Minhas Turmas ou pelo Painel (CSU17, FA1).
 
 const linksDoMenu = (page: Page) => page.locator("aside.sidebar-desktop a.sidebar-link");
 
 test.describe("E2E-05 professor", () => {
   test.use({ storageState: ARQUIVO_ESTADO_PROFESSOR });
 
-  test("menu sem Pessoas, Usuários e Igreja; GET /api/pessoas/{id} de pessoa fora das suas turmas → 403", async ({ page }) => {
+  test("menu sem Pessoas, Usuários, Igreja nem Turmas EBD; GET /api/pessoas/{id} de pessoa fora das suas turmas → 403", async ({ page }) => {
     const { professor, foraDaTurma, turmasChamada } = lerSemente();
 
     await page.goto("/");
     await expect(page.locator("h2.page-header-titulo")).toHaveText("Meu Painel");
-    await expect(linksDoMenu(page)).toHaveText(["Painel", "Minhas Turmas", "Meus Dados", "Relatórios EBD", "Turmas EBD"]);
+    await expect(linksDoMenu(page)).toHaveText(["Painel", "Minhas Turmas", "Meus Dados", "Relatórios EBD"]);
 
     // A rota administrativa digitada à mão não abre.
     await page.goto("/pessoas");
