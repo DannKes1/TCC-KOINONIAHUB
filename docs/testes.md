@@ -2390,8 +2390,8 @@ regra com os valores digitados e limiares, regra e descrição só na aba Acompa
 `PaginaPessoasLista.spec` 1: CEP antigo e guarda do único Admin no topo do diálogo; `cep.spec`
 3; os specs das nove telas migradas para o composable passaram sem alteração) · `npm run build`
 ok · `npm run test:e2e` = **25 aprovados** (11 `chromium` + 14 `mobile`; novos: E2E-09, guardas
-do único Admin, como Superintendente, e do próprio cadastro, como Admin, pela tela; E2E-M4, 17
-diálogos a 360, 430 e 1024 px sem nada passando da janela nem rolando para o lado dentro do
+do único Admin, como Superintendente, e do próprio cadastro, como Admin, pela tela; E2E-M4, 14
+diálogos em 17 aberturas a 360, 430 e 1024 px sem nada passando da janela nem rolando para o lado dentro do
 diálogo; E2E-M5, Painel do Admin, do Professor e do aluno, Pessoas, Turmas, Matérias, Aulas,
 Matrículas, Atribuições, Usuários, Relatórios nas quatro abas, Igreja, Meus Dados e Chamada a 360
 × 640, cada página parada e com a lista de cada Select aberta). Suíte completa executada antes
@@ -2651,3 +2651,89 @@ botão na largura disponível, o ⋮ alinhado e sem rolagem lateral.
 
 **Prints (`docs/evidencias/`, 2 arquivos):** `RF31-acoes-alinhadas-desktop.png`,
 `RF31-acoes-alinhadas-360.png`.
+
+## Ajustes antes da banca, Lote A: diálogos, link de voltar, visitantes, ação da aula Consolidada e textos (14/11/2026)
+
+**Escopo.** Cinco ajustes de interface, sem mudar rota, DTO, banco nem monografia:
+
+- **(A1) Diálogos e confirmações.** Saíram a borda fina e o anel de foco. O espaçamento ficou
+  maior (28 px nas laterais no desktop, 20 px abaixo de 768 px). Pelo teclado, o botão em foco,
+  inclusive o X, muda só o fundo: o preenchido escuro fica um tom mais claro, o preenchido claro
+  um tom mais escuro, e o contornado, o de texto e o X ganham um fundo leve
+  (`web/src/style.css`).
+- **(A2) Link de voltar do cabeçalho.** Ficou maior, em verde e negrito, com seta, e tem 44 px de
+  área de toque abaixo de 768 px (`PageHeader.vue`).
+- **(A3) Presenças da aula (CSU09 FA4).** Ganhou o indicador Visitantes, com o total gravado na
+  chamada. Ele fica fora de Registros, que conta só matrículas.
+- **(A4) Aula Consolidada na aba Aulas.** O botão principal é "Ver presenças" e abre as presenças
+  registradas. O item "Ver presenças registradas" sai do ⋮ só nessa situação; Em aberto e Não
+  realizada não mudaram. O rótulo longo "Ver presenças registradas" foi medido e descartado: a
+  1366 px, a linha da tabela passava de 69 para 91 px, e a Matéria quebrava em 3 linhas em vez
+  de 2. Com o rótulo curto, as medidas são as de antes.
+- **(A5) Textos sem ponto e vírgula.** Dezoito textos da interface e as mensagens da importação
+  passaram a frases com ponto final (RNF 41.3; `PessoaImportacaoServico`). Os Motivos do
+  Acompanhamento ficam numa frase só, separados por vírgula e com inicial minúscula a partir do
+  segundo. O CSV continua com o campo da API. O Termo de Uso não mudou.
+
+**Validação automatizada (14/11/2026):**
+
+- `dotnet build`: 0 erros.
+- `dotnet test`: **237 aprovados**. São 235 + 2:
+  `RF32_ChamadaTests.Registrar_ComVisitantes_GravaNaAulaEDevolveNoGet` e
+  `RF41_ImportacaoTests.Importar_LinhaComVariosAvisos_MostraCadaAvisoComoFrase`.
+- `vue-tsc -b`: limpo.
+- `npm run test`: 40 arquivos, **202 casos**. São 196 + 6: `PaginaPresencasAula.spec` 2, arquivo
+  novo; `PaginaAulasTurma.spec` 3; `PaginaRelatoriosEbd.spec` 1. Com as páginas anteriores,
+  falham os casos de visitantes, da aula Consolidada e dos Motivos.
+- `npm run build`: ok.
+- `npm run test:e2e`: **25 aprovados** (11 `chromium` + 14 `mobile`).
+  - **E2E-M4:** confere o foco pelo fundo nos 14 diálogos, em 17 aberturas por largura. No botão
+    em foco pelo teclado não há contorno nem anel, e o fundo difere do mesmo botão sem foco. Com o
+    contorno da primeira versão, o teste reprova.
+  - **E2E-M1:** mede o link de voltar e o botão da aula Consolidada a 360 px.
+  - **E2E-06:** abre as presenças pelo botão.
+  - **E2E-06 e E2E-M5:** conferem o botão e o ⋮ com diferença de centros de no máximo 1 px. A
+    diferença medida foi de 0 px antes e depois do ajuste, a 1366, 1280 e 360 px.
+
+**Testes manuais (perfil `https` + `npm run dev`, desktop e 360 × 640), executados pelo autor em
+14/11/2026:**
+
+- **T1 ✔** Nova pessoa, sem a borda fina e com mais margem.
+- **T2 ✔** Confirmação de Excluir aula sem borda e inteira a 360 px.
+- **T3 ✔** "← Turmas EBD" em verde e negrito. A 360 px, fácil de tocar.
+- **T4 ✔** Chamada com Visitantes = 3, consolidada. Em Ver presenças: Registros 2, Presentes 1,
+  Ausentes 1, Visitantes 3.
+- **T5 ✔** 1366 px:
+  - aula Consolidada com "Ver presenças" em uma linha e ⋮ sem o item repetido;
+  - Em aberto com "Fazer chamada" e o item no ⋮;
+  - linhas com a altura de antes.
+- **T6 ✔** O mesmo nos cartões a 360 px, sem rolagem lateral.
+- **T7 ✔** Avisos e confirmação da chamada em frases.
+- **T8 ✔** Importar CSV: descrição em frases. O nome foi trocado só na segunda linha do arquivo:
+  - a primeira linha saiu como Criado, com dois avisos em frases (data e CEP);
+  - a segunda linha foi Ignorada e destacada, com "Já existe uma pessoa com este nome. Linha
+    ignorada para conferência. Se for outra pessoa, cadastre manualmente."
+
+  O caso com três avisos é coberto pelo xUnit.
+- **T9 ✔** Acompanhamento com os Motivos separados por vírgula e a descrição em frases.
+- **T10 ✔** Meus Dados, Editar pessoa com conta, informação de Usuários e nota do Painel em frases.
+
+**Acertos depois dos testes manuais, conferidos pelo autor em 14/11/2026:**
+
+1. **Foco nos diálogos.** A primeira versão punha um contorno verde de 2 px no botão em foco. O
+   contorno aparecia também sem Tab: no Excluir da confirmação a 360 px e no Importar depois da
+   importação. Saiu de todos os botões dos diálogos e das confirmações, inclusive do X. Ficou só a
+   mudança de fundo, conferida em Nova pessoa (X, Cancelar e Salvar), na confirmação de Excluir a
+   360 px e no Importar.
+2. **Motivos.** Passaram a ter inicial minúscula a partir do segundo: "2 faltas consecutivas,
+   frequência abaixo do mínimo (60%)".
+
+**Prints (`docs/evidencias/`, 7 arquivos):**
+
+- `RNF-dialogo-foco-fundo.png`
+- `UI-voltar-360.png`
+- `CSU09-FA4-presencas-visitantes.png`
+- `RF31-acao-consolidada-desktop.png`
+- `RF31-acao-consolidada-360.png`
+- `RF41-importacao-avisos-frases.png`
+- `RF36-motivos-virgula.png`
