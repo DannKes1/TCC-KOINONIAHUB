@@ -118,6 +118,30 @@ namespace KoinoniaHub.API.Tests
         }
 
         [Fact]
+        public async Task Registrar_ComVisitantes_GravaNaAulaEDevolveNoGet()
+        {
+            // RF32 / CSU10: a chamada grava o total de visitantes na aula, e GET /api/aulas/{id}
+            // o devolve. É o número que a página de Presenças da aula mostra (ajuste A3).
+            var cenario = await CenarioAula.CriarAsync(_fabrica, "rf32f");
+            var aulaId = await cenario.CriarAulaAsync(_fabrica, SituacaoAula.EmAberto);
+            var professor = await CenarioAcessoPessoa.ClienteAutenticadoAsync(_fabrica, cenario.EmailProfessor);
+
+            var resposta = await professor.PostAsJsonAsync($"/api/aulas/{aulaId}/presencas", new
+            {
+                Itens = new[] { new { AlunoDepartamentoId = cenario.MatriculaAId, Presente = true } },
+                QuantidadeVisitantes = 3
+            });
+
+            Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+            Assert.Equal(3, (await CenarioAula.LerAulaAsync(_fabrica, aulaId)).QuantidadeVisitantes);
+
+            var leitura = await professor.GetAsync($"/api/aulas/{aulaId}");
+            Assert.Equal(HttpStatusCode.OK, leitura.StatusCode);
+            using var json = JsonDocument.Parse(await leitura.Content.ReadAsStringAsync());
+            Assert.Equal(3, json.RootElement.GetProperty("quantidadeVisitantes").GetInt32());
+        }
+
+        [Fact]
         public async Task ChamadaCompleta_InformaRegistrado_PorMatricula()
         {
             // Etapa 6.4-C (RNFs 32.6/33.3): a chamada completa distingue "ausente" de
