@@ -27,10 +27,15 @@ import type { HistoricoPresencaPessoaVM } from "../../aplicacao/modelos/dtos";
 // mesmo carrega o histórico ao abrir. Totais só com aulas Consolidadas (CSU07); a
 // lista traz todos os registros com a situação da aula. Abaixo de 768 px a tabela vira
 // cartões, sem rolagem horizontal; no desktop, a tabela de sempre.
+// Ajuste B2: com `departamentoId` (aba Alunos da turma), a lista e os totais ficam só com
+// as aulas daquela turma, e o diálogo avisa o recorte; sem ele (tela Pessoas), o histórico
+// traz todas as turmas que a API devolve. O filtro usa o `departamentoId` que cada registro
+// já traz: a API e o contrato não mudam.
 const props = defineProps<{
   visible: boolean;
   pessoaId: number | null;
   nome: string;
+  departamentoId?: number | null;
 }>();
 
 const emit = defineEmits<{
@@ -72,7 +77,9 @@ async function carregar() {
   try {
     const lista = await listarHistoricoPresencasDaPessoa(props.pessoaId);
     if (minha !== sequencia) return;
-    historico.value = lista;
+    historico.value = props.departamentoId
+      ? lista.filter((r) => r.departamentoId === props.departamentoId)
+      : lista;
   } catch (e: any) {
     if (minha !== sequencia) return;
     erro.value =
@@ -96,6 +103,12 @@ watch(
     }
   },
   { immediate: true },
+);
+
+const textoVazio = computed(() =>
+  props.departamentoId
+    ? "Nenhum histórico de presença encontrado para esta pessoa nesta turma."
+    : "Nenhum histórico de presença encontrado para esta pessoa.",
 );
 
 function formatarData(valor?: string | null) {
@@ -122,6 +135,13 @@ function severityPresenca(presente: boolean) {
   >
     <div style="display: flex; flex-direction: column; gap: 14px">
       <InlineMessage :texto="erro" tipo="erro" />
+
+      <InlineMessage
+        v-if="departamentoId"
+        texto="Mostrando somente as presenças nesta turma."
+        tipo="info"
+        data-testid="historico-recorte-turma"
+      />
 
       <div class="historico-indicadores" data-testid="historico-indicadores">
         <div class="historico-indicador">
@@ -186,7 +206,7 @@ function severityPresenca(presente: boolean) {
           </CartaoItem>
 
           <p v-if="!carregando && visiveis.length === 0" class="lista-vazia">
-            Nenhum histórico de presença encontrado para esta pessoa.
+            {{ textoVazio }}
           </p>
 
           <Button
@@ -215,7 +235,7 @@ function severityPresenca(presente: boolean) {
         >
           <template #empty>
             <div style="padding: 14px; opacity: 0.7">
-              Nenhum histórico de presença encontrado para esta pessoa.
+              {{ textoVazio }}
             </div>
           </template>
           <Column header="Data" style="width: 120px">

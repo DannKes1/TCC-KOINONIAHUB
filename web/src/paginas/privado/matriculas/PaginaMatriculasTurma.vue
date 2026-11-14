@@ -9,7 +9,8 @@ import FieldError from "../../../components/ui/FieldError.vue";
 import CartaoItem from "../../../components/ui/CartaoItem.vue";
 import MenuAcoes from "../../../components/ui/MenuAcoes.vue";
 // Corretiva da 7.3 (CSU14, RNF 34.3): o Professor consulta o histórico de presenças do
-// aluno a partir da aba Alunos, pelo mesmo diálogo de Pessoas.
+// aluno a partir da aba Alunos, pelo mesmo diálogo de Pessoas. Ajuste B2: aqui o
+// histórico é o da turma (o diálogo recebe a turma da rota).
 import DialogHistoricoPresencas from "../../../components/pessoas/DialogHistoricoPresencas.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
@@ -594,6 +595,7 @@ onMounted(carregarTudo);
       v-model:visible="dialogHistoricoAberto"
       :pessoa-id="alunoHistorico?.pessoaId ?? null"
       :nome="alunoHistorico?.nome ?? ''"
+      :departamento-id="departamentoId"
     />
   </div>
 </template>

@@ -48,10 +48,12 @@ vi.mock("../../../aplicacao/servicos/parentescosServico", () => ({
 }));
 
 // Corretiva da 7.3 (CSU14): o histórico do aluno abre pelo ⋮ e carrega pela rota
-// da pessoa (RNF 34.3), com um registro de aula Consolidada para os totais.
+// da pessoa (RNF 34.3), com um registro de aula Consolidada para os totais. Ajuste B2:
+// o segundo registro é de outra turma (8) e não pode aparecer na aba Alunos da turma 7.
 vi.mock("../../../aplicacao/servicos/presencasPessoaServico", () => ({
   listarHistoricoPresencasDaPessoa: vi.fn(async () => [
     { aulaId: 1, dataAula: "2026-10-05T12:00:00Z", departamentoId: 7, departamentoNome: "Jovens", materiaId: 1, materiaNome: "Gênesis", presente: true, observacao: null, situacaoAula: "Consolidada" },
+    { aulaId: 2, dataAula: "2026-10-12T12:00:00Z", departamentoId: 8, departamentoNome: "Adultos", materiaId: 2, materiaNome: "Êxodo", presente: false, observacao: null, situacaoAula: "Consolidada" },
   ]),
 }));
 
@@ -170,6 +172,8 @@ describe("PaginaMatriculasTurma — cartões no celular (6.4-C)", () => {
     expect(dialogo!.textContent).toContain("Caio");
     expect(dialogo!.querySelector('[data-testid="historico-consolidadas"]')!.textContent?.trim()).toBe("1");
     expect(dialogo!.querySelectorAll('[data-testid="historico-cartao"]')).toHaveLength(1);
+    expect(dialogo!.textContent).not.toContain("Adultos");
+    expect(dialogo!.querySelector('[data-testid="historico-recorte-turma"]')).not.toBeNull();
     wrapper.unmount();
   });
 

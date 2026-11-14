@@ -24,13 +24,21 @@ vi.mock("../../aplicacao/servicos/presencasPessoaServico", () => ({
   listarHistoricoPresencasDaPessoa: vi.fn(async () => registros),
 }));
 
-function montar(visible = true) {
+function montar(visible = true, departamentoId?: number) {
   return mount(DialogHistoricoPresencas, {
     attachTo: document.body,
-    props: { visible, pessoaId: 12, nome: "Caio" },
+    props: { visible, pessoaId: 12, nome: "Caio", departamentoId },
     global: { plugins: [PrimeVue] },
   });
 }
+
+// Ajuste B2: o mesmo aluno com aulas na turma 7 (Jovens) e na turma 8 (Adultos). Lista
+// própria dos dois casos do recorte, para não mudar os números dos casos acima.
+const duasTurmas: HistoricoPresencaPessoaVM[] = [
+  { aulaId: 11, dataAula: "2026-10-05T12:00:00Z", departamentoId: 7, departamentoNome: "Jovens", materiaId: 1, materiaNome: "Gênesis", presente: true, observacao: null, situacaoAula: "Consolidada" },
+  { aulaId: 12, dataAula: "2026-10-12T12:00:00Z", departamentoId: 8, departamentoNome: "Adultos", materiaId: 2, materiaNome: "Êxodo", presente: false, observacao: null, situacaoAula: "Consolidada" },
+  { aulaId: 13, dataAula: "2026-10-19T12:00:00Z", departamentoId: 8, departamentoNome: "Adultos", materiaId: 2, materiaNome: "Êxodo", presente: false, observacao: null, situacaoAula: "Consolidada" },
+];
 
 describe("DialogHistoricoPresencas (RF34 / CSU14)", () => {
   beforeEach(() => {
@@ -75,6 +83,36 @@ describe("DialogHistoricoPresencas (RF34 / CSU14)", () => {
     expect(document.querySelector('[data-testid="historico-tabela"]')).not.toBeNull();
     expect(document.querySelectorAll('[data-testid="historico-cartao"]')).toHaveLength(0);
     expect(document.querySelectorAll('[data-testid="historico-tabela"] tbody tr')).toHaveLength(3);
+    wrapper.unmount();
+  });
+
+  it("aberto pela turma (aba Alunos), mostra só as aulas dela, com os totais dela e o aviso do recorte", async () => {
+    vi.mocked(listarHistoricoPresencasDaPessoa).mockResolvedValueOnce(duasTurmas);
+    const wrapper = montar(true, 7);
+    await flushPromises();
+
+    const cartoes = Array.from(document.querySelectorAll('[data-testid="historico-cartao"]'));
+    expect(cartoes).toHaveLength(1);
+    expect(cartoes[0]!.textContent).toContain("Jovens");
+    const texto = (id: string) => document.querySelector(`[data-testid="${id}"]`)!.textContent?.trim();
+    expect(texto("historico-consolidadas")).toBe("1");
+    expect(texto("historico-faltas")).toBe("0");
+    expect(texto("historico-percentual")).toBe("100%");
+    expect(texto("historico-total")).toBe("1");
+    expect(texto("historico-recorte-turma")).toBe("Mostrando somente as presenças nesta turma.");
+    wrapper.unmount();
+  });
+
+  it("sem turma (tela Pessoas), mostra as aulas de todas as turmas e não avisa recorte", async () => {
+    vi.mocked(listarHistoricoPresencasDaPessoa).mockResolvedValueOnce(duasTurmas);
+    const wrapper = montar();
+    await flushPromises();
+
+    const cartoes = Array.from(document.querySelectorAll('[data-testid="historico-cartao"]'));
+    expect(cartoes).toHaveLength(3);
+    expect(document.body.textContent).toContain("Adultos");
+    expect(document.querySelector('[data-testid="historico-total"]')!.textContent?.trim()).toBe("3");
+    expect(document.querySelector('[data-testid="historico-recorte-turma"]')).toBeNull();
     wrapper.unmount();
   });
 
