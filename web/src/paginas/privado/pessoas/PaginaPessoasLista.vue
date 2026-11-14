@@ -729,7 +729,7 @@ onMounted(carregarLista);
               data-testid="pessoa-email-dica"
               style="font-size: 12px; color: var(--ipb-cinza-claro, #7a7a7a)"
             >
-              E-mail de acesso; definido na criação da conta.
+              E-mail de acesso, definido na criação da conta.
             </small>
             <FieldError
               :texto="erroDoCampo('Email', 'email')"

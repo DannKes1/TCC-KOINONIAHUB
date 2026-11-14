@@ -117,8 +117,8 @@ const mensagem = computed<{ texto: string; tipo: "erro" | "aviso" } | null>(() =
       tipo: "aviso",
       texto:
         semRegistroTotal === 1
-          ? "1 aluno sem registro de presença ou ausência (destacado na lista). Marque presente quem veio; ao salvar ou consolidar, quem ficar sem marcação será registrado como ausente."
-          : `${semRegistroTotal} alunos sem registro de presença ou ausência (destacados na lista). Marque presente quem veio; ao salvar ou consolidar, quem ficar sem marcação será registrado como ausente.`,
+          ? "1 aluno sem registro de presença ou ausência (destacado na lista). Marque presente quem veio. Ao salvar ou consolidar, quem ficar sem marcação será registrado como ausente."
+          : `${semRegistroTotal} alunos sem registro de presença ou ausência (destacados na lista). Marque presente quem veio. Ao salvar ou consolidar, quem ficar sem marcação será registrado como ausente.`,
     };
   }
 
@@ -126,7 +126,7 @@ const mensagem = computed<{ texto: string; tipo: "erro" | "aviso" } | null>(() =
     return {
       tipo: "aviso",
       texto:
-        "Esta aula está consolidada. A chamada está em modo somente leitura; apenas o Administrador pode reabri-la para correção.",
+        "Esta aula está consolidada. A chamada está em modo somente leitura. Apenas o Administrador pode reabri-la para correção.",
     };
   }
 
@@ -290,8 +290,8 @@ function confirmarConsolidar() {
   if (ausentesImplicitos.length > 0) {
     message =
       ausentesImplicitos.length === 1
-        ? "O aluno abaixo está sem registro e será gravado como ausente. A chamada será salva e consolidada; depois disso não poderá mais ser alterada. Deseja continuar?"
-        : `Os ${ausentesImplicitos.length} alunos abaixo estão sem registro e serão gravados como ausentes. A chamada será salva e consolidada; depois disso não poderá mais ser alterada. Deseja continuar?`;
+        ? "O aluno abaixo está sem registro e será gravado como ausente. A chamada será salva e consolidada. Depois disso não poderá mais ser alterada. Deseja continuar?"
+        : `Os ${ausentesImplicitos.length} alunos abaixo estão sem registro e serão gravados como ausentes. A chamada será salva e consolidada. Depois disso não poderá mais ser alterada. Deseja continuar?`;
   } else if (salvaAntes) {
     message =
       "A chamada será salva e consolidada. Depois disso não poderá mais ser alterada. Deseja continuar?";
@@ -416,7 +416,7 @@ onBeforeUnmount(() => {
         </div>
 
         <label class="chamada-visitantes" for="qtd-visitantes">
-          <span title="Pessoas sem matrícula que participaram da aula; a contagem é salva com a chamada.">
+          <span title="Pessoas sem matrícula que participaram da aula. A contagem é salva com a chamada.">
             Visitantes
           </span>
           <InputNumber

@@ -96,7 +96,7 @@ describe("PaginaMeusDados — validação prévia e envio (RNF 4.3)", () => {
     const email = wrapper.find("input#meus-dados-email").element as HTMLInputElement;
     expect(email.value).toBe("maria@teste.com");
     expect(email.disabled).toBe(true); // Corretiva G2: e-mail de acesso, somente leitura
-    expect(wrapper.find('[data-testid="meus-dados-email-dica"]').text()).toBe("E-mail de acesso; definido na criação da conta.");
+    expect(wrapper.find('[data-testid="meus-dados-email-dica"]').text()).toBe("E-mail de acesso, definido na criação da conta.");
     expect((wrapper.find("input#meus-dados-uf").element as HTMLInputElement).value).toBe("RO");
     expect(wrapper.text()).toContain("Maria Souza");
 

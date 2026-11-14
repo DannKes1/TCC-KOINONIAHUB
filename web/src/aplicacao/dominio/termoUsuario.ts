@@ -55,6 +55,6 @@ export function resumirTermoUsuario(
     rotulo: `Versão anterior (v${aceite.versao})`,
     severidade: "warn",
     quando,
-    dica: `Aceitou a versão ${aceite.versao} em ${quando}; a versão vigente ainda está pendente.`,
+    dica: `Aceitou a versão ${aceite.versao} em ${quando}, mas a versão vigente ainda está pendente.`,
   };
 }

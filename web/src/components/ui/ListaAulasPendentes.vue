@@ -26,7 +26,7 @@ const titulo = computed(() =>
 
 const descricao = computed(() =>
   props.tipo === "nao-realizadas"
-    ? "Encerradas sem registro de presença; não entram nos totais."
+    ? "Encerradas sem registro de presença. Não entram nos totais."
     : "Aulas em aberto com data já ocorrida: não entram nos cálculos até serem consolidadas ou marcadas como Não realizadas.",
 );
 

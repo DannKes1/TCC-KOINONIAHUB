@@ -440,7 +440,7 @@ onMounted(carregarDados);
     <InlineMessage :texto="erro" tipo="erro" />
 
     <InlineMessage
-      texto="A criação de usuário sempre exige vínculo com uma pessoa já cadastrada. Por padrão, o sistema gera um link de convite para a própria pessoa definir a senha; para redefinir o acesso de uma conta, gere um novo convite. A senha nunca é digitada pelo administrador. Este módulo é restrito a administradores."
+      texto="A criação de usuário sempre exige vínculo com uma pessoa já cadastrada. Por padrão, o sistema gera um link de convite para a própria pessoa definir a senha. Para redefinir o acesso de uma conta, gere um novo convite. A senha nunca é digitada pelo administrador. Este módulo é restrito a administradores."
       tipo="info"
     />
 

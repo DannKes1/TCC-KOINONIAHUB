@@ -742,7 +742,7 @@ onMounted(carregarPainel);
             </div>
             <p class="card-tabela-nota">
               Mesma janela e mesma regra de Minha Frequência, somando todas as suas
-              turmas: só aulas Consolidadas entram nos números acima; aulas Em aberto
+              turmas. Só aulas Consolidadas entram nos números acima. Aulas Em aberto
               ou Não realizadas aparecem na lista, mas não contam.
             </p>
 

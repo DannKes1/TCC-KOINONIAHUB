@@ -733,7 +733,7 @@ onMounted(async () => {
               (presenças divididas pelas aulas consolidadas em que o aluno tem chamada
               registrada) e as faltas seguidas mais recentes (contadas da última aula
               consolidada para trás, até a última presença), e classifica em Crítico,
-              Atenção ou regular; a lista mostra só Crítico e Atenção. Ajuste os limiares
+              Atenção ou regular. A lista mostra só Crítico e Atenção. Ajuste os limiares
               conforme o critério da igreja.
             </p>
             <div v-if="acompanhamento" class="conteudo-relatorio">
@@ -844,7 +844,7 @@ onMounted(async () => {
                   </Column>
                   <Column field="motivos" header="Motivos">
                     <template #body="{ data }">
-                      {{ (data.motivos || []).join("; ") }}
+                      {{ (data.motivos || []).join(", ") }}
                     </template>
                   </Column>
                 </DataTable>

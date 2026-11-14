@@ -148,7 +148,7 @@ const itensOrdenados = computed(() => {
       />
 
       <InlineMessage
-        texto="Importe de uma só vez o rol de membros da igreja. O arquivo precisa da coluna 'Nome'; as demais colunas do modelo (Sexo, DataNascimento, EstadoCivil, Email, Celular, Endereco, Bairro, Cidade, Estado, CEP) são opcionais e colunas fora do modelo são ignoradas. Linhas com e-mail já cadastrado são ignoradas; linhas sem e-mail cujo nome já existe são ignoradas e sinalizadas para conferência."
+        texto="Importe de uma só vez o rol de membros da igreja. O arquivo precisa da coluna 'Nome'. As demais colunas do modelo (Sexo, DataNascimento, EstadoCivil, Email, Celular, Endereco, Bairro, Cidade, Estado, CEP) são opcionais, e colunas fora do modelo são ignoradas. Linhas com e-mail já cadastrado são ignoradas. Linhas sem e-mail cujo nome já existe também são ignoradas e ficam sinalizadas para conferência."
         tipo="info"
       />
 
@@ -211,7 +211,7 @@ const itensOrdenados = computed(() => {
 
         <InlineMessage
           v-if="resultado.paraConferencia > 0"
-          texto="Linhas destacadas: já existe uma pessoa com o mesmo nome e a linha não trazia e-mail para confirmar. Confira se é a mesma pessoa; se for outra, cadastre manualmente."
+          texto="Linhas destacadas: já existe uma pessoa com o mesmo nome e a linha não trazia e-mail para confirmar. Confira se é a mesma pessoa. Se for outra, cadastre manualmente."
           tipo="aviso"
         />
 

@@ -156,6 +156,32 @@ describe("PaginaRelatoriosEbd — limiares do Acompanhamento (RF36)", () => {
     expect(ultimaChamada()).toMatchObject({ limiarAtencao: 80, limiarCritico: 40, faltasConsecutivasCritico: 3 });
   });
 
+  // Ajuste A5: na tabela "Alunos em atenção", os motivos de cada aluno aparecem separados
+  // por vírgula (antes, por ponto e vírgula); o mesmo texto sai na impressão.
+  it("os motivos de um aluno em atenção aparecem separados por vírgula", async () => {
+    vi.mocked(obterPainelAcompanhamento).mockResolvedValueOnce({
+      departamentoId: 7, nomeDepartamento: "Jovens", dataInicio: "", dataFim: "",
+      totalAulas: 5, totalAlunos: 1, limiarAtencao: 75, limiarCritico: 50,
+      faltasConsecutivasCritico: 3, totalCritico: 1, totalAtencao: 0,
+      alunos: [
+        {
+          matriculaId: 1, pessoaId: 10, nomeAluno: "Ana", classificacao: "Critico",
+          percentualPresenca: 40, faltasConsecutivas: 3, dataUltimaPresenca: null,
+          motivos: ["3 faltas consecutivas", "Frequência crítica (40%)"],
+        },
+      ],
+      aulasPendentes: [],
+    } as never);
+    const wrapper = await montar();
+    wrapperAtual = wrapper;
+
+    await wrapper.get('[role="tab"][aria-label="Acompanhamento"], [role="tab"]:nth-of-type(2)').trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("3 faltas consecutivas, Frequência crítica (40%)");
+    expect(wrapper.text()).not.toContain("3 faltas consecutivas;");
+  });
+
   // Corretiva G5: limiares, regra e descrição do relatório só na aba Acompanhamento; turma
   // e período continuam nas outras abas.
   it("limiares, regra e descrição aparecem só na aba Acompanhamento", async () => {
@@ -185,7 +211,7 @@ describe("PaginaRelatoriosEbd — limiares do Acompanhamento (RF36)", () => {
         "matrícula ativa na turma, no período escolhido, calcula a frequência (presenças " +
         "divididas pelas aulas consolidadas em que o aluno tem chamada registrada) e as faltas " +
         "seguidas mais recentes (contadas da última aula consolidada para trás, até a última " +
-        "presença), e classifica em Crítico, Atenção ou regular; a lista mostra só Crítico e " +
+        "presença), e classifica em Crítico, Atenção ou regular. A lista mostra só Crítico e " +
         "Atenção. Ajuste os limiares conforme o critério da igreja.",
     );
   });

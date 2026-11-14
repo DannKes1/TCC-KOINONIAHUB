@@ -11,7 +11,7 @@ const respostaDaApi = {
   itens: [
     { linha: 2, nome: "Maria da Silva", email: "maria@teste.com", status: "Criado", mensagem: null, paraConferencia: false },
     { linha: 3, nome: "Ana Outra Grafia", email: "ana@teste.com", status: "Ignorado", mensagem: "Este e-mail já está em uso por outra pessoa (linha ignorada).", paraConferencia: false },
-    { linha: 4, nome: "Carlos Souza", email: null, status: "Ignorado", mensagem: "Já existe uma pessoa com este nome; linha ignorada para conferência. Se for outra pessoa, cadastre manualmente.", paraConferencia: true },
+    { linha: 4, nome: "Carlos Souza", email: null, status: "Ignorado", mensagem: "Já existe uma pessoa com este nome. Linha ignorada para conferência. Se for outra pessoa, cadastre manualmente.", paraConferencia: true },
     { linha: 5, nome: "", email: null, status: "Erro", mensagem: "Nome é obrigatório.", paraConferencia: false },
   ],
 };
