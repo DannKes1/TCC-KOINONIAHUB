@@ -16,7 +16,7 @@ test.describe("E2E-05 professor", () => {
   test.use({ storageState: ARQUIVO_ESTADO_PROFESSOR });
 
   test("menu sem Pessoas, Usuários, Igreja nem Turmas EBD; GET /api/pessoas/{id} de pessoa fora das suas turmas → 403", async ({ page }) => {
-    const { professor, foraDaTurma, turmasChamada } = lerSemente();
+    const { professor, foraDaTurma, turmasChamada, turmaReabertura } = lerSemente();
 
     await page.goto("/");
     await expect(page.locator("h2.page-header-titulo")).toHaveText("Meu Painel");
@@ -27,6 +27,33 @@ test.describe("E2E-05 professor", () => {
     await page.waitForURL((url) => url.pathname === "/");
     await page.goto("/usuarios");
     await page.waitForURL((url) => url.pathname === "/");
+
+    // Ajuste D1: aberta por Turmas EBD (endereço digitado; o menu não tem o item), a
+    // turma volta para Turmas EBD, mesmo para o Professor, cuja regra sem origem é Minhas
+    // Turmas. A origem sobrevive à troca de aba e à ida e volta da página da aula; com a
+    // página recarregada, vale a regra por perfil.
+    await page.goto("/departamentos");
+    await page
+      .locator("tr", { hasText: turmaReabertura.nome })
+      .getByRole("button")
+      .last()
+      .click();
+    await page.getByRole("menuitem", { name: "Abrir turma" }).click();
+    await page.waitForURL((url) => url.pathname === `/departamentos/${turmaReabertura.id}/aulas`);
+    const voltarDaTurma = page.locator(".page-header-voltar");
+    await expect(voltarDaTurma).toHaveText(/Turmas EBD/);
+    await page.getByTestId("turma-aba-matriculas").click();
+    await page.waitForURL((url) => url.pathname === `/departamentos/${turmaReabertura.id}/matriculas`);
+    await expect(voltarDaTurma).toHaveText(/Turmas EBD/);
+    await page.getByTestId("turma-aba-aulas").click();
+    await page.locator("tr", { hasText: turmaReabertura.tema }).getByTestId("aula-chamada").click();
+    await page.waitForURL((url) => url.pathname.startsWith(`/aulas/${turmaReabertura.aulaId}/`));
+    await expect(voltarDaTurma).toContainText(turmaReabertura.nome);
+    await voltarDaTurma.click();
+    await page.waitForURL((url) => url.pathname === `/departamentos/${turmaReabertura.id}/aulas`);
+    await expect(voltarDaTurma).toHaveText(/Turmas EBD/);
+    await page.reload();
+    await expect(voltarDaTurma).toHaveText(/Minhas Turmas/);
 
     // RNF 21.x: o professor consulta só alunos das turmas em que tem atribuição ativa.
     const api = await novoClienteApi(apiURL);
@@ -53,6 +80,10 @@ test.describe("E2E-05 professor", () => {
 
     await page.goto("/relatorios/ebd");
     await expect(page.locator("h2.page-header-titulo")).toContainText("Relatórios");
+    // Ajuste D4: sem a aba Resumo do dia, o subtítulo do Professor não a cita.
+    await expect(page.locator(".page-header-subtitulo")).toHaveText(
+      "Frequência da turma, acompanhamento e ranking de faltas",
+    );
     await expect(page.getByTestId("relatorio-total-aulas")).toBeVisible();
 
     // Turma com aula consolidada (A e B presentes, C ausente): as três abas têm tabela.

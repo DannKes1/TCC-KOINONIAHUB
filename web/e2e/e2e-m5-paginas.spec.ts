@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import { problemasDeLargura } from "./apoio/celular";
 import {
@@ -74,11 +74,37 @@ test.describe("E2E-M5 celular — páginas dentro da tela", () => {
         ["/usuarios", "Usuários"],
         ["/igreja", "Igreja"],
         ["/meus-dados", "Meus Dados"],
+        ["/minhas-turmas", "Minhas Turmas"],
         [`/aulas/${turmaReabertura.aulaId}/chamada`, "Chamada"],
       ]) {
         await page.goto(rota);
         await conferirPagina(page, tela);
       }
+
+      // Ajuste D5: o "Mostrar:" de Turmas EBD e o de Minhas Turmas têm o tamanho e a cor do
+      // rótulo de filtro de Usuários (Buscar), sem transparência.
+      const estiloDoRotulo = (alvo: Locator) =>
+        alvo.evaluate((el) => {
+          const estilo = getComputedStyle(el);
+          return { tamanho: estilo.fontSize, cor: estilo.color, opacidade: estilo.opacity };
+        });
+      // Ajuste D5: equipe da Página da Turma com 15 px.
+      await page.goto(`/departamentos/${turma.id}/aulas`);
+      expect(await estiloDoRotulo(page.getByTestId("turma-equipe")).then((e) => e.tamanho)).toBe("15px");
+
+      await page.goto("/usuarios");
+      const rotuloDeUsuarios = await estiloDoRotulo(page.locator('label[for="usuario-filtro-busca"]'));
+      expect(rotuloDeUsuarios.opacidade, "rótulo Buscar sem transparência").toBe("1");
+      await page.goto("/departamentos");
+      expect(
+        await estiloDoRotulo(page.locator("main").getByText("Mostrar:", { exact: true })),
+        "Mostrar: de Turmas EBD",
+      ).toEqual(rotuloDeUsuarios);
+      await page.goto("/minhas-turmas");
+      expect(
+        await estiloDoRotulo(page.locator("#minhas-turmas-filtro-rotulo")),
+        "Mostrar: de Minhas Turmas",
+      ).toEqual(rotuloDeUsuarios);
 
       // Ajuste A4: a 360 px, o cartão da aula consolidada do Admin tem o botão "Ver
       // presenças" em uma linha e o ⋮ (Reabrir aula) ao lado, na mesma altura.

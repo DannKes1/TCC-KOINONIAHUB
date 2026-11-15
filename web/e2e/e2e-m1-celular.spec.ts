@@ -307,6 +307,33 @@ test.describe("E2E-M1 celular", () => {
       await semRolagemHorizontal(page, "Painel do aluno");
       await evidenciaCelular(page, testInfo, "painel-aluno");
 
+      // Ajuste D1: aberta pelo Painel, Minha frequência volta para o Painel.
+      await page
+        .getByTestId("painel-aluno-turmas-cartoes")
+        .locator(".cartao-item", { hasText: turma.nome })
+        .getByTestId("painel-aluno-turma-acao")
+        .click();
+      await page.waitForURL(
+        (url) => url.pathname === `/departamentos/${turma.id}/minha-frequencia`,
+      );
+      // Ajuste D3: o subtítulo diz de que turma é a frequência.
+      await expect(page.locator(".page-header-subtitulo")).toHaveText(`Turma ${turma.nome}`);
+      // Ajustes D3 e D5: subtítulo com 15 px; período com 14 px, na cor do texto comum.
+      const estiloDe = (seletor: string) =>
+        page.locator(seletor).evaluate((el) => {
+          const estilo = getComputedStyle(el);
+          return { tamanho: estilo.fontSize, cor: estilo.color };
+        });
+      expect((await estiloDe(".page-header-subtitulo")).tamanho).toBe("15px");
+      const corDoTexto = await page.locator("body").evaluate((el) => getComputedStyle(el).color);
+      expect(await estiloDe('[data-testid="minha-frequencia-periodo"]')).toEqual({
+        tamanho: "14px",
+        cor: corDoTexto,
+      });
+      await expect(page.locator(".page-header-voltar")).toContainText("Painel");
+      await page.locator(".page-header-voltar").click();
+      await page.waitForURL((url) => url.pathname === "/");
+
       await page.goto("/minhas-turmas");
       const cartaoTurma = page.getByTestId("minhas-turmas-cartao").filter({ hasText: turma.nome });
       await expect(cartaoTurma).toBeVisible();
