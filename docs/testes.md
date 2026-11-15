@@ -2895,3 +2895,90 @@ fora do escopo dos ajustes; fica registrado para os trabalhos futuros.
 Os prints anteriores `RNF-32.6-sem-registro-desde-a-carga.png` e
 `RNF-32.6-sem-registro-baixa-ao-marcar.png` mostram a etiqueta na linha do nome, como era antes do
 C1; continuam valendo como prova da regra do registro explícito.
+
+## Ajustes antes da banca, Lote D: link de voltar pela tela de origem, cabeçalhos e fontes (14/11/2026)
+
+**Escopo.** Cinco ajustes de interface, sem mudar API, rota, DTO, banco nem monografia:
+
+- **(D1) Voltar para a tela de origem.**
+  - **Página da Turma:** aberta por Minhas Turmas, o link de voltar diz "Minhas Turmas" e
+    volta para lá, em qualquer perfil; aberta por Turmas EBD, diz "Turmas EBD", também para o
+    Professor. A origem continua depois de trocar de aba e de ir à chamada ou às presenças e
+    voltar. Sem origem conhecida (endereço digitado, página recarregada ou turma aberta pelo
+    Painel), vale a regra por perfil: gestão para Turmas EBD, Professor para Minhas Turmas.
+  - **Minha frequência:** aberta pelo Painel, o link diz "Painel" e volta para lá; aberta por
+    Minhas Turmas, continua "Minhas Turmas".
+  - A origem fica só na memória da aplicação aberta no navegador
+    (`aplicacao/rotas/origemNavegacao.ts`, registrado no roteador), por isso a recarga da
+    página volta à regra por perfil.
+  - Comportamento conhecido: voltar pelo navegador a partir de uma tela de fora da turma conta
+    como nova entrada. Se essa tela é Minhas Turmas ou Turmas EBD, o link passa a apontar para
+    ela; se é outra, como o Painel, vale a regra por perfil. Exemplo: Minhas Turmas → turma →
+    Turmas EBD (menu) → Voltar do navegador: o link passa a dizer "Turmas EBD".
+- **(D2) Minhas Turmas com o cabeçalho padrão** das outras telas, com o Recarregar nas ações.
+- **(D3) Minha frequência:** subtítulo "Turma <nome>"; a linha do período passou de 13 para
+  14 px, na cor do texto comum.
+- **(D4) Relatórios EBD:** o subtítulo do Professor é "Frequência da turma, acompanhamento e
+  ranking de faltas", sem o resumo do dia, cuja aba ele não tem. O da gestão não mudou.
+- **(D5) Fontes:** subtítulo dos cabeçalhos e linha da equipe da Página da Turma com 15 px; o
+  "Mostrar:" de Turmas EBD e de Minhas Turmas com o tamanho e a cor do rótulo "Buscar" de
+  Usuários, sem transparência.
+
+**Validação automatizada (14/11/2026):**
+
+- `dotnet test`: **238 aprovados**, sem mudança (a API não mudou).
+- `vue-tsc -b`: limpo.
+- `npm run test`: 44 arquivos, **231 casos** (218 + 13):
+  - `origemNavegacao.spec` (7, arquivo novo, com o roteador real): regra por perfil sem
+    origem; Minhas Turmas mantida na troca de aba, na chamada e nas presenças; Turmas EBD
+    também para o Professor; entrada por outra tela ou por outra turma esquece a origem;
+    navegação recusada não muda a origem; endereço com barra no fim ou maiúsculas; Minha
+    frequência pelo Painel e pelas outras telas;
+  - `PaginaTurma.spec` +2: a gestão que abre por Minhas Turmas volta para lá depois de trocar de
+    aba e de ir à chamada; o Professor que abre por Turmas EBD volta para Turmas EBD;
+  - `PaginaMinhaFrequencia.spec` (2, arquivo novo): subtítulo "Turma <nome>"; voltar pelo
+    Painel, por Minhas Turmas e sem origem;
+  - `PaginaRelatoriosEbd.spec` +1 (subtítulo por perfil) e `PaginaMinhasTurmas.spec` +1
+    (cabeçalho padrão com o Recarregar nas ações).
+
+  Com as páginas anteriores, os casos novos das páginas falham; os do módulo falham quando a
+  origem não sobrevive à troca de aba e à chamada.
+- `npm run build`: ok.
+- `npm run test:e2e`: **25 aprovados** (11 `chromium` + 14 `mobile`), sem cenário novo:
+  - **E2E-05:** o Professor abre a turma por Turmas EBD (endereço digitado) e o link diz "Turmas
+    EBD" depois da troca de aba e da ida e volta da página da aula; com a página recarregada,
+    "Minhas Turmas". Confere também o subtítulo de Relatórios do Professor.
+  - **E2E-M1:** o aluno abre Minha frequência pelo Painel e o link diz "Painel"; subtítulo
+    "Turma <nome>" com 15 px; período com 14 px, na cor do texto.
+  - **E2E-M5:** Minhas Turmas a 360 px sem nada passar da borda; equipe da turma com 15 px; o
+    "Mostrar:" de Turmas EBD e de Minhas Turmas com o mesmo tamanho, cor e opacidade do
+    "Buscar" de Usuários, medidos no navegador.
+
+**Testes manuais (perfil `https` + `npm run dev`, desktop e 360 × 640), executados pelo autor em
+14/11/2026:**
+
+- **T1 ✔** Admin abre uma turma por Minhas Turmas: o link diz "← Minhas Turmas".
+- **T2 ✔** Troca para Alunos e volta para Aulas: o link continua "Minhas Turmas".
+- **T3 ✔** Abre "Fazer chamada" e volta pelo link com o nome da turma: continua "Minhas
+  Turmas"; o clique abre Minhas Turmas.
+- **T4 ✔** Admin abre a turma por Turmas EBD (⋮ › Abrir turma): o link diz "Turmas EBD".
+- **T5 ✔** F5 numa turma aberta por Minhas Turmas: o link volta a "Turmas EBD", pela regra do
+  perfil.
+- **T6 ✔** Professor abre a turma por Minhas Turmas: "Minhas Turmas", como antes.
+- **T7 ✔** Minha frequência aberta pelo Painel: "← Painel", subtítulo "Turma <nome>" e período
+  maior e mais escuro; o clique volta ao Painel.
+- **T8 ✔** A mesma frequência aberta por Minhas Turmas: "Minhas Turmas".
+- **T9 ✔** Minhas Turmas a 1366 px: cabeçalho padrão, Recarregar à direita e "Mostrar:" como o
+  "Buscar" de Usuários.
+- **T10 ✔** O mesmo a 360 px: Recarregar abaixo do título, nada rolando para o lado.
+- **T11 ✔** Relatórios EBD: subtítulo do Professor sem "resumo do dia"; o do Admin como antes.
+- **T12 ✔** Turmas EBD com "Mostrar:" sem transparência e Página da Turma com a linha da equipe
+  maior, também a 360 px, sem rolagem lateral.
+
+**Prints (`docs/evidencias/`, 4 arquivos):**
+
+- `UI-turma-voltar-minhas-turmas.png` (T3: turma do Admin com "← Minhas Turmas" na aba Aulas)
+- `UI-minha-frequencia-cabecalho.png` (T7: aberta pelo Painel, com "← Painel", "Turma Jovem" e o
+  período)
+- `UI-minhas-turmas-cabecalho-1366.png` (T9)
+- `UI-minhas-turmas-cabecalho-360.png` (T10)
