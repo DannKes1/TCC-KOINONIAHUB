@@ -37,14 +37,14 @@ vi.mock("../../../aplicacao/servicos/relatoriosServico", () => ({
   obterResumoDia: vi.fn(async () => null),
 }));
 
-async function montar() {
+async function montar(perfil = "Admin") {
   const pinia = createPinia();
   setActivePinia(pinia);
   usarAutenticacaoStore().entrar({
     ExpiraEm: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
     UsuarioId: 1,
-    EmailUsuario: "admin@teste.com",
-    Perfil: "Admin",
+    EmailUsuario: `${perfil.toLowerCase()}@teste.com`,
+    Perfil: perfil,
     IgrejaId: 1,
   });
 
@@ -258,5 +258,19 @@ describe("PaginaRelatoriosEbd — limiares do Acompanhamento (RF36)", () => {
       "Atenção: frequência igual ou abaixo de 80 %. " +
         "Crítico: frequência igual ou abaixo de 80 % ou 2 faltas seguidas.",
     );
+  });
+
+  it("o subtítulo cita o resumo do dia só para a gestão (ajuste D4)", async () => {
+    const gestao = await montar("Admin");
+    expect(gestao.get(".page-header-subtitulo").text()).toBe(
+      "Frequência da turma, acompanhamento, ranking de faltas e resumo do dia",
+    );
+    gestao.unmount();
+
+    const professor = await montar("Professor");
+    expect(professor.get(".page-header-subtitulo").text()).toBe(
+      "Frequência da turma, acompanhamento e ranking de faltas",
+    );
+    professor.unmount();
   });
 });

@@ -55,6 +55,13 @@ const dataFim = ref<Date | null>(null);
 const autenticacao = usarAutenticacaoStore();
 const isAdministrativo = computed(() => autenticacao.isAdministrativo);
 
+// Ajuste D4: o Professor não tem a aba Resumo do dia, então o subtítulo não a cita.
+const subtituloPagina = computed(() =>
+  isAdministrativo.value
+    ? "Frequência da turma, acompanhamento, ranking de faltas e resumo do dia"
+    : "Frequência da turma, acompanhamento e ranking de faltas",
+);
+
 const resumo = ref<ResumoDiaVM | null>(null);
 const dataResumo = ref<Date | null>(new Date());
 
@@ -412,7 +419,7 @@ onMounted(async () => {
   <div class="page-container pagina-relatorios">
     <PageHeader
       titulo="Relatórios EBD"
-      subtitulo="Frequência da turma, acompanhamento, ranking de faltas e resumo do dia"
+      :subtitulo="subtituloPagina"
     >
       <template #acoes>
         <div class="acoes-cabecalho nao-imprimir">

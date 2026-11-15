@@ -7,6 +7,7 @@ import Tag from "primevue/tag";
 import Button from "primevue/button";
 import SelectButton from "primevue/selectbutton";
 import CartaoItem from "../../components/ui/CartaoItem.vue";
+import PageHeader from "../../components/ui/PageHeader.vue";
 import { usarTelaCompacta } from "../../aplicacao/composables/usarTelaCompacta";
 import {
   listarMinhasTurmas,
@@ -87,33 +88,26 @@ onMounted(carregar);
 
 <template>
   <div class="page-container">
-    <div
-      style="
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1rem;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-      "
+    <!-- Ajuste D2: o cabeçalho padrão das outras telas, com o Recarregar nas ações. -->
+    <PageHeader
+      titulo="Minhas Turmas"
+      subtitulo="Turmas em que você possui matrícula ou atribuição ativa"
     >
-      <div>
-        <h2 style="margin: 0">Minhas Turmas</h2>
-        <p style="margin: 0.25rem 0 0; color: #6b7280">
-          Turmas em que você possui matrícula ou atribuição ativa
-        </p>
-      </div>
-      <Button
-        label="Recarregar"
-        icon="pi pi-refresh"
-        severity="secondary"
-        :loading="carregando"
-        @click="carregar"
-      />
-    </div>
+      <template #acoes>
+        <Button
+          label="Recarregar"
+          icon="pi pi-refresh"
+          severity="secondary"
+          :loading="carregando"
+          data-testid="minhas-turmas-recarregar"
+          @click="carregar"
+        />
+      </template>
+    </PageHeader>
 
+    <!-- Ajuste D5: "Mostrar:" com o tamanho e a cor dos rótulos de filtro das outras telas. -->
     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
-      <span id="minhas-turmas-filtro-rotulo" style="font-size: 13px; opacity: 0.8">Mostrar:</span>
+      <span id="minhas-turmas-filtro-rotulo">Mostrar:</span>
       <SelectButton
         v-model="filtroStatus"
         ariaLabelledby="minhas-turmas-filtro-rotulo"

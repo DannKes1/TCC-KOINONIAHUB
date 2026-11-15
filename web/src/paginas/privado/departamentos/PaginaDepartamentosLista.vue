@@ -281,7 +281,8 @@ onMounted(carregarLista);
     <InlineMessage :texto="erro" tipo="erro" />
 
     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
-      <span style="font-size: 13px; opacity: 0.8">Mostrar:</span>
+      <!-- Ajuste D5: mesmo tamanho e cor dos rótulos de filtro das outras telas. -->
+      <span>Mostrar:</span>
       <SelectButton
         v-model="filtroStatus"
         :options="[

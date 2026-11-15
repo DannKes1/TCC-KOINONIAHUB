@@ -128,4 +128,24 @@ describe("PaginaMinhasTurmas — filtro de situação (ajuste C3)", () => {
     expect(semVinculo.get("tbody").text()).toContain("Você ainda não possui vínculo com turmas.");
     semVinculo.unmount();
   });
+
+  it("usa o cabeçalho padrão, com o Recarregar nas ações, e o rótulo do filtro sem estilo próprio (ajustes D2 e D5)", async () => {
+    vi.mocked(listarMinhasTurmas).mockClear();
+    const wrapper = await montar([ATIVA]);
+    expect(listarMinhasTurmas).toHaveBeenCalledTimes(1);
+
+    expect(wrapper.get("h2.page-header-titulo").text()).toBe("Minhas Turmas");
+    expect(wrapper.get(".page-header-subtitulo").text()).toBe(
+      "Turmas em que você possui matrícula ou atribuição ativa",
+    );
+    const recarregar = wrapper.get('.page-header-acoes [data-testid="minhas-turmas-recarregar"]');
+    expect(recarregar.text()).toContain("Recarregar");
+    await recarregar.trigger("click");
+    await flushPromises();
+    expect(listarMinhasTurmas).toHaveBeenCalledTimes(2);
+
+    // O "Mostrar:" herda o tamanho e a cor do texto, como os rótulos de filtro das outras telas.
+    expect(wrapper.get("#minhas-turmas-filtro-rotulo").attributes("style")).toBeUndefined();
+    wrapper.unmount();
+  });
 });

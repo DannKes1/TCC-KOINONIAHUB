@@ -103,7 +103,7 @@ function voltar() {
 
 .page-header-subtitulo {
   margin: 4px 0 0;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--ipb-cinza-claro, #7a7a7a);
 }
 
