@@ -5,6 +5,7 @@ import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Tag from "primevue/tag";
 import Button from "primevue/button";
+import SelectButton from "primevue/selectbutton";
 import CartaoItem from "../../components/ui/CartaoItem.vue";
 import { usarTelaCompacta } from "../../aplicacao/composables/usarTelaCompacta";
 import {
@@ -22,9 +23,35 @@ const compacta = usarTelaCompacta();
 const turmas = ref<MinhaTurmaVM[]>([]);
 const carregando = ref(false);
 
-const turmasOrdenadas = computed(() =>
-  [...turmas.value].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+// Ajuste C3: filtro de situação no cliente, no padrão de Turmas EBD, começando em Ativas.
+// Vale para a tabela e para os cartões; a API continua devolvendo as turmas ativas e as
+// inativas.
+type FiltroSituacao = "ativas" | "inativas" | "todas";
+const filtroStatus = ref<FiltroSituacao>("ativas");
+const opcoesSituacao: { label: string; value: FiltroSituacao }[] = [
+  { label: "Ativas", value: "ativas" },
+  { label: "Inativas", value: "inativas" },
+  { label: "Todas", value: "todas" },
+];
+
+const turmasFiltradas = computed(() =>
+  turmas.value.filter(
+    (t) =>
+      filtroStatus.value === "todas" ||
+      (filtroStatus.value === "ativas" ? t.ativo : !t.ativo),
+  ),
 );
+
+const turmasOrdenadas = computed(() =>
+  [...turmasFiltradas.value].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+);
+
+// Lista vazia: sem vínculo nenhum, ou sem vínculo na situação escolhida.
+const textoVazio = computed(() => {
+  if (turmas.value.length === 0) return "Você ainda não possui vínculo com turmas.";
+  if (filtroStatus.value === "ativas") return "Você não possui vínculo com turmas ativas.";
+  return "Você não possui vínculo com turmas inativas.";
+});
 
 function severityVinculo(vinculo: string) {
   const v = (vinculo || "").toLowerCase();
@@ -85,6 +112,19 @@ onMounted(carregar);
       />
     </div>
 
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+      <span id="minhas-turmas-filtro-rotulo" style="font-size: 13px; opacity: 0.8">Mostrar:</span>
+      <SelectButton
+        v-model="filtroStatus"
+        ariaLabelledby="minhas-turmas-filtro-rotulo"
+        :options="opcoesSituacao"
+        optionLabel="label"
+        optionValue="value"
+        :allowEmpty="false"
+        data-testid="minhas-turmas-filtro-situacao"
+      />
+    </div>
+
     <!-- Celular: cartões (Etapa 6.4). -->
     <div v-if="compacta" class="lista-cartoes" data-testid="minhas-turmas-cartoes">
       <CartaoItem
@@ -122,12 +162,12 @@ onMounted(carregar);
       </CartaoItem>
 
       <p v-if="!carregando && turmasOrdenadas.length === 0" class="lista-vazia">
-        Você ainda não possui vínculo com turmas.
+        {{ textoVazio }}
       </p>
     </div>
 
     <!-- Desktop: tabela. -->
-    <DataTable v-else :value="turmas" :loading="carregando" stripedRows>
+    <DataTable v-else :value="turmasFiltradas" :loading="carregando" stripedRows>
       <Column field="nome" header="Turma" />
       <Column field="tipo" header="Tipo" style="width: 110px" />
       <Column header="Vínculo" style="width: 140px">
@@ -170,7 +210,7 @@ onMounted(carregar);
           </div>
         </template>
       </Column>
-      <template #empty>Você ainda não possui vínculo com turmas.</template>
+      <template #empty>{{ textoVazio }}</template>
     </DataTable>
   </div>
 </template>
