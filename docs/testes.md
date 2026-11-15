@@ -2792,3 +2792,106 @@ botão na largura disponível, o ⋮ alinhado e sem rolagem lateral.
 **Prints (`docs/evidencias/`, 4 arquivos):** `CSU17-menu-professor-sem-turmas-ebd.png`,
 `CSU14-historico-recorte-turma.png`, `CSU14-historico-recorte-turma-360.png`,
 `CSU14-historico-pessoas-todas-turmas.png`.
+
+## Ajustes antes da banca, Lote C: altura dos cartões da chamada, blocos da própria conta no Painel e filtro em Minhas Turmas (14/11/2026)
+
+**Escopo.** Quatro ajustes de interface, sem mudar rota, DTO, banco nem monografia:
+
+- **(C1) Cartões da chamada com a mesma altura (CSU10, RNF 32.6).** A etiqueta "Sem registro"
+  saiu da linha do nome e foi para a segunda linha, ao lado de "+ observação"
+  (`LinhaChamada.vue`). Antes, ela descia para outra linha quando o nome não cabia, e o cartão
+  mudava de altura ao marcar o aluno. Agora, com a observação fechada, a altura é a mesma com e
+  sem a etiqueta.
+- **(C2) Turmas em que sou aluno(a) (RF3, CSU04).** No fim dos Painéis administrativo e do
+  Professor, a conta que também está matriculada numa turma **ativa** vê o bloco "Turmas em que
+  sou aluno(a)", com "Minha frequência" para cada turma (componente novo
+  `components/painel/TurmasComoAluno.vue`; cartões abaixo de 768 px, tabela no desktop). Com
+  matrícula só em turma inativa, o bloco não aparece. O Painel do perfil Usuario não mudou. Se a
+  lista da conta não carregar, o resto do painel continua.
+- **(C2b) Aulas em aberto das minhas turmas (RF3, CSU04).** No Painel administrativo, a conta
+  que também tem atribuição ativa vê, antes das tabelas, as aulas Em aberto das turmas ativas em
+  que tem atribuição, com data, turma, matéria e "Fazer chamada". Os dados vêm das aulas que o
+  painel já carrega, sem chamada nova à API. Sem atribuição, ou sem aula em aberto, nada aparece.
+- **(C3) Filtro de situação em Minhas Turmas (RF5, CSU06).** A tela ganhou "Mostrar:" com
+  Ativas, Inativas e Todas, no padrão de Turmas EBD e começando em Ativas. O filtro é feito na
+  tela, vale para os cartões e para a tabela, e a API não mudou. Clicar de novo na opção marcada
+  não deixa o filtro vazio. A mensagem de lista vazia acompanha o filtro: "Você ainda não possui
+  vínculo com turmas.", "Você não possui vínculo com turmas ativas." ou "Você não possui vínculo
+  com turmas inativas.".
+
+**Limitação conhecida (vínculo único por turma).** A lista de Minhas Turmas
+(`PessoaServico.ListarMinhasTurmasAsync`) devolve um vínculo por turma. Se a conta de perfil
+Professor ou administrativo for aluno(a) e tiver atribuição ativa na mesma turma, prevalece o
+vínculo da atribuição (Professor ou Auxiliar). Na conta de perfil Usuario a atribuição não entra
+na lista (RNF 21.4) e o vínculo Aluno continua. No primeiro caso, a turma aparece em Minhas
+Turmas com "Abrir turma", sem "Minha frequência", e não entra no bloco "Turmas em que sou
+aluno(a)" do Painel. Corrigir exige mudar a resposta da API para mais de um vínculo por turma,
+fora do escopo dos ajustes; fica registrado para os trabalhos futuros.
+
+**Validação automatizada (14/11/2026):**
+
+- `dotnet build`: 0 erros.
+- `dotnet test`: **238 aprovados**, sem mudança (a API não mudou).
+- `vue-tsc -b`: limpo.
+- `npm run test`: 42 arquivos, **218 casos** (205 + 13):
+  - `PaginaPainel.spec` (9, arquivo novo): Admin e Professor matriculados veem o bloco no fim, só
+    com as turmas ativas; sem matrícula em turma ativa (sem turmas, só atribuição ou só turma
+    inativa), o bloco não aparece; Admin com atribuição vê as aulas Em aberto antes das tabelas,
+    na tabela e nos cartões, e sem atribuição não vê; o Painel do usuário não ganha os blocos; a
+    falha da carga não derruba o painel; a resposta antiga é descartada depois de um Recarregar;
+  - `PaginaMinhasTurmas.spec` (4, arquivo novo): começa em Ativas e esconde a inativa, sem
+    esvaziar ao clicar de novo; Inativas mostra só a inativa; Todas mostra as duas na tabela;
+    mensagem de lista vazia por filtro, nos cartões e na tabela;
+  - no `LinhaChamada.spec`, o caso "sem registro" passou a exigir a etiqueta na linha de
+    "+ observação" e fora da linha do nome.
+
+  Com as telas anteriores, falham os casos que exigem os blocos do Painel e o filtro; o da
+  resposta antiga falha sem a guarda que a descarta.
+- `npm run build`: ok.
+- `npm run test:e2e`: **25 aprovados** (11 `chromium` + 14 `mobile`). O E2E-04 mede a altura do
+  cartão de um aluno com a etiqueta, marcado e desmarcado, a 1366 px no `chromium` e a 360 px no
+  `mobile`, com tolerância de 0,5 px. Com a etiqueta de volta na linha do nome, o E2E-04 reprova
+  nos dois projetos com 31 px de diferença. Nenhum cenário E2E depende de turma inativa em Minhas
+  Turmas: a semente cria todas as turmas ativas.
+
+**Testes manuais (perfil `https` + `npm run dev`, desktop e 360 × 640), executados pelo autor em
+14/11/2026:**
+
+- **T1 ✔** Chamada de uma aula Em aberto sem registros, a 1366 px: "Sem registro" ao lado de
+  "+ observação" e todos os cartões com a mesma altura.
+- **T2 ✔** Marcar e desmarcar um aluno: a etiqueta some e volta, e a altura do cartão não muda.
+- **T3 ✔** O mesmo a 360 × 640.
+- **T4 ✔** "+ observação" aberto: o cartão cresce pelo campo, como previsto.
+- **T5 ✔** Admin matriculado numa turma ativa e numa inativa: no fim do Painel, "Turmas em que
+  sou aluno(a)" só com a turma ativa, sem a etiqueta "Inativa"; "Minha frequência" abre a
+  frequência dela.
+- **T6 ✔** O mesmo a 360 px, em cartões, sem rolagem lateral.
+- **T7 ✔** Professor matriculado: o mesmo bloco no fim do painel dele, só com a turma ativa.
+- **T8 ✔** Conta com matrícula só em turma inativa: o bloco não aparece.
+- **T9 ✔** Perfil Usuario: o Painel de sempre, com a turma inativa marcada.
+- **T10 ✔** Admin com atribuição de Professor e aula Em aberto: "Aulas em aberto das minhas
+  turmas" antes das tabelas, com data, turma e matéria; "Fazer chamada" abre a chamada.
+- **T11 ✔** O mesmo a 360 px, em cartões.
+- **T12 ✔** Admin sem matrícula e sem atribuição: o Painel igual ao de antes.
+- **T13 ✔** Minhas Turmas a 1366 px: começa em Ativas, sem a turma inativa; Inativas mostra só
+  a inativa.
+- **T14 ✔** Todas mostra as turmas ativas e a inativa; clicar de novo na opção marcada não a
+  desmarca.
+- **T15 ✔** O mesmo a 360 × 640: cartões, filtro sem rolagem lateral e mensagem de lista vazia
+  de acordo com o filtro.
+
+**Prints (`docs/evidencias/`, 7 arquivos):**
+
+- `RNF-32.6-sem-registro-altura-igual-1366.png` (T1 e T2: dois alunos marcados e dois sem
+  registro, todos os cartões com a mesma altura)
+- `RNF-32.6-sem-registro-altura-igual-360.png` (T3)
+- `RF3-painel-gestao-turmas-como-aluno.png` (T5)
+- `RF3-painel-professor-turmas-como-aluno.png` (T7)
+- `RF3-painel-gestao-minhas-aulas-abertas.png` (T10)
+- `RF5-minhas-turmas-filtro-inativas-1366.png` (T13)
+- `RF5-minhas-turmas-filtro-todas-360.png` (T15, com o filtro em Todas: as turmas ativas e a
+  inativa, marcada "Inativa")
+
+Os prints anteriores `RNF-32.6-sem-registro-desde-a-carga.png` e
+`RNF-32.6-sem-registro-baixa-ao-marcar.png` mostram a etiqueta na linha do nome, como era antes do
+C1; continuam valendo como prova da regra do registro explícito.
