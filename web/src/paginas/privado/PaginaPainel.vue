@@ -176,10 +176,13 @@ const aulasAbertasDoProfessor = computed(() =>
     .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()),
 );
 
-// Ajuste C2: turmas em que a própria conta é aluno(a), no fim dos Painéis administrativo
-// e do Professor. O Painel continua o do perfil (RF3); o bloco só leva à própria
-// frequência (RF6).
-const turmasComoAluno = computed(() => minhasTurmas.value.filter(ehVinculoAluno));
+// Ajuste C2: turmas ativas em que a própria conta é aluno(a), no fim dos Painéis
+// administrativo e do Professor. O Painel continua o do perfil (RF3); o bloco só leva à
+// própria frequência (RF6). Matrícula em turma inativa não entra: com só ela, o bloco
+// não aparece.
+const turmasComoAluno = computed(() =>
+  minhasTurmas.value.filter((t) => ehVinculoAluno(t) && t.ativo),
+);
 
 // Ajuste C2b: no Painel administrativo, as aulas Em aberto das turmas em que a conta tem
 // atribuição (vínculo diferente de Aluno), com a mesma ação do Painel do Professor. Usa as

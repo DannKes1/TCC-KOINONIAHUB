@@ -13,8 +13,9 @@ import type { AulaVM } from "../../aplicacao/modelos/dtos";
 
 // Ajustes C2 e C2b (RF3: o Painel segue o perfil). C2: nos Painéis administrativo e do
 // Professor, a conta que também é aluno(a) vê no fim "Turmas em que sou aluno(a)", com
-// "Minha frequência". C2b: no Painel administrativo, a conta com atribuição vê, antes das
-// tabelas, "Aulas em aberto das minhas turmas", feito das aulas que o painel já carrega.
+// "Minha frequência", só para as turmas ativas. C2b: no Painel administrativo, a conta com
+// atribuição vê, antes das tabelas, "Aulas em aberto das minhas turmas", feito das aulas
+// que o painel já carrega.
 // Se a carga das turmas da conta falhar, o resto do painel continua. Serviços simulados.
 const compacta = ref(true);
 vi.mock("../../aplicacao/composables/usarTelaCompacta", () => ({
@@ -118,7 +119,7 @@ describe("PaginaPainel — blocos da própria conta (ajustes C2 e C2b)", () => {
     vi.mocked(listarAulasPorDepartamento).mockImplementation(async (id: number) => aulasPorTurma[id] ?? []);
   });
 
-  it("Admin matriculado(a) vê no fim Turmas em que sou aluno(a), com Minha frequência desabilitado na turma inativa", async () => {
+  it("Admin matriculado(a) vê no fim Turmas em que sou aluno(a), só com as turmas ativas", async () => {
     const { wrapper, router } = await montar("Admin", [
       turma(7, "Jovens", "Aluno"),
       turma(9, "Turma antiga", "Aluno", false),
@@ -129,19 +130,16 @@ describe("PaginaPainel — blocos da própria conta (ajustes C2 e C2b)", () => {
     expect(vemDepois(wrapper.get('[data-testid="painel-gestao-tabelas"]').element, bloco.element)).toBe(true);
 
     const cartoes = bloco.findAll('[data-testid="painel-turma-como-aluno"]');
-    expect(cartoes.map((c) => c.find(".cartao-item-titulo").text())).toEqual(["Jovens", "Turma antiga"]);
-    expect(cartoes[1]!.text()).toContain("Inativa");
-    const botoes = bloco.findAll('[data-testid="painel-minha-frequencia"]');
-    expect((botoes[0]!.element as HTMLButtonElement).disabled).toBe(false);
-    expect((botoes[1]!.element as HTMLButtonElement).disabled).toBe(true);
+    expect(cartoes.map((c) => c.find(".cartao-item-titulo").text())).toEqual(["Jovens"]);
+    expect(bloco.text()).not.toContain("Turma antiga");
 
-    await botoes[0]!.trigger("click");
+    await bloco.get('[data-testid="painel-minha-frequencia"]').trigger("click");
     await flushPromises();
     expect(router.currentRoute.value.path).toBe("/departamentos/7/minha-frequencia");
     wrapper.unmount();
   });
 
-  it("Professor matriculado(a) vê no fim, no desktop, só as turmas de aluno(a), e não vê o bloco da gestão", async () => {
+  it("Professor matriculado(a) vê no fim, no desktop, só as turmas ativas de aluno(a), e não vê o bloco da gestão", async () => {
     compacta.value = false;
     const { wrapper, router } = await montar("Professor", [
       turma(8, "Adultos", "Professor"),
@@ -155,21 +153,18 @@ describe("PaginaPainel — blocos da própria conta (ajustes C2 e C2b)", () => {
     expect(wrapper.find('[data-testid="painel-gestao-minhas-aulas-abertas"]').exists()).toBe(false);
 
     const linhas = bloco.findAll("tbody tr");
-    expect(linhas).toHaveLength(2);
+    expect(linhas).toHaveLength(1);
     expect(linhas[0]!.text()).toContain("Jovens");
-    expect(linhas[1]!.text()).toContain("Turma antiga");
-    expect(linhas[1]!.text()).toContain("Inativa");
     expect(bloco.text()).not.toContain("Adultos");
-    const botoes = bloco.findAll('[data-testid="painel-minha-frequencia"]');
-    expect((botoes[1]!.element as HTMLButtonElement).disabled).toBe(true);
+    expect(bloco.text()).not.toContain("Turma antiga");
 
-    await botoes[0]!.trigger("click");
+    await bloco.get('[data-testid="painel-minha-frequencia"]').trigger("click");
     await flushPromises();
     expect(router.currentRoute.value.path).toBe("/departamentos/7/minha-frequencia");
     wrapper.unmount();
   });
 
-  it("sem matrícula, o bloco não aparece (Admin sem turmas; Professor só com atribuição)", async () => {
+  it("sem matrícula em turma ativa, o bloco não aparece (sem turmas, só atribuição ou só turma inativa)", async () => {
     const admin = await montar("Admin", []);
     expect(admin.wrapper.find('[data-testid="painel-turmas-como-aluno"]').exists()).toBe(false);
     expect(admin.wrapper.find('[data-testid="painel-gestao-minhas-aulas-abertas"]').exists()).toBe(false);
@@ -178,6 +173,12 @@ describe("PaginaPainel — blocos da própria conta (ajustes C2 e C2b)", () => {
     const professor = await montar("Professor", [turma(8, "Adultos", "Professor")]);
     expect(professor.wrapper.find('[data-testid="painel-turmas-como-aluno"]').exists()).toBe(false);
     professor.wrapper.unmount();
+
+    for (const perfil of ["Admin", "Professor"]) {
+      const soInativa = await montar(perfil, [turma(9, "Turma antiga", "Aluno", false)]);
+      expect(soInativa.wrapper.find('[data-testid="painel-turmas-como-aluno"]').exists()).toBe(false);
+      soInativa.wrapper.unmount();
+    }
   });
 
   it("Admin com atribuição vê, antes das tabelas, só as aulas Em aberto das turmas dele, com Fazer chamada", async () => {
