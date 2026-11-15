@@ -5,6 +5,7 @@ import { createMemoryHistory, createRouter } from "vue-router";
 
 import PaginaTurma from "./PaginaTurma.vue";
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
+import { esquecerOrigens, registrarOrigem } from "../../../aplicacao/rotas/origemNavegacao";
 
 // Etapa 6.4 (RF20): cabeçalho da turma com contadores e equipe, abas como rotas
 // filhas (URLs preservadas), aba Atribuições só para a gestão e redirecionamento
@@ -63,7 +64,7 @@ beforeAll(() => {
 
 const Aba = (nome: string) => ({ template: `<div data-testid="aba-conteudo">${nome}</div>` });
 
-async function montar(perfil: string, caminho: string) {
+async function montar(perfil: string, caminho: string, partida?: string) {
   const pinia = createPinia();
   setActivePinia(pinia);
   usarAutenticacaoStore().entrar({
@@ -93,6 +94,9 @@ async function montar(perfil: string, caminho: string) {
       { path: "/:pathMatch(.*)*", component: { template: "<div />" } },
     ],
   });
+  // Ajuste D1: a origem é anotada como nas rotas reais.
+  router.afterEach(registrarOrigem);
+  if (partida) await router.push(partida);
   await router.push(caminho);
   await router.isReady();
 
@@ -110,6 +114,7 @@ function rotulosDasAbas(wrapper: ReturnType<typeof mount>) {
 describe("PaginaTurma (RF20, Etapa 6.4)", () => {
   beforeEach(() => {
     localStorage.clear();
+    esquecerOrigens();
   });
 
   it("sem aba na URL, abre Aulas; cabeçalho traz nome, contadores e equipe", async () => {
@@ -153,7 +158,7 @@ describe("PaginaTurma (RF20, Etapa 6.4)", () => {
     wrapper.unmount();
   });
 
-  it("o link de voltar leva a gestão a Turmas EBD e o professor a Minhas Turmas", async () => {
+  it("sem origem conhecida, o link de voltar leva a gestão a Turmas EBD e o professor a Minhas Turmas", async () => {
     const admin = await montar("Admin", "/departamentos/7/aulas");
     expect(admin.wrapper.find(".page-header-voltar").text()).toContain("Turmas EBD");
     admin.wrapper.unmount();
@@ -161,5 +166,41 @@ describe("PaginaTurma (RF20, Etapa 6.4)", () => {
     const prof = await montar("Professor", "/departamentos/7/aulas");
     expect(prof.wrapper.find(".page-header-voltar").text()).toContain("Minhas Turmas");
     prof.wrapper.unmount();
+  });
+
+  it("aberta por Minhas Turmas, a gestão volta para Minhas Turmas depois de trocar de aba e de ir à chamada (ajuste D1)", async () => {
+    const { wrapper, router } = await montar("Admin", "/departamentos/7", "/minhas-turmas");
+    const voltar = () => wrapper.find(".page-header-voltar");
+    expect(voltar().text()).toContain("Minhas Turmas");
+
+    await wrapper.find('[data-testid="turma-aba-matriculas"]').trigger("click");
+    await flushPromises();
+    expect(router.currentRoute.value.path).toBe("/departamentos/7/matriculas");
+    expect(voltar().text()).toContain("Minhas Turmas");
+
+    // Ida e volta da chamada: a Página da Turma sai da tela e volta.
+    await router.push("/aulas/30/chamada");
+    await flushPromises();
+    expect(voltar().exists()).toBe(false);
+    await router.push("/departamentos/7/aulas");
+    await flushPromises();
+    expect(voltar().text()).toContain("Minhas Turmas");
+
+    await voltar().trigger("click");
+    await flushPromises();
+    expect(router.currentRoute.value.path).toBe("/minhas-turmas");
+
+    wrapper.unmount();
+  });
+
+  it("aberta por Turmas EBD, o professor volta para Turmas EBD (ajuste D1)", async () => {
+    const { wrapper, router } = await montar("Professor", "/departamentos/7/aulas", "/departamentos");
+    expect(wrapper.find(".page-header-voltar").text()).toContain("Turmas EBD");
+
+    await wrapper.find(".page-header-voltar").trigger("click");
+    await flushPromises();
+    expect(router.currentRoute.value.path).toBe("/departamentos");
+
+    wrapper.unmount();
   });
 });

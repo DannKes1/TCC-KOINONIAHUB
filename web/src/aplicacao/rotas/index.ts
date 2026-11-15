@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import type { RouteRecordRaw } from "vue-router";
 import { aplicarGuardas } from "./guardas";
+import { registrarOrigem } from "./origemNavegacao";
 import PaginaMeusDados from "../../paginas/privado/meus-dados/PaginaMeusDados.vue";
 import PaginaLogin from "../../paginas/publico/PaginaLogin.vue";
 import PaginaCadastroInicial from "../../paginas/publico/PaginaCadastroInicial.vue";
@@ -153,5 +154,7 @@ const router = createRouter({
 });
 
 aplicarGuardas(router);
+// Ajuste D1: anota a tela de origem para o link de voltar da turma e de Minha frequência.
+router.afterEach(registrarOrigem);
 
 export default router;

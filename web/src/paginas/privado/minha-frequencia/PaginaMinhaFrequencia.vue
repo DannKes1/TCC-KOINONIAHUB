@@ -11,6 +11,7 @@ import CartaoItem from "../../../components/ui/CartaoItem.vue";
 
 import { useAsync } from "../../../aplicacao/composables/useAsync";
 import { usarTelaCompacta } from "../../../aplicacao/composables/usarTelaCompacta";
+import { voltarDaMinhaFrequencia } from "../../../aplicacao/rotas/origemNavegacao";
 
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -73,6 +74,14 @@ const periodoFormatado = computed(() => {
   return inicio !== "-" && fim !== "-" ? `${inicio} a ${fim}` : "";
 });
 
+// Ajuste D1: aberta pelo Painel, volta para o Painel; nos demais casos, Minhas Turmas.
+const voltar = computed(() => voltarDaMinhaFrequencia());
+
+// Ajuste D3: o subtítulo diz de que turma é a frequência.
+const subtitulo = computed(() =>
+  dados.value ? `Turma ${dados.value.nomeDepartamento}` : "Sua presença nesta turma",
+);
+
 async function carregar() {
   if (!departamentoId.value) {
     erro.value = "Turma inválida.";
@@ -91,9 +100,9 @@ onMounted(carregar);
   <div class="pagina-minha-frequencia">
     <PageHeader
       titulo="Minha frequência"
-      :subtitulo="dados ? dados.nomeDepartamento : 'Sua presença nesta turma'"
-      voltarPara="/minhas-turmas"
-      voltarLabel="Minhas Turmas"
+      :subtitulo="subtitulo"
+      :voltarPara="voltar.para"
+      :voltarLabel="voltar.rotulo"
     />
 
     <InlineMessage v-if="erro" :texto="erro" tipo="erro" />
@@ -217,13 +226,14 @@ onMounted(carregar);
 </template>
 
 <style scoped>
+/* Ajuste D3: 14 px, na cor do texto comum. */
 .periodo {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: 13px;
-  color: var(--ipb-cinza-claro, #7a7a7a);
+  font-size: 14px;
+  color: var(--ipb-cinza, #4d4d4d);
 }
 
 .periodo .pi {

@@ -12,6 +12,7 @@ import InlineMessage from "../../../components/ui/InlineMessage.vue";
 
 import { usarAutenticacaoStore } from "../../../aplicacao/armazenamentos/autenticacaoStore";
 import { useAsync } from "../../../aplicacao/composables/useAsync";
+import { voltarDaTurma } from "../../../aplicacao/rotas/origemNavegacao";
 
 import { obterDepartamento } from "../../../aplicacao/servicos/departamentosServico";
 import { listarAlunosDaTurma } from "../../../aplicacao/servicos/matriculasServico";
@@ -69,12 +70,11 @@ function irParaAba(valor: string | number) {
   if (route.path !== destino) void router.push(destino);
 }
 
-// Gestão volta para a lista de turmas; professor/auxiliar, para Minhas Turmas.
-const voltarPara = computed(() =>
-  autenticacao.isAdministrativo ? "/departamentos" : "/minhas-turmas",
-);
-const voltarLabel = computed(() =>
-  autenticacao.isAdministrativo ? "Turmas EBD" : "Minhas Turmas",
+// Ajuste D1: volta para a tela de origem (Minhas Turmas ou Turmas EBD), que sobrevive à
+// troca de aba e à ida e volta da chamada. Sem origem conhecida (endereço digitado, página
+// recarregada), a gestão volta para Turmas EBD e o professor/auxiliar para Minhas Turmas.
+const voltar = computed(() =>
+  voltarDaTurma(departamentoId.value, autenticacao.isAdministrativo),
 );
 
 const professores = computed(() =>
@@ -120,8 +120,8 @@ watch(departamentoId, carregarResumo);
   <div class="page-container">
     <PageHeader
       :titulo="turma ? turma.nome : 'Turma'"
-      :voltarPara="voltarPara"
-      :voltarLabel="voltarLabel"
+      :voltarPara="voltar.para"
+      :voltarLabel="voltar.rotulo"
       modo="completo"
     >
       <template #acoes>
@@ -213,7 +213,7 @@ watch(departamentoId, carregarResumo);
 
 .turma-equipe {
   margin: -4px 0 0;
-  font-size: 13.5px;
+  font-size: 15px;
   line-height: 1.5;
   color: var(--ipb-cinza, #4d4d4d);
 }
